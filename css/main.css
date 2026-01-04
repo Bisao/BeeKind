@@ -1,23 +1,132 @@
 :root {
-    --neon-yellow: #f3f315;
-    --dark-bg: #0a0a0c;
-    --cyber-blue: #00f2ff;
-    --xp-green: #39ff14;
+    --primary: #f3f315;
+    --bg: #0a0a0c;
+    --card: #1c1c21;
 }
 
-* { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-
 body {
-    background: var(--dark-bg);
-    color: white;
+    background: var(--bg);
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     margin: 0;
     overflow: hidden;
-    height: 100vh;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
 }
 
 #gameUI {
     display: flex;
     flex-direction: column;
-    height: 100%;
-    padding: 20px;
+    height: 100vh;
+    padding: env(safe-area-inset-top) 15px env(safe-area-inset-bottom) 15px;
 }
+
+.stats-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--card);
+    padding: 15px;
+    border-radius: 15px;
+    margin-top: 10px;
+}
+
+.xp-bar-container {
+    width: 60px;
+    height: 6px;
+    background: #333;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+#xpFill {
+    height: 100%;
+    background: #39ff14;
+    width: 0%;
+    transition: width 0.3s;
+}
+
+#beeContainer {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 120px;
+    cursor: pointer;
+}
+
+#beeContainer:active { transform: scale(0.92); }
+
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.tabs button {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    background: var(--card);
+    color: #fff;
+    font-weight: bold;
+}
+
+.tab-content { display: none; flex: 1; overflow-y: auto; }
+.tab-content.active { display: block; }
+
+.shop-item {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid #333;
+    color: white;
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+.shop-item:disabled { opacity: 0.4; }
+
+/* Minigame Styles */
+#gameOverlay {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.mg-header {
+    width: 100%;
+    max-width: 320px;
+    display: flex;
+    justify-content: space-between;
+    padding: 20px;
+    font-weight: bold;
+}
+
+.mg-controls {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.mg-controls button {
+    width: 60px;
+    height: 60px;
+    background: #222;
+    border: 1px solid #444;
+    color: white;
+    border-radius: 10px;
+    font-size: 20px;
+}
+
+.hidden { display: none !important; }
+canvas { border: 2px solid #333; }
