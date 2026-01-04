@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>BeeKind | Soft-UI Honeycomb 🐝</title>
+    <title>BeeKind | Royal Honeycomb 🐝</title>
     <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
@@ -12,26 +12,26 @@
     <div id="loadingScreen" class="hidden">
         <div style="text-align: center;">
             <div style="font-size: 5rem; animation: beeFloat 3s infinite;">🐝</div>
-            <div style="width: 300px; height: 10px; background: #eee; border-radius: 10px; margin-top: 20px; overflow: hidden;">
+            <div style="width: 80vw; max-width: 400px; height: 10px; background: #eee; border-radius: 10px; margin: 20px auto; overflow: hidden;">
                 <div id="loadingBar" style="width: 0%; height: 100%; background: var(--honey-primary); transition: 0.1s;"></div>
             </div>
-            <h3 style="margin-top: 15px; color: var(--honey-dark);">PROCESSANDO NÉCTAR...</h3>
+            <h3 style="color: var(--honey-dark);">PROCESSANDO NÉCTAR...</h3>
         </div>
     </div>
 
     <div id="startScreen">
         <div class="home-card">
-            <img src="assets/bee.png" style="width: 200px; margin-bottom: 20px;">
+            <img src="assets/bee.png" style="width: 150px; max-width: 40vw; margin-bottom: 20px;">
             <h1 class="game-title">BeeKind</h1>
-            <p style="font-size: 1.4rem; opacity: 0.7;">O império de mel mais doce do mundo</p>
+            <p style="font-size: 1.2rem; opacity: 0.7;">O império de mel mais doce do mundo</p>
             
             <button class="btn-play" onclick="UI.requestStart()">INICIAR COLHEITA</button>
             
-            <div style="margin-top: 40px; display: flex; gap: 30px; justify-content: center;">
-                <span onclick="UI.toggleModal('logModal')" style="cursor:pointer; font-weight:700; color:var(--honey-dark);">REGISTROS</span>
-                <span onclick="UI.toggleModal('configModal')" style="cursor:pointer; font-weight:700; color:var(--honey-dark);">OPÇÕES</span>
+            <div style="margin-top: 40px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
+                <button id="logBtn" class="btn-chromatic" onclick="UI.openLogs()">O QUE MUDOU?</button>
+                <button class="btn-chromatic" style="animation: none;" onclick="UI.toggleModal('configModal')">OPÇÕES</button>
             </div>
-            <p style="margin-top: 60px; font-weight: 800; opacity: 0.4;">fun 🍪 cook studio</p>
+            <p style="margin-top: 40px; font-weight: 800; opacity: 0.4;">fun 🍪 cook studio</p>
         </div>
     </div>
 
@@ -43,7 +43,7 @@
             <div class="stat-bubble" style="box-shadow: none; background: transparent;">
                 <div style="text-align: center;">
                     <small>Nível <span id="lvlDisplay">1</span></small>
-                    <div style="width: 100px; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden;">
+                    <div style="width: 80px; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden;">
                         <div id="xpFill" style="width: 0%; height: 100%; background: #4CAF50;"></div>
                     </div>
                 </div>
@@ -59,24 +59,24 @@
 
             <aside class="main-panel">
                 <div id="shop" class="tab-content active">
-                    <h2 style="margin-bottom: 30px;">🏠 Estruturas</h2>
+                    <h2 style="margin-bottom: 20px;">🏠 Loja</h2>
                     <div id="shopList"></div>
                 </div>
 
                 <div id="industrial" class="tab-content hidden">
-                    <h2 style="margin-bottom: 30px;">🏭 Laboratório</h2>
-                    <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 20px;">
-                        <div><b>Refinaria Automática</b><br><small>700 Mel ➔ 1 Pote</small></div>
+                    <h2 style="margin-bottom: 20px;">🏭 Laboratório</h2>
+                    <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
+                        <div><b>Refinaria</b><br><small>700 Mel ➔ 1 Pote</small></div>
                         <button class="buy-btn" onclick="UI.handleCraft()">CRAFTAR POTE 🏺</button>
                     </div>
-                    <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 20px;">
-                        <div><b>Mercado da Vila</b><br><small>1 Pote ➔ 50 Ouro</small></div>
+                    <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
+                        <div><b>Mercado</b><br><small>1 Pote ➔ 50 Ouro</small></div>
                         <button class="buy-btn" style="color: #2E7D32;" onclick="UI.handleSell()">VENDER POTE 💰</button>
                     </div>
                 </div>
 
                 <div id="talents" class="tab-content hidden">
-                    <h2 style="margin-bottom: 30px;">🌳 Talentos</h2>
+                    <h2 style="margin-bottom: 20px;">🌳 Talentos</h2>
                     <div class="stat-bubble" style="width: 100%; justify-content: center;">Pontos: <span id="talentPoints">0</span></div>
                 </div>
             </aside>
@@ -87,6 +87,22 @@
             <button class="tab-btn" onclick="UI.openTab('industrial')">INDUSTRIA</button>
             <button class="tab-btn" onclick="UI.openTab('talents')">TALENTOS</button>
         </nav>
+    </div>
+
+    <div id="logModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h2 style="color: var(--honey-dark); margin-bottom: 20px;">Últimas Atualizações 📜</h2>
+            <div id="logContent"></div>
+            <button class="btn-play" style="font-size: 1.2rem; padding: 10px 30px; margin-top: 20px;" onclick="UI.toggleModal('logModal')">FECHAR</button>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Opções de Jogo ⚙️</h3>
+            <button class="btn-danger" style="background: #ff4d4d; color: white; border: none; padding: 15px; border-radius: 15px; cursor: pointer; margin: 20px 0;" onclick="UI.resetGame()">APAGAR MEU PROGRESSO</button><br>
+            <button class="tab-btn active-tab" onclick="UI.toggleModal('configModal')">VOLTAR</button>
+        </div>
     </div>
 
     <script src="js/state.js"></script>
