@@ -2,101 +2,85 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>BeeKind | FunCook Studio 🐝</title>
+    <title>BeeKind 🐝 | FunCook Studio</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
-    <link rel="stylesheet" href="css/minigames.css">
 </head>
 <body>
 
     <div id="startScreen">
-        <div class="menu-container">
-            <h1 class="game-title">BeeKind</h1>
-            <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
+        <div class="clouds"></div> <div class="home-card">
+            <div class="bee-logo-container">
+                <span class="main-bee-icon">🐝</span>
+                <div class="crown">👑</div>
+            </div>
             
-            <div class="menu-buttons">
-                <button class="btn-main" onclick="UI.startGame()">COMEÇAR JOGAR</button>
-                <button class="btn-secondary" onclick="UI.toggleModal('logModal')">O QUE MUDOU?</button>
-                <button class="btn-secondary" onclick="UI.toggleModal('configModal')">CONFIGURAÇÕES</button>
+            <h1 class="game-title">BeeKind</h1>
+            <p class="game-subtitle">Bee kind to bees and earn honey</p>
+            
+            <div class="menu-actions">
+                <button class="btn-play" onclick="UI.startGame()">
+                    <span class="btn-text">COMEÇAR JOGAR</span>
+                    <span class="btn-icon">🍯</span>
+                </button>
+                
+                <div class="btn-row">
+                    <button class="btn-alt" onclick="UI.toggleModal('logModal')">
+                        <span>O QUE MUDOU?</span>
+                    </button>
+                    <button class="btn-alt" onclick="UI.toggleModal('configModal')">
+                        <span>AJUSTES</span>
+                    </button>
+                </div>
             </div>
 
-            <footer class="studio-footer">
-                fun🍪cook studio
-            </footer>
+            <div class="studio-tag">
+                fun <span class="cookie">🍪</span> cook studio
+            </div>
         </div>
     </div>
 
     <div id="gameUI" style="display: none;">
         <header class="stats-bar">
-            <div>🍯 Mel: <span id="honey">0</span></div>
-            <div>⚡ Produção: <span id="mps">0</span>/s</div>
-            <div class="xp-section">
-                <span>Nível <span id="lvlDisplay">1</span></span>
+            <div class="stat-bubble">🍯 <span id="honey">0</span></div>
+            <div class="stat-bubble">⚡ <span id="mps">0</span>/s</div>
+            <div class="xp-bubble">
+                <div class="xp-info">Nível <span id="lvlDisplay">1</span></div>
                 <div class="xp-bar-container"><div id="xpFill"></div></div>
             </div>
-            <button class="btn-mini" onclick="UI.backToMenu()">Menu</button>
+            <button class="btn-mini" onclick="UI.backToMenu()">Menu 🏠</button>
         </header>
 
-        <aside class="click-area">
-            <div id="beeContainer">🐝</div>
-            <p class="click-hint">Clique na abelhinha!</p>
-        </aside>
+        <main class="game-layout">
+            <aside class="click-area">
+                <div id="beeContainer">🐝</div>
+                <div class="garden-decor">🌸🌻🌼</div>
+            </aside>
 
-        <section class="main-panel">
-            <div id="shop" class="tab-content active">
-                <h2 style="margin-top:0">Loja de Doces</h2>
-                <div id="shopList"></div>
-            </div>
-            <div id="talents" class="tab-content" style="display:none">
-                <h2>Jardim de Talentos</h2>
-                <div id="talentList"></div>
-            </div>
-            <div id="games" class="tab-content" style="display:none">
-                <h2>Mini-Jogos</h2>
-                <div id="gameList"></div>
-            </div>
-        </section>
-
-        <nav class="tabs">
-            <button onclick="UI.openTab('shop')">LOJA</button>
-            <button onclick="UI.openTab('talents')">TALENTOS</button>
-            <button onclick="UI.openTab('games')">JOGOS</button>
-        </nav>
+            <section class="main-panel">
+                <div id="shop" class="tab-content active">
+                    <h2 class="section-title">Loja de Doces</h2>
+                    <div id="shopList"></div>
+                </div>
+            </section>
+        </main>
     </div>
 
-    <div id="logModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Log de Atualizações v1.0</h3>
-            <ul>
-                <li>✨ Nova interface Desktop "Honey Cream".</li>
-                <li>🐝 Sistema de clique e produção automática.</li>
-                <li>🐍 Adicionado minijogo Bee-Snake.</li>
-                <li>💾 Sistema de salvamento automático implementado.</li>
-            </ul>
-            <button onclick="UI.toggleModal('logModal')">Fechar</button>
-        </div>
-    </div>
-
-    <div id="configModal" class="modal hidden">
-        <div class="modal-content">
-            <h3>Configurações</h3>
-            <div class="config-item">
-                <span>Música</span>
-                <input type="range" min="0" max="100" value="50">
+    <div id="logModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Novidades na Colmeia 📜</h3>
+            <div class="scroll-content">
+                <p><strong>v1.2:</strong> Nova interface desktop ultra fofa!</p>
+                <p><strong>v1.1:</strong> Sistema de XP balanceado.</p>
+                <p><strong>v1.0:</strong> Lançamento do BeeKind.</p>
             </div>
-            <div class="config-item">
-                <span>Efeitos Sonoros</span>
-                <input type="range" min="0" max="100" value="80">
-            </div>
-            <button class="btn-danger" onclick="UI.resetGame()">RESETAR PROGRESSO</button>
-            <button onclick="UI.toggleModal('configModal')">Salvar e Sair</button>
+            <button class="btn-close" onclick="UI.toggleModal('logModal')">Voltar</button>
         </div>
     </div>
 
     <script src="js/state.js"></script>
     <script src="js/economy.js"></script>
     <script src="js/ui.js"></script>
-    <script src="js/games/snake.js"></script>
     <script src="js/core.js"></script>
 </body>
 </html>
