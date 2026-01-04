@@ -2,14 +2,7 @@ const Core = {
     init() {
         GameState.load();
         
-        // Inicia fluxo: Loading -> StartScreen
-        UI.runLoading(() => {
-            document.getElementById("loadingScreen").classList.add("hidden");
-            document.getElementById("startScreen").classList.remove("hidden");
-            UI.init();
-        });
-
-        // Evento de Clique
+        // Evento de Clique na Abelha Principal
         document.getElementById("beeContainer").onclick = () => {
             GameState.honey += Economy.getClickValue();
             GameState.xp += 2;
@@ -18,8 +11,9 @@ const Core = {
             UI.renderShop();
         };
 
-        // Ciclo de Produção (1 segundo)
+        // Ciclo de Produção Passiva
         setInterval(() => {
+            // Só produz se a tela de jogo estiver visível
             if (!document.getElementById("gameUI").classList.contains("hidden")) {
                 const gain = Economy.getMPS();
                 GameState.honey += gain;
@@ -30,7 +24,7 @@ const Core = {
             }
         }, 1000);
 
-        // Auto-save (10 segundos)
+        // Auto-save a cada 10 segundos
         setInterval(() => GameState.save(), 10000);
     },
 
@@ -45,4 +39,5 @@ const Core = {
     }
 };
 
+// Inicia o motor mas mantém a tela inicial travada
 window.onload = () => Core.init();
