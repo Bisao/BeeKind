@@ -2,21 +2,24 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BeeKind 🐝 | FunCook Studio</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/minigames.css">
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <div id="startScreen">
-        <div class="clouds"></div> <div class="home-card">
+        <div class="clouds"></div>
+        <div class="home-card">
             <div class="bee-logo-container">
                 <span class="main-bee-icon">🐝</span>
                 <div class="crown">👑</div>
             </div>
             
             <h1 class="game-title">BeeKind</h1>
-            <p class="game-subtitle">Bee kind to bees and earn honey</p>
+            <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
             
             <div class="menu-actions">
                 <button class="btn-play" onclick="UI.startGame()">
@@ -25,12 +28,8 @@
                 </button>
                 
                 <div class="btn-row">
-                    <button class="btn-alt" onclick="UI.toggleModal('logModal')">
-                        <span>O QUE MUDOU?</span>
-                    </button>
-                    <button class="btn-alt" onclick="UI.toggleModal('configModal')">
-                        <span>AJUSTES</span>
-                    </button>
+                    <button class="btn-alt" onclick="UI.toggleModal('logModal')">O QUE MUDOU?</button>
+                    <button class="btn-alt" onclick="UI.toggleModal('configModal')">AJUSTES</button>
                 </div>
             </div>
 
@@ -40,7 +39,7 @@
         </div>
     </div>
 
-    <div id="gameUI" style="display: none;">
+    <div id="gameUI" class="hidden">
         <header class="stats-bar">
             <div class="stat-bubble">🍯 <span id="honey">0</span></div>
             <div class="stat-bubble">⚡ <span id="mps">0</span>/s</div>
@@ -55,6 +54,7 @@
             <aside class="click-area">
                 <div id="beeContainer">🐝</div>
                 <div class="garden-decor">🌸🌻🌼</div>
+                <p class="click-hint">Clique na abelhinha!</p>
             </aside>
 
             <section class="main-panel">
@@ -62,25 +62,59 @@
                     <h2 class="section-title">Loja de Doces</h2>
                     <div id="shopList"></div>
                 </div>
+                <div id="talents" class="tab-content hidden">
+                    <h2 class="section-title">Jardim de Talentos</h2>
+                    <div id="talentList"></div>
+                </div>
+                <div id="games" class="tab-content hidden">
+                    <h2 class="section-title">Mini-Jogos</h2>
+                    <div class="game-grid">
+                        <button class="mg-card" onclick="SnakeGame.start()">🐍 Bee-Snake</button>
+                    </div>
+                </div>
             </section>
         </main>
+
+        <nav class="tabs">
+            <button onclick="UI.openTab('shop')">LOJA</button>
+            <button onclick="UI.openTab('talents')">TALENTOS</button>
+            <button onclick="UI.openTab('games')">JOGOS</button>
+        </nav>
     </div>
 
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3>Novidades na Colmeia 📜</h3>
             <div class="scroll-content">
-                <p><strong>v1.2:</strong> Nova interface desktop ultra fofa!</p>
-                <p><strong>v1.1:</strong> Sistema de XP balanceado.</p>
-                <p><strong>v1.0:</strong> Lançamento do BeeKind.</p>
+                <p><strong>v1.2:</strong> Nova interface desktop fofa e atraente!</p>
+                <p><strong>v1.1:</strong> Sistema de economia modular.</p>
+                <p><strong>v1.0:</strong> Lançamento BeeKind.</p>
             </div>
             <button class="btn-close" onclick="UI.toggleModal('logModal')">Voltar</button>
         </div>
     </div>
 
+    <div id="configModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Ajustes ⚙️</h3>
+            <p>Configurações de som e progresso.</p>
+            <button class="btn-danger" onclick="UI.resetGame()">RESETAR JOGO</button>
+            <button class="btn-close" onclick="UI.toggleModal('configModal')">Fechar</button>
+        </div>
+    </div>
+
+    <div id="gameOverlay" class="hidden">
+        <div class="mg-header">
+            <span>Pontos: <span id="mgScore">0</span></span>
+            <button onclick="Core.exitMinigame()">Sair</button>
+        </div>
+        <canvas id="gameCanvas"></canvas>
+    </div>
+
     <script src="js/state.js"></script>
     <script src="js/economy.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/games/snake.js"></script>
     <script src="js/core.js"></script>
 </body>
 </html>
