@@ -16,101 +16,35 @@ body {
     height: 100vh;
 }
 
-/* TELA DE LOADING */
-#loadingScreen {
-    position: fixed;
-    inset: 0;
-    background: var(--cream);
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    z-index: 5000;
-}
-
-.loading-container {
-    width: 400px;
-    position: relative;
-}
-
-.progress-bg {
-    width: 100%;
-    height: 20px;
-    background: #eee;
-    border-radius: 10px;
-    border: 3px solid var(--brown);
-    overflow: hidden;
-}
-
-#loadingBar {
-    width: 0%;
-    height: 100%;
-    background: var(--honey);
-    transition: width 0.1s;
-}
-
-.loading-bee-wrapper {
-    position: absolute;
-    bottom: 30px;
-    left: 0%;
-    width: 40px;
-    transform: translateX(-50%);
-    transition: left 0.1s;
-}
-
-#loadingBee { width: 40px; }
-
-.loading-text {
-    margin-top: 15px;
-    font-weight: bold;
-    text-align: center;
-    color: var(--honey-dark);
-}
-
-.rotating-cookie {
-    position: absolute;
-    bottom: 30px;
-    right: 30px;
-    font-size: 50px;
-    animation: spin 3s linear infinite;
-}
-
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-/* TELA INICIAL E GERAL */
-#startScreen {
-    position: fixed;
-    inset: 0;
-    background: linear-gradient(180deg, var(--sky) 0%, var(--cream) 100%);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 2000;
-}
-
-.home-card {
-    background: white;
-    padding: 50px;
-    border-radius: 60px;
-    border: 8px solid var(--honey);
-    text-align: center;
-    box-shadow: 0 20px 0 var(--honey-light), 0 30px 50px rgba(0,0,0,0.1);
-    width: 500px;
-}
-
-.game-title { font-size: 4rem; margin: 10px 0; color: var(--honey-dark); }
 .hidden { display: none !important; }
 
-/* Adicione aqui os estilos de HUD/Shop enviados anteriormente... */
-.stats-bar { background: var(--honey); height: 80px; display: flex; justify-content: space-around; align-items: center; }
-.game-layout { display: grid; grid-template-columns: 350px 1fr; height: calc(100vh - 150px); }
-.click-area { background: var(--honey-light); display: flex; flex-direction: column; align-items: center; justify-content: center; }
-#beeContainer { font-size: 120px; cursor: pointer; transition: 0.1s; }
-#beeContainer:active { transform: scale(0.9); }
-.main-panel { background: white; padding: 20px; overflow-y: auto; }
-.tabs { height: 70px; display: flex; background: var(--honey-light); }
-.tabs button { flex:1; border:none; background:transparent; font-weight:bold; cursor:pointer; }
-.tabs button:hover { background: var(--honey); }
+/* LOADING SCREEN */
+#loadingScreen {
+    position: fixed; inset: 0; background: var(--cream);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5000;
+}
+.loading-container { width: 400px; position: relative; }
+.progress-bg { width: 100%; height: 20px; background: #eee; border-radius: 10px; border: 3px solid var(--brown); overflow: hidden; }
+#loadingBar { width: 0%; height: 100%; background: var(--honey); transition: width 0.1s; }
+.loading-bee-wrapper { position: absolute; bottom: 30px; left: 0%; transform: translateX(-50%); font-size: 40px; transition: left 0.1s; }
+.rotating-cookie { position: absolute; bottom: 30px; right: 30px; font-size: 50px; animation: spin 3s linear infinite; }
+
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+/* START SCREEN */
+#startScreen { height: 100vh; display: flex; justify-content: center; align-items: center; }
+.home-card {
+    background: white; padding: 50px; border-radius: 60px; border: 8px solid var(--honey);
+    text-align: center; box-shadow: 0 20px 0 var(--honey-light); width: 500px;
+}
+.bee-logo { font-size: 100px; }
+.game-title { font-size: 4rem; margin: 10px 0; color: var(--honey-dark); text-shadow: 2px 2px var(--honey-light); }
+.btn-play {
+    width: 100%; padding: 20px; border-radius: 25px; border: none;
+    background: var(--honey); color: var(--brown); font-size: 1.5rem;
+    font-weight: bold; cursor: pointer; box-shadow: 0 8px 0 var(--honey-dark);
+}
+.btn-play:active { transform: translateY(4px); box-shadow: 0 4px 0 var(--honey-dark); }
+.btn-row { display: flex; gap: 10px; margin-top: 15px; }
+.btn-alt { flex: 1; padding: 12px; border-radius: 15px; border: 2px solid var(--honey); background: var(--honey-light); cursor: pointer; font-weight: bold; }
+.studio-tag { margin-top: 40px; font-weight: bold; opacity: 0.6; }
