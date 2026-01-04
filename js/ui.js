@@ -5,25 +5,31 @@ const UI = {
     },
 
     requestStart() {
-        document.getElementById("startScreen").classList.add("hidden");
-        document.getElementById("loadingScreen").classList.remove("hidden");
-        this.runLoading();
+        const start = document.getElementById("startScreen");
+        const loading = document.getElementById("loadingScreen");
+        start.style.transition = "0.8s cubic-bezier(0.1, 0, 0, 1)";
+        start.style.opacity = "0";
+        start.style.transform = "scale(1.2)";
+        
+        setTimeout(() => {
+            start.classList.add("hidden");
+            loading.classList.remove("hidden");
+            this.runLoading();
+        }, 600);
     },
 
     runLoading() {
         let p = 0;
         const bar = document.getElementById("loadingBar");
-        const bee = document.querySelector(".loading-bee-wrapper");
         const interval = setInterval(() => {
-            p += Math.random() * 5;
+            p += Math.random() * 8;
             if (p >= 100) {
                 p = 100;
                 clearInterval(interval);
-                setTimeout(() => this.finalizeLoading(), 500);
+                setTimeout(() => this.finalizeLoading(), 400);
             }
             if (bar) bar.style.width = p + "%";
-            if (bee) bee.style.left = p + "%";
-        }, 80);
+        }, 100);
     },
 
     finalizeLoading() {
@@ -53,12 +59,12 @@ const UI = {
             const div = document.createElement("div");
             div.className = "shop-item";
             div.innerHTML = `
-                <div class="shop-info">
-                    <b style="font-size: 1.2rem; color: var(--brown);">${item.toUpperCase()}</b><br>
-                    <small>Nível: ${GameState.upgrades[item]}</small>
+                <div>
+                    <b style="font-size: 1.4rem;">${item.toUpperCase()}</b><br>
+                    <small style="color: var(--h-dark)">Possui: ${GameState.upgrades[item]}</small>
                 </div>
-                <button class="btn-play" style="width: auto; font-size: 1rem; padding: 10px 20px;" 
-                    onclick="UI.buyUpgrade('${item}')" ${GameState.honey < cost ? 'disabled' : ''}>
+                <button class="buy-btn" onclick="UI.buyUpgrade('${item}')" 
+                    ${GameState.honey < cost ? 'style="opacity:0.5; cursor:not-allowed"' : ''}>
                     ${cost.toLocaleString()} 🍯
                 </button>
             `;
@@ -71,9 +77,8 @@ const UI = {
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove("active-tab"));
         
         document.getElementById(id).classList.remove("hidden");
-        // Encontra o botão correspondente pela lógica de string simples ou ID
-        const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.id.includes(id));
-        if(activeBtn) activeBtn.classList.add("active-tab");
+        const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.toLowerCase().includes(id.substring(0,3)));
+        if (btn) btn.classList.add("active-tab");
     },
 
     handleCraft() { if (Economy.craftJar()) this.updateStats(); },
