@@ -12,13 +12,13 @@
 
     <div id="loadingScreen">
         <div class="loading-container">
-            <div class="loading-wrapper">
-                <img src="assets/bee.png" id="loadingBee" alt="Bee">
-                <div class="progress-bg">
-                    <div id="progressBar"></div>
-                </div>
+            <div class="loading-bee-wrapper">
+                <img src="assets/bee.png" id="loadingBee" alt="🐝">
             </div>
-            <p class="loading-text">Colhendo néctar...</p>
+            <div class="progress-bg">
+                <div id="loadingBar"></div>
+            </div>
+            <p class="loading-text">Preparando o mel...</p>
         </div>
         <div class="rotating-cookie">🍪</div>
     </div>
@@ -48,8 +48,8 @@
 
     <div id="gameUI" class="hidden">
         <header class="stats-bar">
-            <div class="stat-bubble">🍯 <span id="honey">0</span></div>
-            <div class="stat-bubble">⚡ <span id="mps">0</span>/s</div>
+            <div class="stat-bubble">🍯 Mel: <span id="honey">0</span></div>
+            <div class="stat-bubble">⚡ MPS: <span id="mps">0</span></div>
             <div class="xp-bubble">
                 <div class="xp-info">Nível <span id="lvlDisplay">1</span></div>
                 <div class="xp-bar-container"><div id="xpFill"></div></div>
@@ -72,30 +72,29 @@
                     <h2 class="section-title">Jardim de Talentos</h2>
                     <div id="talentList"></div>
                 </div>
-                <div id="games" class="tab-content hidden">
-                    <h2 class="section-title">Mini-Jogos</h2>
-                    <div class="game-grid">
-                        <button class="mg-card" onclick="SnakeGame.start()">🐍 Bee-Snake</button>
-                    </div>
-                </div>
             </section>
         </main>
 
         <nav class="tabs">
             <button onclick="UI.openTab('shop')">LOJA</button>
             <button onclick="UI.openTab('talents')">TALENTOS</button>
-            <button onclick="UI.openTab('games')">JOGOS</button>
         </nav>
     </div>
 
-    <div id="logModal" class="modal-overlay hidden"><div class="modal-card"><h3>Log 📜</h3><p>v1.3: Adicionado Loading Screen.</p><button onclick="UI.toggleModal('logModal')">Voltar</button></div></div>
-    <div id="configModal" class="modal-overlay hidden"><div class="modal-card"><h3>Ajustes ⚙️</h3><button onclick="UI.toggleModal('configModal')">Fechar</button></div></div>
-    <div id="gameOverlay" class="hidden"><canvas id="gameCanvas"></canvas></div>
+    <div id="logModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Novidades na Colmeia 📜</h3>
+            <div class="scroll-content">
+                <p><strong>v1.3:</strong> Adicionada Tela de Loading animada.</p>
+                <p><strong>v1.2:</strong> Interface Desktop fofa concluída.</p>
+            </div>
+            <button class="btn-close" onclick="UI.toggleModal('logModal')">Voltar</button>
+        </div>
+    </div>
 
     <script src="js/state.js"></script>
     <script src="js/economy.js"></script>
     <script src="js/ui.js"></script>
-    <script src="js/games/snake.js"></script>
     <script src="js/core.js"></script>
 </body>
 </html>
