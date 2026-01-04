@@ -2,10 +2,10 @@ const UI = {
     init() {
         this.updateStats();
         this.renderShop();
+        this.checkLogNotification();
     },
 
     requestStart() {
-        document.getElementById("startScreen").style.transition = "0.6s";
         document.getElementById("startScreen").style.opacity = "0";
         setTimeout(() => {
             document.getElementById("startScreen").classList.add("hidden");
@@ -32,6 +32,34 @@ const UI = {
         document.getElementById("loadingScreen").classList.add("hidden");
         document.getElementById("gameUI").classList.remove("hidden");
         this.init();
+    },
+
+    // Notificação do Botão de Log
+    checkLogNotification() {
+        const logBtn = document.getElementById("logBtn");
+        if (logBtn && !GameState.hasSeenLogs) {
+            logBtn.classList.add("pulsing-effect");
+        }
+    },
+
+    // Abrir Logs e Gerenciar Atualizações
+    openLogs() {
+        GameState.hasSeenLogs = true;
+        const logBtn = document.getElementById("logBtn");
+        if (logBtn) logBtn.classList.remove("pulsing-effect");
+        
+        const logContainer = document.getElementById("logContent");
+        if (logContainer) {
+            logContainer.innerHTML = "";
+            GameState.updateLogs.slice(0, 5).forEach(log => {
+                const item = document.createElement("div");
+                item.className = "log-item";
+                item.textContent = log;
+                logContainer.appendChild(item);
+            });
+        }
+        this.toggleModal('logModal');
+        GameState.save();
     },
 
     updateStats() {
@@ -73,8 +101,9 @@ const UI = {
         if (btn) btn.classList.add("active-tab");
     },
 
+    toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
     handleCraft() { if (Economy.craftJar()) this.updateStats(); },
     handleSell() { if (Economy.sellJar()) this.updateStats(); },
     buyUpgrade(item) { if (Economy.buyUpgrade(item)) { this.updateStats(); this.renderShop(); } },
-    toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); }
+    resetGame() { if (confirm("Resetar TUDO?")) { localStorage.clear(); location.reload(); } }
 };
