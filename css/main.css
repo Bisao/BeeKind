@@ -1,52 +1,78 @@
 :root {
-    --honey-primary: #FFB300;
-    --honey-secondary: #FFD54F;
-    --honey-dark: #E65100;
-    --soft-white: #FFFDF5;
-    --glass: rgba(255, 255, 255, 0.9);
-    --text-main: #4E342E;
-    --shadow-soft: 10px 10px 20px #bebebe, -10px -10px 20px #ffffff;
-    --shadow-inner: inset 6px 6px 12px #bebebe, inset -6px -6px 12px #ffffff;
+  --main-blue: #071B87;
+  --bg-gradient: linear-gradient(180deg, var(--main-blue), #030d45);
+  --card-opacity: 0.85;
+  --card: linear-gradient(145deg, rgba(7, 27, 135, var(--card-opacity)), rgba(3, 13, 69, 0.9));
+  --accent:#ffcc00; 
+  --dark:#ffffff;
+  --text-color: #ffffff; 
+  --shadow:0 10px 30px rgba(0,0,0,0.3);
+  --xp-bar:#4caf50;
+  --common: #b2bec3; 
+  --rare: #0984e3; 
+  --epic: #a29bfe;
+  --panel-blur: blur(15px);
+}
+* { 
+    box-sizing:border-box; 
+    user-select:none; 
+    -webkit-tap-highlight-color:transparent; 
+    touch-action: manipulation; 
+}
+body, html {
+  margin:0; padding: 0; width: 100%; height: 100%;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg-gradient);
+  background-attachment: fixed;
+  overflow: hidden;
+  color: var(--text-color);
+  transition: background 0.3s ease, color 0.3s ease;
+  touch-action: none;
+}
+body { display: flex; align-items: center; justify-content: center; min-height: 100svh; }
+/* TELA DE LOADING */
+#loadingScreen {
+    position: fixed; inset: 0; background: var(--bg-gradient);
+    z-index: 20000; display: none; flex-direction: column; align-items: center; justify-content: center;
+}
 }
 
-* { box-sizing: border-box; font-family: 'Quicksand', sans-serif; cursor: default; }
-
-body {
-    background: var(--soft-white);
-    margin: 0;
-    height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+/* DESIGN PROFISSIONAL TELA INICIAL */
+#startScreen {
+    position: fixed; inset: 0; background: var(--bg-gradient);
+    z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 0.5s ease;
     overflow: hidden;
-    color: var(--text-main);
 }
-
-/* Background com Padrão de Favo de Mel */
-body::before {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; width: 100%; height: 100%;
-    background-image: url("https://www.transparenttextures.com/patterns/honey-comb.png");
-    opacity: 0.15;
-    z-index: -1;
+@keyframes moveClouds { from { transform: translateX(0); }
+@keyframes fall { to { transform: translateY(110vh) rotate(360deg); }
+/* TREE CSS */
+.talent-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 12px;
+    margin-bottom: 12px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
-
-.hidden { display: none !important; }
-
-/* Animação da Abelha Principal */
-.bee-img-main {
-    width: 280px;
-    filter: drop-shadow(0 20px 30px rgba(230, 81, 0, 0.2));
-    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    animation: beeFloat 6s infinite ease-in-out;
-    cursor: pointer;
+/* MODULAR HIVE CSS */
+.modular-hive-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 20px;
+    line-height: 0;
 }
-
-@keyframes beeFloat {
-    0%, 100% { transform: translateY(0) rotate(0); }
-    50% { transform: translateY(-25px) rotate(5deg); }
+/* VELHO DUDU CSS */
+.dudu-card {
+    background: rgba(0,0,0,0.3);
+    border: 2px dashed var(--accent);
+    border-radius: 20px;
+    padding: 15px;
+    margin-top: 20px;
+    text-align: center;
 }
-
-.bee-img-main:hover { transform: scale(1.05); }
-.bee-img-main:active { transform: scale(0.92); }

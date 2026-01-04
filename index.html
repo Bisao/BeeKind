@@ -1,113 +1,529 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>BeeKind | Royal Honeycomb 🐝</title>
-    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700;800&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>BeeKind 🐝</title>
+
+<link rel="icon" type="image/png" href="NoelBeeUp.png">
+<link rel="apple-touch-icon" href="NoelBeeUp.png">
+<link rel="shortcut icon" href="NoelBeeUp.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#071B87">
+<link rel="manifest" href="manifest.json">
+
+
+
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/minigames.css">
+    
 </head>
-<body>
 
-    <div id="loadingScreen" class="hidden">
-        <div style="text-align: center;">
-            <div style="font-size: 5rem; animation: beeFloat 3s infinite;">🐝</div>
-            <div style="width: 80vw; max-width: 400px; height: 10px; background: #eee; border-radius: 10px; margin: 20px auto; overflow: hidden;">
-                <div id="loadingBar" style="width: 0%; height: 100%; background: var(--honey-primary); transition: 0.1s;"></div>
-            </div>
-            <h3 style="color: var(--honey-dark);">PROCESSANDO NÉCTAR...</h3>
+<body oncontextmenu="return false;">
+
+<div id="loadingScreen">
+    <div class="loading-container">
+        <img id="loadingBeeImg" src="NoelBee.png" alt="Bee" class="loading-bee">
+        <div class="loading-bar-bg">
+            <div id="loadingBarFill" class="loading-bar-fill"></div>
+        </div>
+        <div class="loading-text" id="loadingTextMsg">PREPARANDO COLMEIA...</div>
+    </div>
+    <div class="rotating-cookie">🍪</div>
+</div>
+
+<div id="startScreen">
+    <div class="bg-clouds"></div>
+    <div class="snow-container" id="snowContainer"></div>
+    <div class="start-bee-wrapper">
+        <div class="start-logo">
+            <img src="NoelBee.png" alt="NoelBee Logo" class="bee-img-large">
+        </div>
+    </div>
+    <div class="start-title">
+        BEEK<span class="letter-i-wrapper">I<span class="tree-overlay">🎄</span></span>ND
+    </div>
+    <div class="start-subtitle">Be kind to bees and earn honey.</div>
+    
+    <div style="display: flex; flex-direction: column; gap: 15px; width: 280px; z-index: 10;">
+        <button class="btn-play-premium" onclick="enterGame()">JOGAR AGORA</button>
+        <button id="btnChangelog" class="btn-secondary-glass" onclick="openChangelog()">O QUE MUDOU?</button>
+        
+        <div class="pwa-btn-container">
+            <button class="btn-secondary-glass" style="flex: 1; padding: 12px !important;" onclick="openModal('settingsModal')">
+                AJUSTES ⚙️
+            </button>
+            <button id="pwaMainActionBtn" class="circular-btn" onclick="handlePwaClick()">
+                <span id="pwaIcon">📥</span>
+            </button>
         </div>
     </div>
 
-    <div id="startScreen">
-        <div class="home-card">
-            <img src="assets/bee.png" style="width: 150px; max-width: 40vw; margin-bottom: 20px;">
-            <h1 class="game-title">BeeKind</h1>
-            <p style="font-size: 1.2rem; opacity: 0.7;">O império de mel mais doce do mundo</p>
+    <div class="studio-brand">Fun🍪Cook Studio</div>
+</div>
+
+<div class="game" id="gameUI">
+  <div class="snow-container" id="gameSnowContainer"></div>
+  
+  <div class="card" id="statsCard">
+    <div id="saveIndicator" class="save-icon">💾</div>
+    <div class="daily-reward-btn" onclick="openModal('dailyRewardModal')">🎁</div>
+    <div id="btnMissionAlert" class="daily-mission-btn" onclick="openModal('missionsModal')">📝</div>
+    <div class="settings-gear" onclick="openModal('settingsModal')">⚙️</div>
+
+    <div id="gameHeaderTitle" style="font-size: 18px; font-weight: 900; margin-top: 5px; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        BeeKind <img id="miniBeeHeader" src="NoelBee.png" alt="Bee" style="width: 20px; height: 20px;">
+    </div>
+    <div class="stats">🍯 <span id="honey">0</span> | ⚡ <span id="mps">0</span>/s</div>
+    <div class="level-container">
+      <div class="level-info"><span>Nível <span id="lvlDisplay">1</span></span><span id="xpDisplay">0 / 1.0K</span></div>
+      <div class="xp-bg"><div class="xp-fill" id="xpFill"></div></div>
+    </div>
+  </div>
+
+  <div class="card notif-card">
+      <div class="notif-static-icon">📢</div>
+      <div id="notifContainer"></div>
+  </div>
+
+  <div class="card" id="clickCard" style="padding: 10px; position: relative; overflow: hidden;">
+    <div id="active-boosts"></div>
+    <div class="click-zone" id="clickZone">
+      <div class="target" id="leftTarget">🎯</div>
+      <div class="aura-wrapper">
+        <div class="bee-container" id="beeContainer">
+            <div class="crown-overlay" id="beeCrown">👑</div>
+            <img id="mainBeeSprite" src="NoelBee.png" alt="Bee character" class="bee-img">
+        </div>
+      </div>
+      <div class="target" id="rightTarget">🎯</div>
+    </div>
+  </div>
+
+  <div class="main-panel">
+      <div class="tabs-header">
+          <button class="tab-btn active" onclick="openTab('talents', this)">🌳<span>Talentos</span></button>
+          <button class="tab-btn" onclick="openTab('shop', this)">🛒<span>Loja</span></button>
+          <button class="tab-btn" onclick="openTab('expedition-tab', this)">🧭<span>Expedição</span></button>
+          <button class="tab-btn" onclick="openTab('hive-stats', this)">🏠<span>Colmeia</span></button>
+          <button id="btnTabGames" class="tab-btn tab-btn-games-highlight" onclick="openTab('events', this)">🎮<span>Jogos</span></button>
+          <button class="tab-btn" onclick="openTab('achievements', this)">🎖️<span>Conquistas</span></button>
+      </div>
+      
+      <div class="tabs-content" id="mainScrollArea">
+          <div id="talents" class="tab-pane active">
+              <div class="scroll-area">
+                <div class="section-title">ÁRVORE DE TALENTOS REAIS</div>
+                <div id="talentPointsDisplay" style="background: var(--accent); color: var(--main-blue); padding: 10px; border-radius: 12px; font-weight: 900; font-size: 14px; margin-bottom: 20px; text-align: center;">PONTOS DISPONÍVEIS: 0</div>
+                
+                <div class="section-title">OPERÁRIO (CLIQUES) 🐝</div>
+                <div id="tree_clicks"></div>
+
+                <div class="section-title">ARQUITETO (AUTOMAÇÃO) 🏠</div>
+                <div id="tree_auto"></div>
+
+                <div class="section-title">ALQUIMISTA (SORTE) 🧪</div>
+                <div id="tree_luck"></div>
+                
+                <button onclick="resetTalents()" style="background: #e74c3c; color: white; margin-top: 30px; font-size: 12px; height: auto; padding: 10px;">RESETAR TALENTOS (10% Mel Total)</button>
+              </div>
+          </div>
+
+          <div id="shop" class="tab-pane">
+              <div class="fixed-nav-header">
+                <div class="shop-nav">
+                    <button class="sub-tab-btn active" onclick="openSubShop('boosts', this)">BOOSTS</button>
+                    <button class="sub-tab-btn" onclick="openSubShop('cosmetics', this)">VISUAIS</button>
+                </div>
+              </div>
+              <div class="scroll-area">
+                <div id="shop_boosts" class="sub-shop-pane">
+                  
+                  <div class="dudu-card">
+                       <div class="dudu-bubble" id="duduSpeech">Olá jovenzinho! Quer trocar esse mel por influência real?</div>
+                       <div class="dudu-portrait">👴</div>
+                       <div style="font-size: 14px; font-weight: 900; color: var(--accent); margin-bottom: 5px;">MERCADO DO VELHO DUDU</div>
+                       <div style="font-size: 10px; opacity: 0.8; margin-bottom: 12px;">Venda mel para ganhar Favor Real permanente.</div>
+                       
+                       <div style="background: rgba(255,255,255,0.1); border-radius: 12px; padding: 10px; margin-bottom: 10px;">
+                           <div style="font-size: 10px; font-weight: 800; opacity: 0.6;">FAVOR REAL ATUAL</div>
+                           <div style="font-size: 18px; font-weight: 900; color: #4caf50;" id="favorRealDisplay">0.00%</div>
+                           <div style="font-size: 9px; opacity: 0.5;">(Bônus Multiplicador de Produção)</div>
+                       </div>
+
+                       <button onclick="sellToDudu()" id="btnSellDudu" style="background: var(--xp-bar); color: white; height: auto; padding: 12px;">
+                           VENDER ESTOQUE ATUAL 🍯
+                       </button>
+                       <div id="duduEstimate" style="font-size: 9px; margin-top: 5px; font-weight: 800;">Estimativa: +0.00% de Favor</div>
+                   </div>
+
+                  <div class="section-title">🧪 GELEIA REAL (2X FORÇA)</div>
+                  <small id="status_jelly" style="display:block; margin-bottom:8px; font-size:10px; color:inherit; opacity: 0.6;">Dobra o valor dos seus upgrades ativos.</small>
+                  <div class="shop-grid" id="grid_jelly"></div>
+
+                  <div class="section-title">🧲 ÍMÃ DE PÓLEN (ALVO FÁCIL)</div>
+                  <small id="status_magnet" style="display:block; margin-bottom:8px; font-size:10px; color:inherit; opacity: 0.6;">Atrai os alvos 🎯 para mais perto do centro.</small>
+                  <div class="shop-grid" id="grid_magnet"></div>
+
+                  <div class="section-title">🌶️ PIMENTA (2x MEL)</div>
+                  <small id="status_pepper" style="display:block; margin-bottom:8px; font-size:10px; color:inherit; opacity: 0.6;">Inativo</small>
+                  <div class="shop-grid" id="grid_pepper"></div>
+                  
+                  <div class="section-title">🥤 ENERGÉTICO (1.5x VEL)</div>
+                  <small id="status_energy" style="display:block; margin-bottom:8px; font-size:10px; color:inherit; opacity: 0.6;">Inativo</small>
+                  <div class="shop-grid" id="grid_energy"></div>
+                  
+                  <div class="section-title">🌼 FLOR (3x XP)</div>
+                  <small id="status_flower" style="display:block; margin-bottom:8px; font-size:10px; color:inherit; opacity: 0.6;">Inativo</small>
+                  <div class="shop-grid" id="grid_flower"></div>
+                  
+                  <div class="section-title">🍀 TREVO (2x SORTE)</div>
+                  <small id="status_luck" style="display:block; margin-bottom:8px; font-size:10px; color:inherit; opacity: 0.6;">Inativo</small>
+                  <div class="shop-grid" id="grid_luck"></div>
+                </div>
+
+                <div id="shop_cosmetics" class="sub-shop-pane" style="display:none;">
+                  <div class="section-title">👔 GUARDA-ROUPA</div>
+                  <div class="shop-grid">
+                    <button class="buy-btn-small" id="btn_cos_Bee" onclick="handleCosmetic('Bee')">
+                      <img src="Bee.png" class="skin-preview">
+                      <b>Comum</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_cos_NoelBee" onclick="handleCosmetic('NoelBee')">
+                      <img src="NoelBee.png" class="skin-preview">
+                      <b>Noel (+10%)</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_cos_SkullBee" onclick="handleCosmetic('SkullBee')">
+                      <img src="SkullBee.png" class="skin-preview">
+                      <b>Skull (+5% Crit)</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_cos_FairyBee" onclick="handleCosmetic('FairyBee')">
+                      <img src="FairyBee.png" class="skin-preview">
+                      <b>Fairy (+6% Luck)</b>
+                    </button>
+                  </div>
+
+                  <div class="section-title">🖼️ CENÁRIOS</div>
+                  <div class="shop-grid">
+                    <button class="buy-btn-small" id="btn_bg_BgPadrao" onclick="handleBackground('BgPadrao')">
+                      <div style="width:40px;height:40px;background:url('BgPadrao.gif');background-size:cover;margin-bottom:5px;border-radius:10px;border:1px solid rgba(255,255,255,0.1)"></div>
+                      <b>Padrão</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_bg_BgCristmas" onclick="handleBackground('BgCristmas')">
+                      <div style="width:40px;height:40px;background:url('BgCristmas.gif');background-size:cover;margin-bottom:5px;border-radius:10px;border:1px solid rgba(255,255,255,0.1)"></div>
+                      <b>Natal 🎄</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_bg_BgRaining" onclick="handleBackground('BgRaining')">
+                      <div style="width:40px;height:40px;background:url('BgRaining.gif');background-size:cover;margin-bottom:5px;border-radius:10px;border:1px solid rgba(255,255,255,0.1)"></div>
+                      <b>Chuva 🌧️</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_bg_BgNight" onclick="handleBackground('BgNight')">
+                      <div style="width:40px;height:40px;background:url('BgNight.gif');background-size:cover;margin-bottom:5px;border-radius:10px;border:1px solid rgba(255,255,255,0.1)"></div>
+                      <b>Noite 🌙</b>
+                    </button>
+                    <button class="buy-btn-small" id="btn_bg_BgLake" onclick="handleBackground('BgLake')">
+                      <div style="width:40px;height:40px;background:url('BgLake.gif');background-size:cover;margin-bottom:5px;border-radius:10px;border:1px solid rgba(255,255,255,0.1)"></div>
+                      <b>Lago 🌊</b>
+                    </button>
+                  </div>
+                </div>
+              </div>
+          </div>
+
+          <div id="expedition-tab" class="tab-pane">
+              <div class="scroll-area" id="expeditionScroll">
+                  <div class="section-title">CENTRO DE HANGAR (EXPEDIÇÕES)</div>
+                  <div id="synergyDisplay" style="margin-bottom: 10px;"></div>
+                  <div id="hangarList"></div>
+              </div>
+          </div>
+
+          <div id="hive-stats" class="tab-pane">
+              <div class="scroll-area" id="hiveStatsContent">
+              </div>
+          </div>
+
+          <div id="events" class="tab-pane">
+              <div class="scroll-area">
+                  <div class="section-title">CENTRAL DE JOGOS</div>
+
+                  <div class="game-card">
+                    <div class="game-card-header">
+                        <div class="game-icon">🔫</div>
+                        <div class="game-meta">
+                            <div class="game-title">Hive Defender (v1.11)</div>
+                            <div class="game-record">NÍVEL ATUAL: <span id="defenderLevelDisplay">1</span></div>
+                        </div>
+                    </div>
+                    <div class="game-play-area">
+                        <button onclick="prepareMinigame('defender')">INICIAR PARTIDA</button>
+                    </div>
+                </div>
+                  
+                  <div class="game-card">
+                      <div class="game-card-header">
+                          <div class="game-icon">🍯</div>
+                          <div class="game-meta">
+                              <div class="game-title">Honey Rain (v4.6)</div>
+                              <div class="game-record">RECORD: <span id="rainRecordDisplay">0</span></div>
+                          </div>
+                      </div>
+                      <div class="game-play-area">
+                          <button onclick="prepareMinigame('rain')">INICIAR PARTIDA</button>
+                      </div>
+                  </div>
+
+                  <div class="game-card">
+                      <div class="game-card-header">
+                          <div class="game-icon">🐍</div>
+                          <div class="game-meta">
+                              <div class="game-title">Bee-Line (Snake)</div>
+                              <div class="game-record">RECORD: <span id="snakeRecordDisplay">0</span></div>
+                          </div>
+                      </div>
+                      <div class="game-play-area">
+                          <button onclick="prepareMinigame('snake')">INICIAR PARTIDA</button>
+                      </div>
+                  </div>
+
+                  <div class="game-card">
+                      <div class="game-card-header">
+                          <div class="game-icon">🌸</div>
+                          <div class="game-meta">
+                              <div class="game-title">Bee Flight</div>
+                              <div class="game-record">RECORD: <span id="flightRecordDisplay">0</span></div>
+                          </div>
+                      </div>
+                      <div class="game-play-area">
+                          <button onclick="prepareMinigame('flight')">INICIAR PARTIDA</button>
+                      </div>
+                  </div>
+              </div>
+          </div>
+
+          <div id="achievements" class="tab-pane">
+              <div class="fixed-nav-header">
+                  <div class="filter-bar">
+                      <button class="filter-btn active" onclick="setAchFilter('all', this)">TODAS</button>
+                      <button class="filter-btn" onclick="setAchFilter('common', this)">COMUNS</button>
+                      <button class="filter-btn" onclick="setAchFilter('rare', this)">RARAS</button>
+                      <button class="filter-btn" onclick="setAchFilter('epic', this)">ÉPICAS</button>
+                  </div>
+              </div>
+              <div class="scroll-area">
+                  <div id="achList"></div>
+              </div>
+          </div>
+      </div>
+  </div>
+</div>
+
+<div id="downloadOverlay">
+    <h2 style="color: var(--accent); font-weight: 900;">COMO BAIXAR 🐝</h2>
+    <p style="font-size: 14px; margin-bottom: 30px; opacity: 0.8;">O seu navegador precisa de ajuda manual para instalar o app.</p>
+    
+    <div class="dl-step">
+        <div class="dl-icon">1</div>
+        <div>Toque no ícone de <b>Compartilhar</b> ou nos <b>três pontinhos</b> do navegador.</div>
+    </div>
+    
+    <div class="dl-step">
+        <div class="dl-icon">2</div>
+        <div>Selecione <b>"Instalar Aplicativo"</b> ou <b>"Adicionar à Tela de Início"</b>.</div>
+    </div>
+    
+    <div class="dl-step">
+        <div class="dl-icon">3</div>
+        <div>Pronto! A abelha aparecerá na sua tela inicial para jogar offline.</div>
+    </div>
+    
+    <button onclick="document.getElementById('downloadOverlay').style.display='none'" style="width: 200px; background: var(--xp-bar); color: white; margin-top: 20px;">ENTENDI!</button>
+</div>
+
+<div id="minigameOverlay">
+    <div id="mgCountdown">3</div>
+    
+    <div id="mgResultScreen">
+        <h1 id="mgResultTitle">FIM DE JOGO</h1>
+        <p style="font-size: 20px; margin-bottom: 5px;">Pontuação: <span id="mgResultScore">0</span></p>
+        <p id="mgResultBoosts" style="color: #4caf50; font-weight: 800; font-size: 14px; margin-bottom: 5px;"></p>
+        <p id="mgResultReward" style="color: var(--accent); font-weight: 800; margin-bottom: 20px;"></p>
+        <button onclick="closeMgResult()" style="width: 200px; background: var(--xp-bar); color: white;">REIVINDICAR</button>
+    </div>
+
+    <div class="mg-header">
+        <div class="mg-stats-panel">
+            <div class="mg-score-box">
+                <span class="mg-label" id="mgLabelText">Tempo Restante</span>
+                <span class="mg-val" id="mgCurrentScore">40s</span>
+            </div>
+            <div id="mgLiveBoosts"></div>
+            <div id="rainHearts" style="display: none; font-size: 16px;">❤️❤️❤️</div>
+            <div id="defenderHearts" style="display: none; font-size: 16px;">🐝🐝🐝</div>
+        </div>
+        <button onclick="exitMinigame()" style="width: auto; padding: 10px 20px; margin-top: 0; background: rgba(0,0,0,0.4); border: 1px solid white; color: white; border-radius: 12px;">SAIR</button>
+    </div>
+    
+    <canvas id="snakeCanvas"></canvas>
+    <canvas id="flightCanvas"></canvas>
+    <canvas id="rainCanvas"></canvas>
+    <canvas id="defenderCanvas"></canvas>
+
+    <div id="snakeControls" class="mg-controls" style="display: none;">
+        <div class="dpad-btn" style="grid-area: up;" ontouchstart="changeSnakeDir('UP')" onmousedown="changeSnakeDir('UP')">▲</div>
+        <div class="dpad-btn" style="grid-area: left;" ontouchstart="changeSnakeDir('LEFT')" onmousedown="changeSnakeDir('LEFT')">◀</div>
+        <div class="dpad-btn" style="grid-area: down;" ontouchstart="changeSnakeDir('DOWN')" onmousedown="changeSnakeDir('DOWN')">▼</div>
+        <div class="dpad-btn" style="grid-area: right;" ontouchstart="changeSnakeDir('RIGHT')" onmousedown="changeSnakeDir('RIGHT')">▶</div>
+    </div>
+
+    <div id="defenderControls" style="display: none; margin-top: 20px; width: 100%; max-width: 400px; display: flex; align-items: center; justify-content: center; gap: 15px;">
+        <div class="dpad-btn" ontouchstart="moveDefender('LEFT')" onmousedown="moveDefender('LEFT')" ontouchend="stopDefender()" onmouseup="stopDefender()">◀</div>
+        <div class="dpad-btn" ontouchstart="moveDefender('RIGHT')" onmousedown="moveDefender('RIGHT')" ontouchend="stopDefender()" onmouseup="stopDefender()">▶</div>
+        <div class="fire-btn" ontouchstart="defenderFire()" onmousedown="defenderFire()"></div>
+    </div>
+
+    <div id="flightControls" style="display: none; width: 100%; height: 100%; position: absolute; top: 0; left: 0;" ontouchstart="flightJump()" onmousedown="flightJump()"></div>
+    <div id="flightHint" style="display: none; color: white; margin-top: 10px; font-weight: 800; opacity: 0.6;">TOQUE PARA SUBIR</div>
+</div>
+
+<div class="modal" id="missionsModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>Agenda Real (10 Missões) 📝</span>
+            <span style="cursor:pointer" onclick="closeModal('missionsModal')">✖</span>
+        </div>
+        <div class="modal-content-scroll" id="missionsList"></div>
+        <div class="modal-footer" style="text-align: center; font-size: 11px; padding-top: 10px; color: inherit; opacity: 0.5;">
+            Próximo Ciclo: 22:00 Diariamente
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="rerollModal">
+    <div class="modal-box" style="text-align: center; padding: 20px;">
+        <div style="font-size: 50px; margin-bottom: 15px;">🔄</div>
+        <h2 id="rerollTitle" style="margin: 0 0 10px; color: var(--accent); font-weight: 900;">Nova Tarefa?</h2>
+        <p style="font-size: 14px; line-height: 1.4; color: inherit; margin-bottom: 25px;">
+            Você deseja trocar esta missão por uma nova tarefa aleatória? 
+            <br><small style="opacity: 0.7;">(O progresso atual será perdido)</small>
+        </p>
+        <div style="display: flex; gap: 10px;">
+            <button id="btnConfirmReroll" style="background: var(--xp-bar); color: white; margin-top: 0;">SIM, TROCAR</button>
+            <button onclick="closeModal('rerollModal')" style="background: rgba(255,255,255,0.1); color: inherit; border: 1px solid rgba(255,255,255,0.3); margin-top: 0; box-shadow: none;">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal" id="settingsModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>Ajustes Reais ⚙️</span>
+            <span style="cursor:pointer" onclick="closeModal('settingsModal')">✖</span>
+        </div>
+        <div class="modal-content-scroll">
             
-            <button class="btn-play" onclick="UI.requestStart()">INICIAR COLHEITA</button>
+            <div class="section-title">AUDIO & SOM 🔊</div>
+            <div class="config-group-card">
+                <div class="config-row">
+                    <div class="config-label"><span>Música 🎵</span><span id="musicVolLabel">50%</span></div>
+                    <input type="range" id="musicVol" min="0" max="100" value="50" oninput="updateVolume('music')">
+                </div>
+                <div class="config-row">
+                    <div class="config-label"><span>Efeito Click 🔊</span><span id="clickVolLabel">80%</span></div>
+                    <input type="range" id="clickVol" min="0" max="100" value="80" oninput="updateVolume('click')">
+                </div>
+                <div class="config-row">
+                    <div class="config-label"><span>Efeito Level Up ✨</span><span id="lvlUpVolLabel">100%</span></div>
+                    <input type="range" id="lvlUpVol" min="0" max="100" value="100" oninput="updateVolume('lvlUp')">
+                </div>
+            </div>
+
+            <div class="section-title">INTERFACE 🎨</div>
+            <div class="config-group-card">
+                <div class="config-row">
+                    <div class="config-label">
+                        <span>Cor Principal do Tema</span>
+                        <input type="color" id="uiMainColor" value="#071B87" oninput="updateTheme()">
+                    </div>
+                </div>
+                <div class="config-row">
+                    <div class="config-label"><span>Opacidade dos Painéis</span><span id="uiOpacityLabel">85%</span></div>
+                    <input type="range" id="uiOpacity" min="10" max="100" value="85" oninput="updateTheme()">
+                </div>
+            </div>
+
+            <div class="config-group-card" style="margin-top: 20px;">
+                <div id="pwaStatusArea">
+                    <button id="btnPwaAction" style="display: none; background: var(--xp-bar); color: white; margin-top:0; height: 45px; font-size: 12px;"></button>
+                    <div id="pwaInstalledMsg" style="display: none; text-align: center; font-size: 11px; color: var(--xp-bar); font-weight: 800;">
+                        SISTEMA SINCRONIZADO ✅
+                    </div>
+                </div>
+                <button id="btnExitToMain" onclick="returnToMain()" style="background: #e74c3c; color: white; border: none; box-shadow: 0 4px 0 #c0392b; margin-top: 15px; height: 45px; font-size: 12px;">SAIR PARA O INÍCIO 🚪</button>
+            </div>
             
-            <div style="margin-top: 40px; display: flex; gap: 20px; justify-content: center; flex-wrap: wrap;">
-                <button id="logBtn" class="btn-chromatic" onclick="UI.openLogs()">O QUE MUDOU?</button>
-                <button class="btn-chromatic" style="animation: none;" onclick="UI.toggleModal('configModal')">OPÇÕES</button>
-            </div>
-            <p style="margin-top: 40px; font-weight: 800; opacity: 0.4;">fun 🍪 cook studio</p>
+            <div class="version-tag" id="configVersionDisplay">BEEKIND v0.0.0</div>
         </div>
     </div>
+</div>
 
-    <div id="gameUI" class="hidden">
-        <header class="stats-bar">
-            <div class="stat-bubble">🍯 <span id="honey">0</span></div>
-            <div class="stat-bubble">🏺 <span id="jars">0</span></div>
-            <div class="stat-bubble">💰 <span id="coins">0</span></div>
-            <div class="stat-bubble" style="box-shadow: none; background: transparent;">
-                <div style="text-align: center;">
-                    <small>Nível <span id="lvlDisplay">1</span></small>
-                    <div style="width: 80px; height: 8px; background: #ddd; border-radius: 4px; overflow: hidden;">
-                        <div id="xpFill" style="width: 0%; height: 100%; background: #4CAF50;"></div>
-                    </div>
-                </div>
-            </div>
-        </header>
-
-        <main class="game-layout">
-            <section class="click-area">
-                <div id="beeContainer">
-                    <img src="assets/bee.png" class="bee-img-main">
-                </div>
-            </section>
-
-            <aside class="main-panel">
-                <div id="shop" class="tab-content active">
-                    <h2 style="margin-bottom: 20px;">🏠 Loja</h2>
-                    <div id="shopList"></div>
-                </div>
-
-                <div id="industrial" class="tab-content hidden">
-                    <h2 style="margin-bottom: 20px;">🏭 Laboratório</h2>
-                    <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
-                        <div><b>Refinaria</b><br><small>700 Mel ➔ 1 Pote</small></div>
-                        <button class="buy-btn" onclick="UI.handleCraft()">CRAFTAR POTE 🏺</button>
-                    </div>
-                    <div class="shop-item" style="flex-direction: column; align-items: stretch; gap: 15px;">
-                        <div><b>Mercado</b><br><small>1 Pote ➔ 50 Ouro</small></div>
-                        <button class="buy-btn" style="color: #2E7D32;" onclick="UI.handleSell()">VENDER POTE 💰</button>
-                    </div>
-                </div>
-
-                <div id="talents" class="tab-content hidden">
-                    <h2 style="margin-bottom: 20px;">🌳 Talentos</h2>
-                    <div class="stat-bubble" style="width: 100%; justify-content: center;">Pontos: <span id="talentPoints">0</span></div>
-                </div>
-            </aside>
-        </main>
-
-        <nav class="tabs">
-            <button class="tab-btn active-tab" onclick="UI.openTab('shop')">LOJA</button>
-            <button class="tab-btn" onclick="UI.openTab('industrial')">INDUSTRIA</button>
-            <button class="tab-btn" onclick="UI.openTab('talents')">TALENTOS</button>
-        </nav>
-    </div>
-
-    <div id="logModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h2 style="color: var(--honey-dark); margin-bottom: 20px;">Últimas Atualizações 📜</h2>
-            <div id="logContent"></div>
-            <button class="btn-play" style="font-size: 1.2rem; padding: 10px 30px; margin-top: 20px;" onclick="UI.toggleModal('logModal')">FECHAR</button>
+<div class="modal" id="changelogModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>Histórico Real 📜</span>
+            <span style="cursor:pointer" onclick="closeModal('changelogModal')">✖</span>
+        </div>
+        <div class="modal-content-scroll" id="changelogContent"></div>
+        <div class="modal-footer">
+            <button onclick="closeModal('changelogModal')" style="margin-top: 0;">ENTENDIDO!</button>
         </div>
     </div>
+</div>
 
-    <div id="configModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3>Opções de Jogo ⚙️</h3>
-            <button class="btn-danger" style="background: #ff4d4d; color: white; border: none; padding: 15px; border-radius: 15px; cursor: pointer; margin: 20px 0;" onclick="UI.resetGame()">APAGAR MEU PROGRESSO</button><br>
-            <button class="tab-btn active-tab" onclick="UI.toggleModal('configModal')">VOLTAR</button>
+<div class="modal" id="offlineModal">
+    <div class="modal-box">
+        <div class="modal-header">Produção de Descanso 🐝</div>
+        <div class="modal-content-scroll" style="text-align: center;">
+            <div id="offlineIcon" style="width: 100px; height: 100px; background: rgba(255, 204, 0, 0.2); border-radius: 50%; flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 50px;">🍯</div>
+            <h2 id="offlineTitle" style="margin: 0 0 10px; font-weight: 900; color: inherit;">Bem-vindo de volta!</h2>
+            <p id="offlineText" style="font-size: 15px; line-height: 1.4; color: inherit; opacity: 0.9;"></p>
+        </div>
+        <div class="modal-footer">
+            <button id="btnCollectOffline" onclick="collectOfflineRewards()" style="background:var(--xp-bar); color:white; box-shadow:0 6px 0 rgba(0,0,0,0.3); height: 60px; font-size: 18px;">REIVINDICAR RECOMPENSAS</button>
         </div>
     </div>
+</div>
+
+<div class="modal" id="dailyRewardModal">
+    <div class="modal-box">
+        <div class="modal-header">
+            <span>Prêmios de Login 🎁</span>
+            <span style="cursor:pointer" onclick="closeModal('dailyRewardModal')">✖</span>
+        </div>
+        <div class="modal-content-scroll" style="text-align: center;">
+            <h3 style="margin-top:0; color:var(--accent);">CICLO DE 7 DIAS</h3>
+            <p style="font-size:12px; opacity:0.8; margin-bottom:20px;">Entre todos os dias para acumular prêmios reais!</p>
+            <div id="dailyGrid" class="daily-grid"></div>
+        </div>
+        <div class="modal-footer">
+            <button id="btnClaimDaily" onclick="claimDailyReward()" style="background:var(--xp-bar); color:white;">RESGATAR HOJE</button>
+        </div>
+    </div>
+</div>
+
+
 
     <script src="js/state.js"></script>
     <script src="js/economy.js"></script>
     <script src="js/ui.js"></script>
+    <script src="js/games/Snake.js"></script>
+    <script src="js/games/Defender.js"></script>
+    <script src="js/games/Rain.js"></script>
     <script src="js/core.js"></script>
+    
 </body>
 </html>
