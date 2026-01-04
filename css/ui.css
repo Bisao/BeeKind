@@ -1,198 +1,84 @@
-/* Layout Geral da Interface de Jogo */
-#gameUI {
-    display: grid;
-    grid-template-rows: 100px 1fr 80px;
+/* --- TELA INICIAL --- */
+#startScreen {
     height: 100vh;
-    background-color: var(--bg-cream);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
 }
 
-/* HUD Superior (Stats) */
+.home-card {
+    background: var(--white);
+    padding: 60px;
+    border-radius: 60px;
+    border: 10px solid var(--honey);
+    text-align: center;
+    box-shadow: 0 20px 0 var(--honey-light), 0 40px 60px rgba(93, 64, 55, 0.1);
+    width: 600px;
+}
+
+.game-title { font-size: 5rem; color: var(--honey-dark); margin: 0; text-shadow: 3px 3px 0 var(--brown); }
+.game-subtitle { font-size: 1.2rem; margin-bottom: 40px; font-style: italic; }
+
+.btn-play {
+    width: 100%; padding: 25px; border-radius: 30px; border: none;
+    background: var(--honey); color: var(--brown); font-size: 1.8rem;
+    font-weight: bold; cursor: pointer; box-shadow: 0 10px 0 var(--honey-dark);
+    transition: 0.1s;
+}
+.btn-play:active { transform: translateY(6px); box-shadow: 0 4px 0 var(--honey-dark); }
+
+/* --- TELA DE LOADING --- */
+#loadingScreen {
+    position: fixed; inset: 0; background: var(--cream);
+    display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5000;
+}
+.loading-container { width: 500px; position: relative; }
+.progress-bg { width: 100%; height: 25px; background: var(--white); border-radius: 15px; border: 4px solid var(--brown); overflow: hidden; }
+#loadingBar { width: 0%; height: 100%; background: var(--honey); transition: width 0.1s; }
+.loading-bee-wrapper { position: absolute; bottom: 35px; left: 0%; transform: translateX(-50%); transition: left 0.1s; }
+
+/* --- TELA DE JOGO --- */
+#gameUI { display: grid; grid-template-rows: 100px 1fr 90px; height: 100vh; }
+
 .stats-bar {
-    background: var(--honey);
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    padding: 0 40px;
-    border-bottom: 6px solid var(--honey-dark);
-    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    z-index: 10;
+    background: var(--honey); display: flex; justify-content: space-around;
+    align-items: center; border-bottom: 6px solid var(--honey-dark); padding: 0 30px;
 }
 
 .stat-bubble {
-    background: white;
-    padding: 10px 25px;
-    border-radius: 30px;
-    font-weight: bold;
-    font-size: 1.2rem;
-    color: var(--brown);
-    border: 3px solid var(--honey-dark);
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    box-shadow: 0 4px 0 rgba(0,0,0,0.05);
+    background: var(--white); padding: 12px 25px; border-radius: 35px;
+    font-weight: bold; font-size: 1.3rem; border: 3px solid var(--brown);
+    box-shadow: 4px 4px 0 rgba(0,0,0,0.1);
 }
 
-.xp-bubble {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 5px;
-}
+.xp-bar-container { width: 250px; height: 16px; background: var(--white); border-radius: 10px; border: 3px solid var(--brown); overflow: hidden; }
+#xpFill { height: 100%; background: var(--green); width: 0%; transition: width 0.3s; }
 
-.xp-bar-container {
-    width: 200px;
-    height: 14px;
-    background: #f0f0f0;
-    border-radius: 10px;
-    border: 3px solid var(--brown);
-    overflow: hidden;
-}
+.game-layout { display: grid; grid-template-columns: 450px 1fr; overflow: hidden; }
 
-#xpFill {
-    height: 100%;
-    background: linear-gradient(90deg, #4CAF50, #8BC34A);
-    width: 0%;
-    transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-/* Painel Principal */
-.game-layout {
-    display: grid;
-    grid-template-columns: 400px 1fr;
-    overflow: hidden;
-}
-
-/* Lado Esquerdo: Área de Clique */
 .click-area {
-    background: #FFFDE7;
-    background-image: radial-gradient(var(--honey-light) 2px, transparent 2px);
-    background-size: 30px 30px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    border-right: 6px dashed var(--honey);
-    position: relative;
+    background: var(--honey-light); display: flex; flex-direction: column;
+    align-items: center; justify-content: center; border-right: 8px dashed var(--honey);
 }
 
-.click-hint {
-    margin-top: 20px;
-    font-weight: bold;
-    color: var(--honey-dark);
-    background: white;
-    padding: 5px 15px;
-    border-radius: 15px;
-    border: 2px solid var(--honey);
-}
+.main-panel { background: var(--white); padding: 40px; overflow-y: auto; }
 
-/* Lado Direito: Conteúdo das Abas */
-.main-panel {
-    background: white;
-    padding: 40px;
-    overflow-y: auto;
-}
-
-.section-title {
-    color: var(--honey-dark);
-    font-size: 2rem;
-    margin-bottom: 25px;
-    border-bottom: 4px solid var(--honey-light);
-    display: inline-block;
-}
-
-/* Cards da Loja e Indústria */
 .shop-item, .industrial-card {
-    background: white;
-    border: 4px solid var(--honey);
-    border-radius: 25px;
-    padding: 20px;
-    margin-bottom: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    transition: all 0.2s ease;
+    background: var(--bg-main); border: 4px solid var(--honey);
+    border-radius: 30px; padding: 25px; margin-bottom: 20px;
+    display: flex; justify-content: space-between; align-items: center;
     box-shadow: 0 6px 0 var(--honey-light);
 }
 
-.shop-item:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 9px 0 var(--honey-light);
-}
-
-.shop-info b {
-    font-size: 1.3rem;
-    color: var(--brown);
-}
-
-.shop-item button, .btn-main, .btn-alt {
-    padding: 12px 25px;
-    border-radius: 18px;
-    border: none;
-    font-weight: bold;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: 0.1s;
-}
-
-.shop-item button {
-    background: var(--honey);
-    color: var(--brown);
-    box-shadow: 0 4px 0 var(--honey-dark);
-}
-
-.shop-item button:disabled {
-    background: #ccc;
-    box-shadow: 0 4px 0 #999;
-    cursor: not-allowed;
-}
-
-.shop-item button:active:not(:disabled) {
-    transform: translateY(3px);
-    box-shadow: 0 1px 0 var(--honey-dark);
-}
-
-/* Navegação por Abas (Inferior) */
-.tabs {
-    background: var(--honey-light);
-    display: flex;
-    justify-content: center;
-    gap: 20px;
-    padding: 10px;
-    border-top: 6px solid var(--honey);
-}
-
+.tabs { background: var(--honey-light); display: flex; justify-content: center; align-items: center; gap: 20px; }
 .tab-btn {
-    background: white;
-    border: 3px solid var(--honey);
-    border-radius: 20px;
-    padding: 10px 30px;
-    font-weight: bold;
-    color: var(--brown);
-    cursor: pointer;
-    transition: 0.2s;
+    padding: 15px 40px; border-radius: 20px; border: 3px solid var(--brown);
+    background: var(--white); font-weight: bold; cursor: pointer; transition: 0.2s;
 }
+.tab-btn:hover { background: var(--honey); transform: translateY(-5px); }
+.tab-btn.active-tab { background: var(--honey-dark); color: white; }
 
-.tab-btn:hover {
-    background: var(--honey);
-}
-
-.tab-btn.active-tab {
-    background: var(--honey-dark);
-    color: white;
-    transform: translateY(-5px);
-}
-
-/* Grid Industrial */
-.industrial-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.info-box {
-    background: var(--sky);
-    padding: 10px;
-    border-radius: 12px;
-    margin: 10px 0;
-    font-weight: bold;
-}
+/* Modais */
+.modal-overlay { position: fixed; inset: 0; background: rgba(93, 64, 55, 0.8); display: flex; justify-content: center; align-items: center; z-index: 6000; }
+.modal-card { background: var(--white); padding: 40px; border-radius: 40px; border: 8px solid var(--honey); width: 450px; text-align: center; }
