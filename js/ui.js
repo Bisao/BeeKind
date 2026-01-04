@@ -4,7 +4,6 @@ const UI = {
         this.renderShop();
     },
 
-    // Ordem: 1. Chamado pela Tela Inicial
     requestStart() {
         const start = document.getElementById("startScreen");
         const loading = document.getElementById("loadingScreen");
@@ -16,27 +15,23 @@ const UI = {
         }
     },
 
-    // Ordem: 2. Gerencia a barra de progresso (Mel)
     runLoading() {
         let p = 0;
         const bar = document.getElementById("loadingBar");
         const bee = document.querySelector(".loading-bee-wrapper");
         
         const interval = setInterval(() => {
-            p += Math.random() * 5; // Simula velocidade de carregamento
-            
+            p += Math.random() * 4;
             if (p >= 100) {
                 p = 100;
                 clearInterval(interval);
                 setTimeout(() => this.finalizeLoading(), 500);
             }
-            
             if (bar) bar.style.width = p + "%";
             if (bee) bee.style.left = p + "%";
         }, 80);
     },
 
-    // Ordem: 3. Mostra a tela de jogo
     finalizeLoading() {
         const loading = document.getElementById("loadingScreen");
         const game = document.getElementById("gameUI");
@@ -61,7 +56,7 @@ const UI = {
     },
 
     resetGame() {
-        if (confirm("Deseja apagar permanentemente todo seu mel e progresso?")) {
+        if (confirm("Apagar seu progresso permanentemente?")) {
             localStorage.clear();
             location.reload();
         }
