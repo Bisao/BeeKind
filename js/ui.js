@@ -4,56 +4,53 @@ const UI = {
         this.renderShop();
     },
 
-    // Chamado pelo botão "COMEÇAR JOGAR" na index.html
+    // Ordem: 1. Chamado pela Tela Inicial
     requestStart() {
-        const startScreen = document.getElementById("startScreen");
-        const loadingScreen = document.getElementById("loadingScreen");
+        const start = document.getElementById("startScreen");
+        const loading = document.getElementById("loadingScreen");
         
-        if (startScreen && loadingScreen) {
-            startScreen.classList.add("hidden");
-            loadingScreen.classList.remove("hidden");
+        if (start && loading) {
+            start.classList.add("hidden");
+            loading.classList.remove("hidden");
             this.runLoading();
         }
     },
 
-    // Gerencia a barra de progresso do mel
+    // Ordem: 2. Gerencia a barra de progresso (Mel)
     runLoading() {
-        let progress = 0;
+        let p = 0;
         const bar = document.getElementById("loadingBar");
-        const beeWrapper = document.querySelector(".loading-bee-wrapper");
+        const bee = document.querySelector(".loading-bee-wrapper");
         
         const interval = setInterval(() => {
-            // Incremento aleatório para parecer um carregamento real
-            progress += Math.random() * 4;
+            p += Math.random() * 5; // Simula velocidade de carregamento
             
-            if (progress >= 100) {
-                progress = 100;
+            if (p >= 100) {
+                p = 100;
                 clearInterval(interval);
-                // Pequeno atraso para o jogador ver a barra cheia
                 setTimeout(() => this.finalizeLoading(), 500);
             }
             
-            if (bar) bar.style.width = progress + "%";
-            if (beeWrapper) beeWrapper.style.left = progress + "%";
+            if (bar) bar.style.width = p + "%";
+            if (bee) bee.style.left = p + "%";
         }, 80);
     },
 
-    // Transição final para a tela de jogo
+    // Ordem: 3. Mostra a tela de jogo
     finalizeLoading() {
-        const loadingScreen = document.getElementById("loadingScreen");
-        const gameUI = document.getElementById("gameUI");
+        const loading = document.getElementById("loadingScreen");
+        const game = document.getElementById("gameUI");
         
-        if (loadingScreen) loadingScreen.classList.add("hidden");
-        if (gameUI) {
-            gameUI.classList.remove("hidden");
-            this.init(); // Inicializa os textos e a loja
+        if (loading) loading.classList.add("hidden");
+        if (game) {
+            game.classList.remove("hidden");
+            this.init();
         }
     },
 
     backToMenu() {
         document.getElementById("gameUI").classList.add("hidden");
         document.getElementById("startScreen").classList.remove("hidden");
-        // Reseta a barra para caso o jogador queira entrar de novo
         const bar = document.getElementById("loadingBar");
         if (bar) bar.style.width = "0%";
     },
@@ -64,7 +61,7 @@ const UI = {
     },
 
     resetGame() {
-        if (confirm("CUIDADO: Isso apagará todo o seu progresso de mel e upgrades. Deseja continuar?")) {
+        if (confirm("Deseja apagar permanentemente todo seu mel e progresso?")) {
             localStorage.clear();
             location.reload();
         }
@@ -87,33 +84,32 @@ const UI = {
     },
 
     renderShop() {
-        const container = document.getElementById("shopList");
-        if (!container) return;
+        const cont = document.getElementById("shopList");
+        if (!cont) return;
         
-        container.innerHTML = "";
+        cont.innerHTML = "";
         for (let item in Economy.costs) {
             const cost = Economy.getCost(item);
-            const upgradeLevel = GameState.upgrades[item];
+            const level = GameState.upgrades[item];
             
             const div = document.createElement("div");
             div.className = "shop-item";
             div.innerHTML = `
-                <div class="shop-text">
+                <div class="shop-info">
                     <b style="text-transform: capitalize;">${item}</b><br>
-                    <small>Nível Atual: ${upgradeLevel}</small>
+                    <small>Nível: ${level}</small>
                 </div>
-                <button 
-                    onclick="UI.handleBuy('${item}')" 
+                <button onclick="UI.buyUpgrade('${item}')" 
                     ${GameState.honey < cost ? 'disabled' : ''}
-                    class="buy-button">
+                    class="buy-btn">
                     ${cost.toLocaleString()} 🍯
                 </button>
             `;
-            container.appendChild(div);
+            cont.appendChild(div);
         }
     },
 
-    handleBuy(item) {
+    buyUpgrade(item) {
         if (Economy.buyUpgrade(item)) {
             this.updateStats();
             this.renderShop();
@@ -121,9 +117,8 @@ const UI = {
     },
 
     openTab(id) {
-        const tabs = document.querySelectorAll('.tab-content');
-        tabs.forEach(tab => tab.classList.add("hidden"));
-        
+        const contents = document.querySelectorAll('.tab-content');
+        contents.forEach(c => c.classList.add("hidden"));
         const target = document.getElementById(id);
         if (target) target.classList.remove("hidden");
     }
