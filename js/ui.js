@@ -4,11 +4,11 @@ const UI = {
         this.renderShop();
     },
 
+    // Executa a animação da barra de carregamento
     runLoading(onComplete) {
         let p = 0;
         const bar = document.getElementById("loadingBar");
         const bee = document.querySelector(".loading-bee-wrapper");
-        
         const interval = setInterval(() => {
             p += Math.random() * 5;
             if (p >= 100) {
@@ -24,7 +24,6 @@ const UI = {
     startGame() {
         document.getElementById("startScreen").classList.add("hidden");
         document.getElementById("gameUI").classList.remove("hidden");
-        this.updateStats();
     },
 
     backToMenu() {
@@ -32,59 +31,41 @@ const UI = {
         document.getElementById("gameUI").classList.add("hidden");
     },
 
-    toggleModal(id) {
-        document.getElementById(id).classList.toggle("hidden");
-    },
+    toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
 
     resetGame() {
-        if (confirm("Isso apagará todo seu mel e progresso! Deseja continuar?")) {
+        if (confirm("Apagar seu progresso permanentemente?")) {
             localStorage.clear();
             location.reload();
         }
     },
 
     updateStats() {
-        const honeyEl = document.getElementById("honey");
-        const mpsEl = document.getElementById("mps");
-        const lvlEl = document.getElementById("lvlDisplay");
-        const fillEl = document.getElementById("xpFill");
-
-        if (honeyEl) honeyEl.textContent = Math.floor(GameState.honey).toLocaleString();
-        if (mpsEl) mpsEl.textContent = Economy.getMPS().toFixed(1);
-        if (lvlEl) lvlEl.textContent = GameState.level;
-        
+        document.getElementById("honey").textContent = Math.floor(GameState.honey).toLocaleString();
+        document.getElementById("mps").textContent = Economy.getMPS().toFixed(1);
+        document.getElementById("lvlDisplay").textContent = GameState.level;
+        document.getElementById("talentPoints").textContent = GameState.talentPoints;
         const perc = (GameState.xp / GameState.nextLvlXp) * 100;
-        if (fillEl) fillEl.style.width = Math.min(100, perc) + "%";
+        document.getElementById("xpFill").style.width = Math.min(perc, 100) + "%";
     },
 
     renderShop() {
-        const container = document.getElementById("shopList");
-        if (!container) return;
-        container.innerHTML = "";
-        
+        const cont = document.getElementById("shopList");
+        cont.innerHTML = "";
         for (let item in Economy.costs) {
-            const cost = Economy.getUpgradeCost(item);
+            const cost = Economy.getCost(item);
             const div = document.createElement("div");
             div.className = "shop-item";
-            div.style = "background: #fff; border: 2px solid #FFB300; padding: 15px; margin-bottom: 10px; border-radius: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 0 #FFECB3;";
             div.innerHTML = `
-                <div>
-                    <b style="color: #5D4037">${item.toUpperCase()}</b><br>
-                    <small>Possui: ${GameState.upgrades[item]}</small>
-                </div>
-                <button onclick="UI.buy('${item}')" style="background:#FFB300; border:none; padding:10px 20px; border-radius:10px; cursor:pointer; font-weight:bold; color:#5D4037;" ${GameState.honey < cost ? 'disabled' : ''}>
-                    ${cost} 🍯
-                </button>
+                <span><b>${item.toUpperCase()}</b> (Nív. ${GameState.upgrades[item]})</span>
+                <button onclick="UI.buy('${item}')" ${GameState.honey < cost ? 'disabled' : ''}>${cost} 🍯</button>
             `;
-            container.appendChild(div);
+            cont.appendChild(div);
         }
     },
 
     buy(item) {
-        if (Economy.buyUpgrade(item)) {
-            this.renderShop();
-            this.updateStats();
-        }
+        if (Economy.buyUpgrade(item)) { this.init(); }
     },
 
     openTab(id) {
