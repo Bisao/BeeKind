@@ -7,7 +7,6 @@ const UI = {
     requestStart() {
         const start = document.getElementById("startScreen");
         const loading = document.getElementById("loadingScreen");
-        
         if (start && loading) {
             start.classList.add("hidden");
             loading.classList.remove("hidden");
@@ -19,7 +18,6 @@ const UI = {
         let p = 0;
         const bar = document.getElementById("loadingBar");
         const bee = document.querySelector(".loading-bee-wrapper");
-        
         const interval = setInterval(() => {
             p += Math.random() * 4;
             if (p >= 100) {
@@ -33,46 +31,24 @@ const UI = {
     },
 
     finalizeLoading() {
-        const loading = document.getElementById("loadingScreen");
-        const game = document.getElementById("gameUI");
-        
-        if (loading) loading.classList.add("hidden");
-        if (game) {
-            game.classList.remove("hidden");
-            this.init();
-        }
-    },
-
-    backToMenu() {
-        document.getElementById("gameUI").classList.add("hidden");
-        document.getElementById("startScreen").classList.remove("hidden");
-        const bar = document.getElementById("loadingBar");
-        if (bar) bar.style.width = "0%";
-    },
-
-    toggleModal(id) {
-        const modal = document.getElementById(id);
-        if (modal) modal.classList.toggle("hidden");
-    },
-
-    resetGame() {
-        if (confirm("Apagar seu progresso permanentemente?")) {
-            localStorage.clear();
-            location.reload();
-        }
+        document.getElementById("loadingScreen").classList.add("hidden");
+        document.getElementById("gameUI").classList.remove("hidden");
+        this.init();
     },
 
     updateStats() {
         const h = document.getElementById("honey");
+        const jars = document.getElementById("jars");
+        const coins = document.getElementById("coins");
         const m = document.getElementById("mps");
         const l = document.getElementById("lvlDisplay");
-        const t = document.getElementById("talentPoints");
         const f = document.getElementById("xpFill");
 
         if (h) h.textContent = Math.floor(GameState.honey).toLocaleString();
+        if (jars) jars.textContent = GameState.honeyJars;
+        if (coins) coins.textContent = GameState.coins.toLocaleString();
         if (m) m.textContent = Economy.getMPS().toFixed(1);
         if (l) l.textContent = GameState.level;
-        if (t) t.textContent = GameState.talentPoints;
         
         const perc = (GameState.xp / GameState.nextLvlXp) * 100;
         if (f) f.style.width = Math.min(perc, 100) + "%";
@@ -81,26 +57,31 @@ const UI = {
     renderShop() {
         const cont = document.getElementById("shopList");
         if (!cont) return;
-        
         cont.innerHTML = "";
         for (let item in Economy.costs) {
-            const cost = Economy.getCost(item);
-            const level = GameState.upgrades[item];
-            
+            const cost = Economy.getUpgradeCost(item);
             const div = document.createElement("div");
             div.className = "shop-item";
             div.innerHTML = `
-                <div class="shop-info">
-                    <b style="text-transform: capitalize;">${item}</b><br>
-                    <small>Nível: ${level}</small>
-                </div>
-                <button onclick="UI.buyUpgrade('${item}')" 
-                    ${GameState.honey < cost ? 'disabled' : ''}
-                    class="buy-btn">
-                    ${cost.toLocaleString()} 🍯
-                </button>
+                <div class="shop-info"><b>${item.toUpperCase()}</b><br><small>Nív: ${GameState.upgrades[item]}</small></div>
+                <button onclick="UI.buyUpgrade('${item}')" ${GameState.honey < cost ? 'disabled' : ''}>${cost} 🍯</button>
             `;
             cont.appendChild(div);
+        }
+    },
+
+    // Funções de interação de Craft/Venda
+    handleCraft() {
+        if (Economy.craftJar()) {
+            this.updateStats();
+            console.log("Pote engarrafado!");
+        }
+    },
+
+    handleSell() {
+        if (Economy.sellJar()) {
+            this.updateStats();
+            console.log("Pote vendido!");
         }
     },
 
@@ -112,9 +93,11 @@ const UI = {
     },
 
     openTab(id) {
-        const contents = document.querySelectorAll('.tab-content');
-        contents.forEach(c => c.classList.add("hidden"));
-        const target = document.getElementById(id);
-        if (target) target.classList.remove("hidden");
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.add("hidden"));
+        document.getElementById(id).classList.remove("hidden");
+    },
+
+    toggleModal(id) {
+        document.getElementById(id).classList.toggle("hidden");
     }
 };
