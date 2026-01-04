@@ -1,5 +1,5 @@
 const GameState = {
-    SAVE_KEY: "BeeKind_Final_v2.0",
+    SAVE_KEY: "BeeKind_Final_v2.1",
     
     honey: 0,
     honeyJars: 0,
@@ -10,14 +10,14 @@ const GameState = {
     talentPoints: 0,
     upgrades: { colhedora: 0, jardim: 0 },
     
-    // Controle de Logs e UI
+    // Controle de Logs e Notificação
     hasSeenLogs: false, 
     updateLogs: [
-        "v2.0: Interface Honeycomb Responsiva e Adaptável.",
-        "v1.9: Novo sistema de engarrafamento industrial.",
-        "v1.8: Adicionado Mercado da Vila e Moedas de Ouro.",
-        "v1.7: Melhoria nas animações da abelha e loading.",
-        "v1.6: Correção no sistema de salvamento automático."
+        "v2.1: Correção de sobreposição de elementos e layout responsivo.",
+        "v2.0: Interface Soft-UI Honeycomb implementada.",
+        "v1.9: Adicionado sistema de Laboratório e Refinaria.",
+        "v1.8: Mercado da Vila agora aceita venda de potes.",
+        "v1.7: Melhoria na performance e salvamento automático."
     ],
 
     save() {
