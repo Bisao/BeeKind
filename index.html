@@ -1,51 +1,81 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>CyberBees 🐝</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>BeeKind 🐝</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
     <link rel="stylesheet" href="css/minigames.css">
 </head>
-<body>
+<body oncontextmenu="return false;">
 
     <div id="gameUI">
         <header class="stats-bar">
             <div class="stat">🍯 <span id="honey">0</span></div>
             <div class="stat">⚡ <span id="mps">0</span>/s</div>
-            <div class="xp-container">
-                <div id="xpFill"></div>
+            <div class="xp-section">
+                <div class="xp-bar-container">
+                    <div id="xpFill"></div>
+                </div>
                 <span id="lvlDisplay">1</span>
             </div>
         </header>
 
         <main class="click-area">
             <div id="beeContainer">
-                <img src="assets/bee.png" id="mainBee" alt="Bee">
+                <div id="mainBee">🐝</div>
             </div>
         </main>
 
         <nav class="tabs">
-            <button onclick="UI.openTab('shop')">🛒 Loja</button>
-            <button onclick="UI.openTab('talents')">🌳 Talentos</button>
-            <button onclick="UI.openTab('games')">🎮 Jogos</button>
+            <button onclick="UI.openTab('shop')">Loja</button>
+            <button onclick="UI.openTab('talents')">Talentos</button>
+            <button onclick="UI.openTab('games')">Jogos</button>
         </nav>
 
-        <section id="shop" class="tab-content">
+        <section id="shop" class="tab-content active">
             <div id="shopList"></div>
+        </section>
+
+        <section id="talents" class="tab-content">
+            <div class="talent-tree">
+                <h3 style="text-align: center; color: #f3f315;">Árvore Real</h3>
+                <div id="talentPointsDisplay">Pontos: 0</div>
+                <div id="talentList"></div>
+            </div>
+        </section>
+
+        <section id="games" class="tab-content">
+            <div class="game-grid">
+                <div class="mg-card" onclick="SnakeGame.start()">
+                    <span style="font-size: 40px;">🐍</span>
+                    <p>Bee-Snake</p>
+                </div>
+            </div>
         </section>
     </div>
 
     <div id="gameOverlay" class="hidden">
+        <div class="mg-header">
+            <span>Pontos: <span id="mgScore">0</span></span>
+            <button onclick="Core.exitMinigame()">Sair</button>
+        </div>
         <canvas id="gameCanvas"></canvas>
-        <button onclick="Core.exitMinigame()">Sair</button>
+        <div class="mg-controls">
+            <button onclick="SnakeGame.setDir('up')">▲</button>
+            <div style="display: flex; gap: 10px;">
+                <button onclick="SnakeGame.setDir('left')">◀</button>
+                <button onclick="SnakeGame.setDir('down')">▼</button>
+                <button onclick="SnakeGame.setDir('right')">▶</button>
+            </div>
+        </div>
     </div>
 
     <script src="js/state.js"></script>
     <script src="js/economy.js"></script>
     <script src="js/ui.js"></script>
-    <script src="js/games/Snake.js"></script>
+    <script src="js/games/snake.js"></script>
     <script src="js/core.js"></script>
 </body>
 </html>
