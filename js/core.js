@@ -1,27 +1,30 @@
 const Core = {
     init() {
-        // Tenta carregar o progresso salvo antes de qualquer coisa
+        // Carrega os dados do salvamento
         GameState.load();
         
-        // Configura o evento de clique na abelha principal
-        // O elemento só existirá no DOM após o carregamento das telas
+        // Configura o clique na abelha principal
         const bee = document.getElementById("beeContainer");
         if (bee) {
-            bee.onclick = () => {
+            bee.onclick = (e) => {
                 const clickVal = Economy.getClickValue();
                 GameState.honey += clickVal;
                 GameState.xp += 2;
+                
                 this.checkLevel();
                 UI.updateStats();
                 UI.renderShop();
+                
+                // Feedback visual simples no console ou UI
+                console.log("Néctar coletado!");
             };
         }
 
-        // Ciclo de produção passiva (roda a cada 1 segundo)
+        // Loop de Produção Passiva (1 segundo)
         setInterval(() => {
-            // Só processa mel se a tela de jogo estiver visível
-            const gameVisible = !document.getElementById("gameUI").classList.contains("hidden");
-            if (gameVisible) {
+            const gameUI = document.getElementById("gameUI");
+            // Só processa se a tela de jogo estiver ativa (não oculta)
+            if (gameUI && !gameUI.classList.contains("hidden")) {
                 const gain = Economy.getMPS();
                 if (gain > 0) {
                     GameState.honey += gain;
@@ -33,7 +36,7 @@ const Core = {
             }
         }, 1000);
 
-        // Sistema de salvamento automático (a cada 10 segundos)
+        // Auto-save a cada 10 segundos
         setInterval(() => {
             GameState.save();
         }, 10000);
@@ -44,14 +47,15 @@ const Core = {
             GameState.xp -= GameState.nextLvlXp;
             GameState.level++;
             GameState.talentPoints++;
-            // Aumenta a dificuldade do próximo nível em 50%
+            // Aumenta a dificuldade do próximo nível
             GameState.nextLvlXp = Math.floor(GameState.nextLvlXp * 1.5);
             GameState.save();
+            console.log("Level Up! Novo Nível: " + GameState.level);
         }
     }
 };
 
-// Ponto de entrada único do sistema
+// Ponto de entrada: Garante que o DOM está pronto
 window.onload = () => {
     Core.init();
 };
