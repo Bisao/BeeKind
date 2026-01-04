@@ -1,11 +1,8 @@
 const Economy = {
-    costs: {
-        colhedora: 15,
-        jardim: 150
-    },
+    costs: { colhedora: 15, jardim: 150 },
     
-    CRAFT_COST: 700, // Mel bruto por pote
-    JAR_SELL_PRICE: 50, // Moedas ganhas por pote vendido
+    CRAFT_COST: 700,
+    JAR_SELL_PRICE: 50,
 
     getMPS() {
         return (GameState.upgrades.colhedora * 1) + (GameState.upgrades.jardim * 8);
@@ -30,7 +27,7 @@ const Economy = {
         return false;
     },
 
-    // Novo Sistema de Craft
+    // Processamento Industrial
     craftJar() {
         if (GameState.honey >= this.CRAFT_COST) {
             GameState.honey -= this.CRAFT_COST;
@@ -41,7 +38,6 @@ const Economy = {
         return false;
     },
 
-    // Novo Sistema de Venda
     sellJar() {
         if (GameState.honeyJars >= 1) {
             GameState.honeyJars -= 1;
