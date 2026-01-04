@@ -1,8 +1,15 @@
 const Core = {
     init() {
         GameState.load();
-        UI.init();
         
+        // Executa o loading antes de mostrar qualquer coisa
+        UI.runLoading(() => {
+            document.getElementById("loadingScreen").classList.add("hidden");
+            document.getElementById("startScreen").classList.remove("hidden");
+            UI.init();
+        });
+
+        // Evento de clique
         document.getElementById("beeContainer").addEventListener("click", () => {
             const val = Economy.getClickValue();
             GameState.honey += val;
@@ -12,7 +19,9 @@ const Core = {
             UI.renderShop();
         });
 
+        // Loop de Produção
         setInterval(() => {
+            if (document.getElementById("gameUI").classList.contains("hidden")) return;
             const gain = Economy.getMPS();
             if (gain > 0) {
                 GameState.honey += gain;
@@ -31,10 +40,7 @@ const Core = {
             GameState.talentPoints++;
             GameState.nextLvlXp *= 1.5;
         }
-    },
-
-    exitMinigame() {
-        document.getElementById("gameOverlay").classList.add("hidden");
     }
 };
+
 window.onload = () => Core.init();
