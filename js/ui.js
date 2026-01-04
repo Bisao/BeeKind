@@ -5,13 +5,9 @@ const UI = {
     },
 
     requestStart() {
-        const start = document.getElementById("startScreen");
-        const loading = document.getElementById("loadingScreen");
-        if (start && loading) {
-            start.classList.add("hidden");
-            loading.classList.remove("hidden");
-            this.runLoading();
-        }
+        document.getElementById("startScreen").classList.add("hidden");
+        document.getElementById("loadingScreen").classList.remove("hidden");
+        this.runLoading();
     },
 
     runLoading() {
@@ -37,21 +33,15 @@ const UI = {
     },
 
     updateStats() {
-        const h = document.getElementById("honey");
-        const jars = document.getElementById("jars");
-        const coins = document.getElementById("coins");
-        const m = document.getElementById("mps");
-        const l = document.getElementById("lvlDisplay");
-        const f = document.getElementById("xpFill");
-
-        if (h) h.textContent = Math.floor(GameState.honey).toLocaleString();
-        if (jars) jars.textContent = GameState.honeyJars;
-        if (coins) coins.textContent = GameState.coins.toLocaleString();
-        if (m) m.textContent = Economy.getMPS().toFixed(1);
-        if (l) l.textContent = GameState.level;
+        document.getElementById("honey").textContent = Math.floor(GameState.honey).toLocaleString();
+        document.getElementById("jars").textContent = GameState.honeyJars;
+        document.getElementById("coins").textContent = GameState.coins.toLocaleString();
+        document.getElementById("lvlDisplay").textContent = GameState.level;
+        document.getElementById("talentPoints").textContent = GameState.talentPoints;
         
         const perc = (GameState.xp / GameState.nextLvlXp) * 100;
-        if (f) f.style.width = Math.min(perc, 100) + "%";
+        const fill = document.getElementById("xpFill");
+        if (fill) fill.style.width = Math.min(perc, 100) + "%";
     },
 
     renderShop() {
@@ -63,26 +53,20 @@ const UI = {
             const div = document.createElement("div");
             div.className = "shop-item";
             div.innerHTML = `
-                <div class="shop-info"><b>${item.toUpperCase()}</b><br><small>Nív: ${GameState.upgrades[item]}</small></div>
+                <div class="shop-info"><b>${item.toUpperCase()}</b><br><small>Lvl: ${GameState.upgrades[item]}</small></div>
                 <button onclick="UI.buyUpgrade('${item}')" ${GameState.honey < cost ? 'disabled' : ''}>${cost} 🍯</button>
             `;
             cont.appendChild(div);
         }
     },
 
-    // Funções de interação de Craft/Venda
+    // Handlers Industriais
     handleCraft() {
-        if (Economy.craftJar()) {
-            this.updateStats();
-            console.log("Pote engarrafado!");
-        }
+        if (Economy.craftJar()) this.updateStats();
     },
 
     handleSell() {
-        if (Economy.sellJar()) {
-            this.updateStats();
-            console.log("Pote vendido!");
-        }
+        if (Economy.sellJar()) this.updateStats();
     },
 
     buyUpgrade(item) {
@@ -97,7 +81,10 @@ const UI = {
         document.getElementById(id).classList.remove("hidden");
     },
 
-    toggleModal(id) {
-        document.getElementById(id).classList.toggle("hidden");
+    toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
+
+    backToMenu() {
+        document.getElementById("gameUI").classList.add("hidden");
+        document.getElementById("startScreen").classList.remove("hidden");
     }
 };
