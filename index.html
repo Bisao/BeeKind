@@ -17,7 +17,7 @@
             <div class="progress-bg">
                 <div id="loadingBar"></div>
             </div>
-            <p class="loading-text">Coletando pólen e preparando o mel...</p>
+            <p class="loading-text">Coletando néctar e preparando o mel...</p>
         </div>
         <div class="rotating-cookie">🍪</div>
     </div>
@@ -65,7 +65,8 @@
                 <div id="talents" class="tab-content hidden">
                     <h2 class="section-title">Jardim de Talentos</h2>
                     <div id="talentList">
-                        <p>Suba de nível para ganhar pontos!</p>
+                        <p>Pontos de Talento: <span id="talentPoints">0</span></p>
+                        <p>Em breve: Melhore sua produção!</p>
                     </div>
                 </div>
             </section>
@@ -80,11 +81,7 @@
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3>Novidades na Colmeia 📜</h3>
-            <div class="scroll-content">
-                <p><strong>v1.4:</strong> Interface Desktop "Cozy" finalizada.</p>
-                <p><strong>v1.3:</strong> Tela de Loading com progresso real.</p>
-                <p><strong>v1.2:</strong> Sistema de salvamento corrigido.</p>
-            </div>
+            <p>v1.5: Adicionada transição completa entre telas.</p>
             <button class="btn-close" onclick="UI.toggleModal('logModal')">Fechar</button>
         </div>
     </div>
@@ -92,10 +89,8 @@
     <div id="configModal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3>Ajustes ⚙️</h3>
-            <p>Deseja limpar seu progresso permanentemente?</p>
-            <button class="btn-danger" onclick="UI.resetGame()">APAGAR TUDO</button>
-            <br><br>
-            <button class="btn-close" onclick="UI.toggleModal('configModal')">Voltar</button>
+            <button class="btn-danger" onclick="UI.resetGame()">APAGAR PROGRESSO</button>
+            <button class="btn-close" onclick="UI.toggleModal('configModal')">Fechar</button>
         </div>
     </div>
 
