@@ -33,11 +33,19 @@ const UI = {
     },
 
     updateStats() {
-        document.getElementById("honey").textContent = Math.floor(GameState.honey).toLocaleString();
-        document.getElementById("jars").textContent = GameState.honeyJars;
-        document.getElementById("coins").textContent = GameState.coins.toLocaleString();
-        document.getElementById("lvlDisplay").textContent = GameState.level;
-        document.getElementById("talentPoints").textContent = GameState.talentPoints;
+        const h = document.getElementById("honey");
+        const jars = document.getElementById("jars");
+        const coins = document.getElementById("coins");
+        const lvl = document.getElementById("lvlDisplay");
+        const tP = document.getElementById("talentPoints");
+        const mps = document.getElementById("mps");
+
+        if (h) h.textContent = Math.floor(GameState.honey).toLocaleString();
+        if (jars) jars.textContent = GameState.honeyJars;
+        if (coins) coins.textContent = GameState.coins.toLocaleString();
+        if (lvl) lvl.textContent = GameState.level;
+        if (tP) tP.textContent = GameState.talentPoints;
+        if (mps) mps.textContent = Economy.getMPS().toFixed(1);
         
         const perc = (GameState.xp / GameState.nextLvlXp) * 100;
         const fill = document.getElementById("xpFill");
@@ -53,8 +61,13 @@ const UI = {
             const div = document.createElement("div");
             div.className = "shop-item";
             div.innerHTML = `
-                <div class="shop-info"><b>${item.toUpperCase()}</b><br><small>Lvl: ${GameState.upgrades[item]}</small></div>
-                <button onclick="UI.buyUpgrade('${item}')" ${GameState.honey < cost ? 'disabled' : ''}>${cost.toLocaleString()} 🍯</button>
+                <div class="shop-info">
+                    <b>${item.toUpperCase()}</b><br>
+                    <small>Nível: ${GameState.upgrades[item]}</small>
+                </div>
+                <button onclick="UI.buyUpgrade('${item}')" ${GameState.honey < cost ? 'disabled' : ''}>
+                    ${cost.toLocaleString()} 🍯
+                </button>
             `;
             cont.appendChild(div);
         }
@@ -65,6 +78,7 @@ const UI = {
     buyUpgrade(item) { if (Economy.buyUpgrade(item)) { this.updateStats(); this.renderShop(); } },
 
     openTab(id) {
+        // Controla visibilidade das seções
         document.querySelectorAll('.tab-content').forEach(c => {
             c.classList.add("hidden");
             c.classList.remove("active");
@@ -74,6 +88,10 @@ const UI = {
             target.classList.remove("hidden");
             target.classList.add("active");
         }
+
+        // Estética dos botões das abas
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove("active-tab"));
+        // Opcional: Adicionar lógica para encontrar o botão clicado se necessário
     },
 
     toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
