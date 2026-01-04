@@ -1,21 +1,15 @@
 const GameState = {
-    SAVE_KEY: "BeeKind_Final_v1.8",
+    SAVE_KEY: "BeeKind_Ind_v1.8",
     
-    // Recursos
     honey: 0,
-    honeyJars: 0, // Potes engarrafados
-    coins: 0,     // Moedas do mercado
-    
+    honeyJars: 0,
+    coins: 0,
     totalHoney: 0,
     level: 1,
     xp: 0,
     nextLvlXp: 100,
     talentPoints: 0,
-    
-    upgrades: {
-        colhedora: 0,
-        jardim: 0
-    },
+    upgrades: { colhedora: 0, jardim: 0 },
 
     save() {
         const data = {
