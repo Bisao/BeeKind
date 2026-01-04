@@ -11,7 +11,9 @@
 
     <div id="startScreen">
         <div class="home-card">
-            <div class="bee-logo">🐝</div>
+            <div class="bee-logo">
+                <img src="assets/bee.png" alt="BeeKind Logo" class="bee-img-logo">
+            </div>
             <h1 class="game-title">BeeKind</h1>
             <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
             
@@ -29,7 +31,7 @@
     <div id="loadingScreen" class="hidden">
         <div class="loading-container">
             <div class="loading-bee-wrapper">
-                <div id="loadingBee">🐝</div>
+                <img src="assets/bee.png" alt="Loading Bee" class="bee-img-small">
             </div>
             <div class="progress-bg">
                 <div id="loadingBar"></div>
@@ -52,7 +54,9 @@
 
         <main class="game-layout">
             <aside class="click-area">
-                <div id="beeContainer">🐝</div>
+                <div id="beeContainer">
+                    <img src="assets/bee.png" alt="Main Bee" class="bee-img-main" id="mainBeeImg">
+                </div>
                 <p class="click-hint">Clique na abelhinha!</p>
                 <div class="garden-decor">🌸🌻🌼</div>
             </aside>
@@ -80,7 +84,7 @@
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3>Notas da Versão 📜</h3>
-            <p>v1.6: Fluxo Corrigido (Menu -> Loading -> Jogo)</p>
+            <p>v1.7: Substituídos emojis por ativos bee.png!</p>
             <button class="btn-close" onclick="UI.toggleModal('logModal')">Fechar</button>
         </div>
     </div>
