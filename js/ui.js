@@ -6,19 +6,22 @@ const UI = {
     },
 
     requestStart() {
-        document.getElementById("startScreen").style.opacity = "0";
-        setTimeout(() => {
-            document.getElementById("startScreen").classList.add("hidden");
-            document.getElementById("loadingScreen").classList.remove("hidden");
-            this.runLoading();
-        }, 600);
+        const start = document.getElementById("startScreen");
+        if (start) {
+            start.style.opacity = "0";
+            setTimeout(() => {
+                start.classList.add("hidden");
+                document.getElementById("loadingScreen").classList.remove("hidden");
+                this.runLoading();
+            }, 500);
+        }
     },
 
     runLoading() {
         let p = 0;
         const bar = document.getElementById("loadingBar");
         const interval = setInterval(() => {
-            p += Math.random() * 8;
+            p += Math.random() * 10;
             if (p >= 100) {
                 p = 100;
                 clearInterval(interval);
@@ -34,28 +37,29 @@ const UI = {
         this.init();
     },
 
-    // Notificação do Botão de Log
+    // Notificação do Botão Cromático
     checkLogNotification() {
         const logBtn = document.getElementById("logBtn");
         if (logBtn && !GameState.hasSeenLogs) {
-            logBtn.classList.add("pulsing-effect");
+            logBtn.classList.add("pulsing-chromatic");
         }
     },
 
-    // Abrir Logs e Gerenciar Atualizações
+    // Painel de Logs Dinâmico
     openLogs() {
         GameState.hasSeenLogs = true;
         const logBtn = document.getElementById("logBtn");
-        if (logBtn) logBtn.classList.remove("pulsing-effect");
-        
-        const logContainer = document.getElementById("logContent");
-        if (logContainer) {
-            logContainer.innerHTML = "";
-            GameState.updateLogs.slice(0, 5).forEach(log => {
-                const item = document.createElement("div");
-                item.className = "log-item";
-                item.textContent = log;
-                logContainer.appendChild(item);
+        if (logBtn) logBtn.classList.remove("pulsing-chromatic");
+
+        const logContent = document.getElementById("logContent");
+        if (logContent) {
+            logContent.innerHTML = "";
+            // Mostra as últimas 5 atualizações
+            GameState.updateLogs.slice(0, 5).forEach(text => {
+                const div = document.createElement("div");
+                div.className = "log-item";
+                div.textContent = text;
+                logContent.appendChild(div);
             });
         }
         this.toggleModal('logModal');
@@ -85,7 +89,7 @@ const UI = {
             div.innerHTML = `
                 <div><b>${item.toUpperCase()}</b><br><small>Nível: ${GameState.upgrades[item]}</small></div>
                 <button class="buy-btn" onclick="UI.buyUpgrade('${item}')" 
-                    ${GameState.honey < cost ? 'style="opacity:0.4;"' : ''}>
+                    ${GameState.honey < cost ? 'style="opacity:0.4; pointer-events:none;"' : ''}>
                     ${cost.toLocaleString()} 🍯
                 </button>
             `;
@@ -97,13 +101,16 @@ const UI = {
         document.querySelectorAll('.tab-content').forEach(c => c.classList.add("hidden"));
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove("active-tab"));
         document.getElementById(id).classList.remove("hidden");
-        const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.textContent.toLowerCase().includes(id.substring(0,3)));
-        if (btn) btn.classList.add("active-tab");
+        // Lógica para ativar o botão visualmente
+        const btns = document.querySelectorAll('.tab-btn');
+        btns.forEach(btn => {
+            if(btn.innerText.toLowerCase().includes(id.substring(0,3))) btn.classList.add('active-tab');
+        });
     },
 
-    toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
     handleCraft() { if (Economy.craftJar()) this.updateStats(); },
     handleSell() { if (Economy.sellJar()) this.updateStats(); },
     buyUpgrade(item) { if (Economy.buyUpgrade(item)) { this.updateStats(); this.renderShop(); } },
+    toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
     resetGame() { if (confirm("Resetar TUDO?")) { localStorage.clear(); location.reload(); } }
 };
