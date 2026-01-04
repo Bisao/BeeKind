@@ -1,18 +1,8 @@
 const Economy = {
     costs: { colhedora: 15, jardim: 150 },
-
-    getMPS() {
-        return (GameState.upgrades.colhedora * 1) + (GameState.upgrades.jardim * 8);
-    },
-
-    getClickValue() {
-        return 1 + (GameState.level * 0.5);
-    },
-
-    getCost(type) {
-        return Math.floor(this.costs[type] * Math.pow(1.15, GameState.upgrades[type]));
-    },
-
+    getMPS() { return (GameState.upgrades.colhedora * 1) + (GameState.upgrades.jardim * 8); },
+    getClickValue() { return 1 + (GameState.level * 0.5); },
+    getCost(type) { return Math.floor(this.costs[type] * Math.pow(1.15, GameState.upgrades[type])); },
     buyUpgrade(type) {
         const cost = this.getCost(type);
         if (GameState.honey >= cost) {
