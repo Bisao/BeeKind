@@ -2,41 +2,34 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>BeeKind 🐝 | FunCook Studio</title>
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
-    <link rel="stylesheet" href="css/minigames.css">
 </head>
 <body oncontextmenu="return false;">
 
     <div id="loadingScreen">
         <div class="loading-container">
             <div class="loading-bee-wrapper">
-                <img src="assets/bee.png" id="loadingBee" alt="🐝">
+                <div id="loadingBee">🐝</div>
             </div>
             <div class="progress-bg">
                 <div id="loadingBar"></div>
             </div>
-            <p class="loading-text">Preparando o mel...</p>
+            <p class="loading-text">Coletando pólen e preparando o mel...</p>
         </div>
         <div class="rotating-cookie">🍪</div>
     </div>
 
     <div id="startScreen" class="hidden">
-        <div class="clouds"></div>
         <div class="home-card">
-            <div class="bee-logo-container">
-                <span class="main-bee-icon">🐝</span>
-                <div class="crown">👑</div>
-            </div>
+            <div class="bee-logo">🐝</div>
             <h1 class="game-title">BeeKind</h1>
             <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
+            
             <div class="menu-actions">
-                <button class="btn-play" onclick="UI.startGame()">
-                    <span class="btn-text">COMEÇAR JOGAR</span>
-                    <span class="btn-icon">🍯</span>
-                </button>
+                <button class="btn-play" onclick="UI.startGame()">COMEÇAR JOGAR 🍯</button>
                 <div class="btn-row">
                     <button class="btn-alt" onclick="UI.toggleModal('logModal')">O QUE MUDOU?</button>
                     <button class="btn-alt" onclick="UI.toggleModal('configModal')">AJUSTES</button>
@@ -60,17 +53,20 @@
         <main class="game-layout">
             <aside class="click-area">
                 <div id="beeContainer">🐝</div>
-                <div class="garden-decor">🌸🌻🌼</div>
                 <p class="click-hint">Clique na abelhinha!</p>
+                <div class="garden-decor">🌸🌻🌼</div>
             </aside>
+
             <section class="main-panel">
                 <div id="shop" class="tab-content active">
-                    <h2 class="section-title">Loja de Doces</h2>
+                    <h2 class="section-title">Loja da Colmeia</h2>
                     <div id="shopList"></div>
                 </div>
                 <div id="talents" class="tab-content hidden">
                     <h2 class="section-title">Jardim de Talentos</h2>
-                    <div id="talentList"></div>
+                    <div id="talentList">
+                        <p>Suba de nível para ganhar pontos!</p>
+                    </div>
                 </div>
             </section>
         </main>
@@ -85,10 +81,21 @@
         <div class="modal-card">
             <h3>Novidades na Colmeia 📜</h3>
             <div class="scroll-content">
-                <p><strong>v1.3:</strong> Adicionada Tela de Loading animada.</p>
-                <p><strong>v1.2:</strong> Interface Desktop fofa concluída.</p>
+                <p><strong>v1.4:</strong> Interface Desktop "Cozy" finalizada.</p>
+                <p><strong>v1.3:</strong> Tela de Loading com progresso real.</p>
+                <p><strong>v1.2:</strong> Sistema de salvamento corrigido.</p>
             </div>
-            <button class="btn-close" onclick="UI.toggleModal('logModal')">Voltar</button>
+            <button class="btn-close" onclick="UI.toggleModal('logModal')">Fechar</button>
+        </div>
+    </div>
+
+    <div id="configModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            <h3>Ajustes ⚙️</h3>
+            <p>Deseja limpar seu progresso permanentemente?</p>
+            <button class="btn-danger" onclick="UI.resetGame()">APAGAR TUDO</button>
+            <br><br>
+            <button class="btn-close" onclick="UI.toggleModal('configModal')">Voltar</button>
         </div>
     </div>
 
