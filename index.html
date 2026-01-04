@@ -11,16 +11,13 @@
 
     <div id="startScreen">
         <div class="home-card">
-            <div class="bee-logo">
-                <img src="assets/bee.png" alt="BeeKind Logo" class="bee-img-logo">
-            </div>
+            <div class="bee-logo"><img src="assets/bee.png" class="bee-img-logo"></div>
             <h1 class="game-title">BeeKind</h1>
             <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
-            
             <div class="menu-actions">
                 <button class="btn-play" onclick="UI.requestStart()">COMEÇAR JOGAR 🍯</button>
                 <div class="btn-row">
-                    <button class="btn-alt" onclick="UI.toggleModal('logModal')">O QUE MUDOU?</button>
+                    <button class="btn-alt" onclick="UI.toggleModal('logModal')">LOGS</button>
                     <button class="btn-alt" onclick="UI.toggleModal('configModal')">AJUSTES</button>
                 </div>
             </div>
@@ -30,35 +27,29 @@
 
     <div id="loadingScreen" class="hidden">
         <div class="loading-container">
-            <div class="loading-bee-wrapper">
-                <img src="assets/bee.png" alt="Loading Bee" class="bee-img-small">
-            </div>
-            <div class="progress-bg">
-                <div id="loadingBar"></div>
-            </div>
-            <p class="loading-text">Preparando as flores...</p>
+            <div class="loading-bee-wrapper"><img src="assets/bee.png" class="bee-img-small"></div>
+            <div class="progress-bg"><div id="loadingBar"></div></div>
+            <p class="loading-text">Engarrafando o mel...</p>
         </div>
         <div class="rotating-cookie">🍪</div>
     </div>
 
     <div id="gameUI" class="hidden">
         <header class="stats-bar">
-            <div class="stat-bubble">🍯 Mel: <span id="honey">0</span></div>
-            <div class="stat-bubble">⚡ MPS: <span id="mps">0</span></div>
+            <div class="stat-bubble">🍯 <span id="honey">0</span></div>
+            <div class="stat-bubble">🏺 <span id="jars">0</span></div>
+            <div class="stat-bubble">💰 <span id="coins">0</span></div>
             <div class="xp-bubble">
-                <div class="xp-info">Nível <span id="lvlDisplay">1</span></div>
                 <div class="xp-bar-container"><div id="xpFill"></div></div>
+                <small>Nív. <span id="lvlDisplay">1</span></small>
             </div>
             <button class="btn-mini" onclick="UI.backToMenu()">Menu 🏠</button>
         </header>
 
         <main class="game-layout">
             <aside class="click-area">
-                <div id="beeContainer">
-                    <img src="assets/bee.png" alt="Main Bee" class="bee-img-main" id="mainBeeImg">
-                </div>
-                <p class="click-hint">Clique na abelhinha!</p>
-                <div class="garden-decor">🌸🌻🌼</div>
+                <div id="beeContainer"><img src="assets/bee.png" class="bee-img-main"></div>
+                <p class="click-hint">Clique para coletar!</p>
             </aside>
 
             <section class="main-panel">
@@ -66,34 +57,43 @@
                     <h2 class="section-title">Loja da Colmeia</h2>
                     <div id="shopList"></div>
                 </div>
+
+                <div id="industrial" class="tab-content hidden">
+                    <h2 class="section-title">🏭 Indústria e Comércio</h2>
+                    <div class="craft-area">
+                        <div class="craft-card">
+                            <h3>Engarrafamento</h3>
+                            <p>Custo: 700 🍯 por Pote</p>
+                            <button class="btn-main" onclick="UI.handleCraft()">CRAFTAR POTE 🏺</button>
+                        </div>
+                        <div class="market-card">
+                            <h3>Mercado de Ouro</h3>
+                            <p>Venda 1 Pote por 50 💰</p>
+                            <button class="btn-alt" onclick="UI.handleSell()">VENDER POTE (+50)</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div id="talents" class="tab-content hidden">
                     <h2 class="section-title">Jardim de Talentos</h2>
-                    <div id="talentList">
-                        <p>Pontos disponíveis: <span id="talentPoints">0</span></p>
-                    </div>
+                    <p>Pontos disponíveis: <span id="talentPoints">0</span></p>
                 </div>
             </section>
         </main>
 
         <nav class="tabs">
             <button onclick="UI.openTab('shop')">LOJA</button>
+            <button onclick="UI.openTab('industrial')">INDÚSTRIA</button>
             <button onclick="UI.openTab('talents')">TALENTOS</button>
         </nav>
     </div>
 
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
-            <h3>Notas da Versão 📜</h3>
-            <p>v1.7: Substituídos emojis por ativos bee.png!</p>
+            <h3>Versão 1.8 📜</h3>
+            <p>- Sistema Industrial Adicionado.</p>
+            <p>- Craft de Potes e Mercado de Moedas.</p>
             <button class="btn-close" onclick="UI.toggleModal('logModal')">Fechar</button>
-        </div>
-    </div>
-
-    <div id="configModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3>Ajustes ⚙️</h3>
-            <button class="btn-danger" onclick="UI.resetGame()">RESETAR PROGRESSO</button>
-            <button class="btn-close" onclick="UI.toggleModal('configModal')">Fechar</button>
         </div>
     </div>
 
