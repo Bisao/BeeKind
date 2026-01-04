@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CyberBees 🐝</title>
+    <link rel="stylesheet" href="css/main.css">
+    <link rel="stylesheet" href="css/ui.css">
+    <link rel="stylesheet" href="css/minigames.css">
+</head>
+<body>
+
+    <div id="gameUI">
+        <header class="stats-bar">
+            <div class="stat">🍯 <span id="honey">0</span></div>
+            <div class="stat">⚡ <span id="mps">0</span>/s</div>
+            <div class="xp-container">
+                <div id="xpFill"></div>
+                <span id="lvlDisplay">1</span>
+            </div>
+        </header>
+
+        <main class="click-area">
+            <div id="beeContainer">
+                <img src="assets/bee.png" id="mainBee" alt="Bee">
+            </div>
+        </main>
+
+        <nav class="tabs">
+            <button onclick="UI.openTab('shop')">🛒 Loja</button>
+            <button onclick="UI.openTab('talents')">🌳 Talentos</button>
+            <button onclick="UI.openTab('games')">🎮 Jogos</button>
+        </nav>
+
+        <section id="shop" class="tab-content">
+            <div id="shopList"></div>
+        </section>
+    </div>
+
+    <div id="gameOverlay" class="hidden">
+        <canvas id="gameCanvas"></canvas>
+        <button onclick="Core.exitMinigame()">Sair</button>
+    </div>
+
+    <script src="js/state.js"></script>
+    <script src="js/economy.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/games/Snake.js"></script>
+    <script src="js/core.js"></script>
+</body>
+</html>

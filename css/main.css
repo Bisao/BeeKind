@@ -1,0 +1,23 @@
+:root {
+    --neon-yellow: #f3f315;
+    --dark-bg: #0a0a0c;
+    --cyber-blue: #00f2ff;
+    --xp-green: #39ff14;
+}
+
+* { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+
+body {
+    background: var(--dark-bg);
+    color: white;
+    margin: 0;
+    overflow: hidden;
+    height: 100vh;
+}
+
+#gameUI {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    padding: 20px;
+}
