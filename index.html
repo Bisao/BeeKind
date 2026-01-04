@@ -11,7 +11,7 @@
 
     <div id="startScreen">
         <div class="home-card">
-            <div class="bee-logo"><img src="assets/bee.png" class="bee-img-logo"></div>
+            <div class="bee-logo"><img src="assets/bee.png" class="bee-img-logo" alt="Bee"></div>
             <h1 class="game-title">BeeKind</h1>
             <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
             <div class="menu-actions">
@@ -27,7 +27,7 @@
 
     <div id="loadingScreen" class="hidden">
         <div class="loading-container">
-            <div class="loading-bee-wrapper"><img src="assets/bee.png" class="bee-img-small"></div>
+            <div class="loading-bee-wrapper"><img src="assets/bee.png" class="bee-img-small" alt="Bee"></div>
             <div class="progress-bg"><div id="loadingBar"></div></div>
             <p class="loading-text">Engarrafando o mel...</p>
         </div>
@@ -36,9 +36,9 @@
 
     <div id="gameUI" class="hidden">
         <header class="stats-bar">
-            <div class="stat-bubble">🍯 <span id="honey">0</span></div>
-            <div class="stat-bubble">🏺 <span id="jars">0</span></div>
-            <div class="stat-bubble">💰 <span id="coins">0</span></div>
+            <div class="stat-bubble" title="Mel Bruto">🍯 <span id="honey">0</span></div>
+            <div class="stat-bubble" title="Potes de Mel">🏺 <span id="jars">0</span></div>
+            <div class="stat-bubble" title="Moedas de Ouro">💰 <span id="coins">0</span></div>
             <div class="xp-bubble">
                 <div class="xp-bar-container"><div id="xpFill"></div></div>
                 <small>Nív. <span id="lvlDisplay">1</span></small>
@@ -48,7 +48,7 @@
 
         <main class="game-layout">
             <aside class="click-area">
-                <div id="beeContainer"><img src="assets/bee.png" class="bee-img-main"></div>
+                <div id="beeContainer"><img src="assets/bee.png" class="bee-img-main" alt="Bee"></div>
                 <p class="click-hint">Clique para coletar!</p>
             </aside>
 
@@ -60,16 +60,19 @@
 
                 <div id="industrial" class="tab-content hidden">
                     <h2 class="section-title">🏭 Indústria e Comércio</h2>
-                    <div class="craft-area">
-                        <div class="craft-card">
-                            <h3>Engarrafamento</h3>
-                            <p>Custo: 700 🍯 por Pote</p>
+                    <div class="industrial-grid">
+                        <div class="industrial-card lab">
+                            <h3>Laboratório</h3>
+                            <p>Transforme mel bruto em potes luxuosos.</p>
+                            <div class="info-box">Custo: 700 🍯</div>
                             <button class="btn-main" onclick="UI.handleCraft()">CRAFTAR POTE 🏺</button>
                         </div>
-                        <div class="market-card">
-                            <h3>Mercado de Ouro</h3>
-                            <p>Venda 1 Pote por 50 💰</p>
-                            <button class="btn-alt" onclick="UI.handleSell()">VENDER POTE (+50)</button>
+                        
+                        <div class="industrial-card market">
+                            <h3>Mercado da Vila</h3>
+                            <p>Venda seus potes para ganhar moedas.</p>
+                            <div class="info-box">Ganho: +50 💰</div>
+                            <button class="btn-alt" onclick="UI.handleSell()">VENDER POTE</button>
                         </div>
                     </div>
                 </div>
@@ -77,22 +80,23 @@
                 <div id="talents" class="tab-content hidden">
                     <h2 class="section-title">Jardim de Talentos</h2>
                     <p>Pontos disponíveis: <span id="talentPoints">0</span></p>
+                    <p>Em desenvolvimento...</p>
                 </div>
             </section>
         </main>
 
         <nav class="tabs">
-            <button onclick="UI.openTab('shop')">LOJA</button>
-            <button onclick="UI.openTab('industrial')">INDÚSTRIA</button>
-            <button onclick="UI.openTab('talents')">TALENTOS</button>
+            <button class="tab-btn" onclick="UI.openTab('shop')">🛒 LOJA</button>
+            <button class="tab-btn" onclick="UI.openTab('industrial')">🏭 INDÚSTRIA</button>
+            <button class="tab-btn" onclick="UI.openTab('talents')">🌳 TALENTOS</button>
         </nav>
     </div>
 
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3>Versão 1.8 📜</h3>
-            <p>- Sistema Industrial Adicionado.</p>
-            <p>- Craft de Potes e Mercado de Moedas.</p>
+            <p>- Corrigida visibilidade da aba Industrial.</p>
+            <p>- Adicionado Laboratório e Mercado.</p>
             <button class="btn-close" onclick="UI.toggleModal('logModal')">Fechar</button>
         </div>
     </div>
