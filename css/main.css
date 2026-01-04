@@ -1,15 +1,42 @@
-/* main.css */
-.hidden { display: none !important; }
-.bee-img-logo { width: 150px; }
-.bee-img-small { width: 40px; }
-.bee-img-main { width: 180px; transition: 0.1s; cursor: pointer; }
-.bee-img-main:active { transform: scale(0.9); }
-
-/* ui.css */
-.industrial-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
-.industrial-card { 
-    background: #fff; border: 4px solid #FFB300; border-radius: 20px; 
-    padding: 20px; text-align: center; box-shadow: 0 5px 0 #FFECB3;
+:root {
+    --honey: #FFCA28;
+    --honey-light: #FFE082;
+    --honey-dark: #FFA000;
+    --cream: #FFFDF5;
+    --bg-cream: #FFFDE7;
+    --brown: #5D4037;
+    --sky: #E3F2FD;
+    --white: #FFFFFF;
 }
-.tab-content { animation: fadeIn 0.3s ease; }
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+* { box-sizing: border-box; font-family: 'Comic Sans MS', 'Segoe UI', cursive, sans-serif; }
+
+body {
+    background: var(--sky);
+    margin: 0;
+    color: var(--brown);
+    overflow: hidden;
+    height: 100vh;
+}
+
+.hidden { display: none !important; }
+
+/* Imagens */
+.bee-img-logo { width: 180px; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.1)); }
+.bee-img-small { width: 50px; }
+.bee-img-main { 
+    width: 220px; 
+    cursor: pointer; 
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter: drop-shadow(0 15px 10px rgba(0,0,0,0.1));
+}
+.bee-img-main:hover { transform: scale(1.05) rotate(3deg); }
+.bee-img-main:active { transform: scale(0.9) rotate(-3deg); }
+
+/* Animação do Cookie */
+.rotating-cookie {
+    position: absolute; bottom: 30px; right: 30px; font-size: 50px;
+    animation: spin 4s linear infinite;
+    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.1));
+}
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
