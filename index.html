@@ -10,32 +10,39 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="startScreen">
+    <div id="loadingScreen">
+        <div class="loading-container">
+            <div class="loading-wrapper">
+                <img src="assets/bee.png" id="loadingBee" alt="Bee">
+                <div class="progress-bg">
+                    <div id="progressBar"></div>
+                </div>
+            </div>
+            <p class="loading-text">Colhendo néctar...</p>
+        </div>
+        <div class="rotating-cookie">🍪</div>
+    </div>
+
+    <div id="startScreen" class="hidden">
         <div class="clouds"></div>
         <div class="home-card">
             <div class="bee-logo-container">
                 <span class="main-bee-icon">🐝</span>
                 <div class="crown">👑</div>
             </div>
-            
             <h1 class="game-title">BeeKind</h1>
             <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
-            
             <div class="menu-actions">
                 <button class="btn-play" onclick="UI.startGame()">
                     <span class="btn-text">COMEÇAR JOGAR</span>
                     <span class="btn-icon">🍯</span>
                 </button>
-                
                 <div class="btn-row">
                     <button class="btn-alt" onclick="UI.toggleModal('logModal')">O QUE MUDOU?</button>
                     <button class="btn-alt" onclick="UI.toggleModal('configModal')">AJUSTES</button>
                 </div>
             </div>
-
-            <div class="studio-tag">
-                fun <span class="cookie">🍪</span> cook studio
-            </div>
+            <div class="studio-tag">fun <span class="cookie">🍪</span> cook studio</div>
         </div>
     </div>
 
@@ -56,7 +63,6 @@
                 <div class="garden-decor">🌸🌻🌼</div>
                 <p class="click-hint">Clique na abelhinha!</p>
             </aside>
-
             <section class="main-panel">
                 <div id="shop" class="tab-content active">
                     <h2 class="section-title">Loja de Doces</h2>
@@ -82,34 +88,9 @@
         </nav>
     </div>
 
-    <div id="logModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3>Novidades na Colmeia 📜</h3>
-            <div class="scroll-content">
-                <p><strong>v1.2:</strong> Nova interface desktop fofa e atraente!</p>
-                <p><strong>v1.1:</strong> Sistema de economia modular.</p>
-                <p><strong>v1.0:</strong> Lançamento BeeKind.</p>
-            </div>
-            <button class="btn-close" onclick="UI.toggleModal('logModal')">Voltar</button>
-        </div>
-    </div>
-
-    <div id="configModal" class="modal-overlay hidden">
-        <div class="modal-card">
-            <h3>Ajustes ⚙️</h3>
-            <p>Configurações de som e progresso.</p>
-            <button class="btn-danger" onclick="UI.resetGame()">RESETAR JOGO</button>
-            <button class="btn-close" onclick="UI.toggleModal('configModal')">Fechar</button>
-        </div>
-    </div>
-
-    <div id="gameOverlay" class="hidden">
-        <div class="mg-header">
-            <span>Pontos: <span id="mgScore">0</span></span>
-            <button onclick="Core.exitMinigame()">Sair</button>
-        </div>
-        <canvas id="gameCanvas"></canvas>
-    </div>
+    <div id="logModal" class="modal-overlay hidden"><div class="modal-card"><h3>Log 📜</h3><p>v1.3: Adicionado Loading Screen.</p><button onclick="UI.toggleModal('logModal')">Voltar</button></div></div>
+    <div id="configModal" class="modal-overlay hidden"><div class="modal-card"><h3>Ajustes ⚙️</h3><button onclick="UI.toggleModal('configModal')">Fechar</button></div></div>
+    <div id="gameOverlay" class="hidden"><canvas id="gameCanvas"></canvas></div>
 
     <script src="js/state.js"></script>
     <script src="js/economy.js"></script>
