@@ -21,7 +21,7 @@ body {
 /* LOADING SCREEN */
 #loadingScreen {
     position: fixed; inset: 0; background: var(--cream);
-    display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 5000;
+    display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999;
 }
 .loading-container { width: 400px; position: relative; }
 .progress-bg { width: 100%; height: 20px; background: #eee; border-radius: 10px; border: 3px solid var(--brown); overflow: hidden; }
@@ -32,13 +32,15 @@ body {
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
 
 /* START SCREEN */
-#startScreen { height: 100vh; display: flex; justify-content: center; align-items: center; }
+#startScreen { height: 100vh; display: flex; justify-content: center; align-items: center; background: radial-gradient(circle, var(--cream) 0%, var(--honey-light) 100%); }
 .home-card {
     background: white; padding: 50px; border-radius: 60px; border: 8px solid var(--honey);
     text-align: center; box-shadow: 0 20px 0 var(--honey-light); width: 500px;
+    animation: floating 4s infinite ease-in-out;
 }
+@keyframes floating { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-15px); } }
 .bee-logo { font-size: 100px; }
-.game-title { font-size: 4rem; margin: 10px 0; color: var(--honey-dark); text-shadow: 2px 2px var(--honey-light); }
+.game-title { font-size: 4rem; color: var(--honey-dark); margin: 10px 0; text-shadow: 2px 2px var(--brown); }
 .btn-play {
     width: 100%; padding: 20px; border-radius: 25px; border: none;
     background: var(--honey); color: var(--brown); font-size: 1.5rem;
