@@ -9,27 +9,14 @@
 </head>
 <body oncontextmenu="return false;">
 
-    <div id="loadingScreen">
-        <div class="loading-container">
-            <div class="loading-bee-wrapper">
-                <div id="loadingBee">🐝</div>
-            </div>
-            <div class="progress-bg">
-                <div id="loadingBar"></div>
-            </div>
-            <p class="loading-text">Coletando néctar e preparando o mel...</p>
-        </div>
-        <div class="rotating-cookie">🍪</div>
-    </div>
-
-    <div id="startScreen" class="hidden">
+    <div id="startScreen">
         <div class="home-card">
             <div class="bee-logo">🐝</div>
             <h1 class="game-title">BeeKind</h1>
             <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
             
             <div class="menu-actions">
-                <button class="btn-play" onclick="UI.startGame()">COMEÇAR JOGAR 🍯</button>
+                <button class="btn-play" onclick="UI.requestStart()">COMEÇAR JOGAR 🍯</button>
                 <div class="btn-row">
                     <button class="btn-alt" onclick="UI.toggleModal('logModal')">O QUE MUDOU?</button>
                     <button class="btn-alt" onclick="UI.toggleModal('configModal')">AJUSTES</button>
@@ -37,6 +24,19 @@
             </div>
             <div class="studio-tag">fun <span class="cookie">🍪</span> cook studio</div>
         </div>
+    </div>
+
+    <div id="loadingScreen" class="hidden">
+        <div class="loading-container">
+            <div class="loading-bee-wrapper">
+                <div id="loadingBee">🐝</div>
+            </div>
+            <div class="progress-bg">
+                <div id="loadingBar"></div>
+            </div>
+            <p class="loading-text">Preparando as flores...</p>
+        </div>
+        <div class="rotating-cookie">🍪</div>
     </div>
 
     <div id="gameUI" class="hidden">
@@ -65,8 +65,7 @@
                 <div id="talents" class="tab-content hidden">
                     <h2 class="section-title">Jardim de Talentos</h2>
                     <div id="talentList">
-                        <p>Pontos de Talento: <span id="talentPoints">0</span></p>
-                        <p>Em breve: Melhore sua produção!</p>
+                        <p>Pontos disponíveis: <span id="talentPoints">0</span></p>
                     </div>
                 </div>
             </section>
@@ -80,8 +79,8 @@
 
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
-            <h3>Novidades na Colmeia 📜</h3>
-            <p>v1.5: Adicionada transição completa entre telas.</p>
+            <h3>Notas da Versão 📜</h3>
+            <p>v1.6: Fluxo Corrigido (Menu -> Loading -> Jogo)</p>
             <button class="btn-close" onclick="UI.toggleModal('logModal')">Fechar</button>
         </div>
     </div>
@@ -89,7 +88,7 @@
     <div id="configModal" class="modal-overlay hidden">
         <div class="modal-card">
             <h3>Ajustes ⚙️</h3>
-            <button class="btn-danger" onclick="UI.resetGame()">APAGAR PROGRESSO</button>
+            <button class="btn-danger" onclick="UI.resetGame()">RESETAR PROGRESSO</button>
             <button class="btn-close" onclick="UI.toggleModal('configModal')">Fechar</button>
         </div>
     </div>
