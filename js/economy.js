@@ -1,11 +1,10 @@
 const Economy = {
     costs: { colhedora: 15, jardim: 150 },
-    
     CRAFT_COST: 700,
-    JAR_SELL_PRICE: 50,
+    SELL_PRICE: 50,
 
     getMPS() {
-        return (GameState.upgrades.colhedora * 1) + (GameState.upgrades.jardim * 8);
+        return (GameState.upgrades.colhedora * 1.5) + (GameState.upgrades.jardim * 10);
     },
 
     getClickValue() {
@@ -13,7 +12,7 @@ const Economy = {
     },
 
     getUpgradeCost(type) {
-        return Math.floor(this.costs[type] * Math.pow(1.15, GameState.upgrades[type]));
+        return Math.floor(this.costs[type] * Math.pow(1.18, GameState.upgrades[type]));
     },
 
     buyUpgrade(type) {
@@ -27,11 +26,10 @@ const Economy = {
         return false;
     },
 
-    // Processamento Industrial
     craftJar() {
         if (GameState.honey >= this.CRAFT_COST) {
             GameState.honey -= this.CRAFT_COST;
-            GameState.honeyJars += 1;
+            GameState.honeyJars++;
             GameState.save();
             return true;
         }
@@ -40,8 +38,8 @@ const Economy = {
 
     sellJar() {
         if (GameState.honeyJars >= 1) {
-            GameState.honeyJars -= 1;
-            GameState.coins += this.JAR_SELL_PRICE;
+            GameState.honeyJars--;
+            GameState.coins += this.SELL_PRICE;
             GameState.save();
             return true;
         }
