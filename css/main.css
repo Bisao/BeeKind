@@ -1,3 +1,4 @@
+/* Variáveis mantidas do anterior */
 :root {
     --primary-honey: #FFC107;
     --light-honey: #FFECB3;
@@ -5,36 +6,103 @@
     --bg-cream: #FFFDE7;
     --text-brown: #5D4037;
     --white: #FFFFFF;
-    --accent-green: #8BC34A;
 }
 
-* {
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    user-select: none;
-}
-
-body {
-    background-color: var(--bg-cream);
-    background-image: radial-gradient(var(--light-honey) 1px, transparent 1px);
-    background-size: 20px 20px; /* Efeito de papel pontilhado sutil */
-    color: var(--text-brown);
-    margin: 0;
+/* TELA INICIAL */
+#startScreen {
+    position: fixed;
+    inset: 0;
+    background: var(--bg-cream);
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
+    z-index: 2000;
+    background-image: url('https://www.transparenttextures.com/patterns/honey-comb.png');
 }
 
-#gameUI {
-    width: 1000px;
-    height: 700px;
+.menu-container {
+    text-align: center;
     background: var(--white);
-    border-radius: 40px;
-    box-shadow: 0 20px 0px rgba(255, 193, 7, 0.2), 0 30px 60px rgba(93, 64, 55, 0.15);
-    display: grid;
-    grid-template-columns: 350px 1fr;
-    grid-template-rows: 100px 1fr 80px;
-    overflow: hidden;
-    border: 8px solid var(--primary-honey);
+    padding: 60px;
+    border-radius: 50px;
+    border: 10px solid var(--primary-honey);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+    position: relative;
+    width: 500px;
 }
+
+.game-title {
+    font-size: 4rem;
+    color: var(--dark-honey);
+    margin: 0;
+    text-shadow: 3px 3px 0px var(--text-brown);
+}
+
+.game-subtitle {
+    font-style: italic;
+    color: var(--text-brown);
+    margin-bottom: 40px;
+    font-size: 1.1rem;
+}
+
+.menu-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.btn-main {
+    background: var(--primary-honey);
+    color: var(--text-brown);
+    font-size: 1.5rem;
+    padding: 20px;
+    border-radius: 20px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    box-shadow: 0 8px 0 var(--dark-honey);
+    transition: 0.1s;
+}
+
+.btn-main:active {
+    transform: translateY(4px);
+    box-shadow: 0 4px 0 var(--dark-honey);
+}
+
+.btn-secondary {
+    background: var(--light-honey);
+    border: 3px solid var(--primary-honey);
+    padding: 12px;
+    border-radius: 15px;
+    cursor: pointer;
+    font-weight: bold;
+    color: var(--text-brown);
+}
+
+.studio-footer {
+    margin-top: 50px;
+    font-weight: bold;
+    color: var(--text-brown);
+    opacity: 0.8;
+}
+
+/* MODAIS */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(93, 64, 55, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 3000;
+}
+
+.modal-content {
+    background: var(--white);
+    padding: 40px;
+    border-radius: 30px;
+    width: 400px;
+    border: 6px solid var(--primary-honey);
+}
+
+.hidden { display: none !important; }
