@@ -4,31 +4,43 @@ const UI = {
         this.renderShop();
     },
 
-    // Executa a animação da barra de carregamento
-    runLoading(onComplete) {
+    // Passo 1: Clicou em Play na Tela Inicial
+    requestStart() {
+        document.getElementById("startScreen").classList.add("hidden");
+        document.getElementById("loadingScreen").classList.remove("hidden");
+        this.runLoading();
+    },
+
+    // Passo 2: Animação de Carregamento
+    runLoading() {
         let p = 0;
         const bar = document.getElementById("loadingBar");
         const bee = document.querySelector(".loading-bee-wrapper");
+        
         const interval = setInterval(() => {
-            p += Math.random() * 5;
+            p += Math.random() * 4;
             if (p >= 100) {
                 p = 100;
                 clearInterval(interval);
-                setTimeout(onComplete, 500);
+                setTimeout(() => this.finalizeLoading(), 500);
             }
             if (bar) bar.style.width = p + "%";
             if (bee) bee.style.left = p + "%";
-        }, 100);
+        }, 80);
     },
 
-    startGame() {
-        document.getElementById("startScreen").classList.add("hidden");
+    // Passo 3: Entra no Jogo
+    finalizeLoading() {
+        document.getElementById("loadingScreen").classList.add("hidden");
         document.getElementById("gameUI").classList.remove("hidden");
+        this.init();
     },
 
     backToMenu() {
-        document.getElementById("startScreen").classList.remove("hidden");
         document.getElementById("gameUI").classList.add("hidden");
+        document.getElementById("startScreen").classList.remove("hidden");
+        // Reinicia a barra para um futuro loading
+        document.getElementById("loadingBar").style.width = "0%";
     },
 
     toggleModal(id) { document.getElementById(id).classList.toggle("hidden"); },
