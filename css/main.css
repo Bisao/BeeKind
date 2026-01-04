@@ -1,42 +1,52 @@
 :root {
-    --honey: #FFCA28;
-    --honey-light: #FFE082;
+    --honey: #FFC107;
+    --honey-light: #FFECB3;
     --honey-dark: #FFA000;
     --cream: #FFFDF5;
-    --bg-cream: #FFFDE7;
+    --bg-main: #FFFDE7;
     --brown: #5D4037;
-    --sky: #E3F2FD;
     --white: #FFFFFF;
+    --green: #8BC34A;
 }
 
-* { box-sizing: border-box; font-family: 'Comic Sans MS', 'Segoe UI', cursive, sans-serif; }
+* {
+    box-sizing: border-box;
+    font-family: 'Segoe UI', 'Comic Sans MS', cursive, sans-serif;
+    user-select: none;
+}
 
 body {
-    background: var(--sky);
+    background: var(--bg-main);
+    background-image: radial-gradient(var(--honey-light) 2px, transparent 2px);
+    background-size: 30px 30px;
     margin: 0;
     color: var(--brown);
-    overflow: hidden;
     height: 100vh;
+    overflow: hidden;
 }
 
 .hidden { display: none !important; }
 
+/* Animação de Flutuação */
+@keyframes floating {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50% { transform: translateY(-15px) rotate(2deg); }
+}
+
 /* Imagens */
-.bee-img-logo { width: 180px; filter: drop-shadow(0 10px 5px rgba(0,0,0,0.1)); }
+.bee-img-logo { width: 180px; animation: floating 4s infinite ease-in-out; }
 .bee-img-small { width: 50px; }
 .bee-img-main { 
-    width: 220px; 
+    width: 240px; 
     cursor: pointer; 
-    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    filter: drop-shadow(0 15px 10px rgba(0,0,0,0.1));
+    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    filter: drop-shadow(0 15px 10px rgba(93, 64, 55, 0.2));
 }
-.bee-img-main:hover { transform: scale(1.05) rotate(3deg); }
-.bee-img-main:active { transform: scale(0.9) rotate(-3deg); }
+.bee-img-main:hover { transform: scale(1.05); }
+.bee-img-main:active { transform: scale(0.9); }
 
-/* Animação do Cookie */
 .rotating-cookie {
     position: absolute; bottom: 30px; right: 30px; font-size: 50px;
     animation: spin 4s linear infinite;
-    filter: drop-shadow(0 5px 5px rgba(0,0,0,0.1));
 }
 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
