@@ -1,52 +1,58 @@
 :root {
-    --honey: #FFC107;
-    --honey-light: #FFECB3;
-    --honey-dark: #FFA000;
-    --cream: #FFFDF5;
-    --bg-main: #FFFDE7;
-    --brown: #5D4037;
-    --white: #FFFFFF;
-    --green: #8BC34A;
+    --h-gold: #FFB300;
+    --h-light: #FFECB3;
+    --h-dark: #E65100;
+    --h-glass: rgba(255, 255, 255, 0.85);
+    --h-accent: #FFD54F;
+    --text: #4E342E;
+    --bg-gradient: linear-gradient(135deg, #FFFDE7 0%, #FFF9C4 100%);
+    --shadow: 0 10px 30px rgba(93, 64, 55, 0.15);
 }
 
-* {
-    box-sizing: border-box;
-    font-family: 'Segoe UI', 'Comic Sans MS', cursive, sans-serif;
-    user-select: none;
-}
+* { box-sizing: border-box; font-family: 'Quicksand', 'Segoe UI', sans-serif; cursor: default; }
 
 body {
-    background: var(--bg-main);
-    background-image: radial-gradient(var(--honey-light) 2px, transparent 2px);
-    background-size: 30px 30px;
+    background: var(--bg-gradient);
     margin: 0;
-    color: var(--brown);
     height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--text);
     overflow: hidden;
+}
+
+/* Background Animado */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: url("https://www.transparenttextures.com/patterns/honey-comb.png");
+    opacity: 0.1;
+    z-index: -1;
 }
 
 .hidden { display: none !important; }
 
-/* Animação de Flutuação */
-@keyframes floating {
+/* Animações Premium */
+@keyframes float {
     0%, 100% { transform: translateY(0) rotate(0); }
-    50% { transform: translateY(-15px) rotate(2deg); }
+    50% { transform: translateY(-20px) rotate(3deg); }
 }
 
-/* Imagens */
-.bee-img-logo { width: 180px; animation: floating 4s infinite ease-in-out; }
-.bee-img-small { width: 50px; }
-.bee-img-main { 
-    width: 240px; 
-    cursor: pointer; 
-    transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    filter: drop-shadow(0 15px 10px rgba(93, 64, 55, 0.2));
+@keyframes pulse-gold {
+    0% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0.4); }
+    70% { box-shadow: 0 0 0 20px rgba(255, 179, 0, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 179, 0, 0); }
 }
-.bee-img-main:hover { transform: scale(1.05); }
-.bee-img-main:active { transform: scale(0.9); }
 
-.rotating-cookie {
-    position: absolute; bottom: 30px; right: 30px; font-size: 50px;
-    animation: spin 4s linear infinite;
+.bee-img-main {
+    width: 260px;
+    filter: drop-shadow(0 20px 30px rgba(0,0,0,0.15));
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    animation: float 5s infinite ease-in-out;
+    cursor: pointer;
 }
-@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.bee-img-main:hover { transform: scale(1.08); filter: drop-shadow(0 30px 40px rgba(0,0,0,0.2)); }
+.bee-img-main:active { transform: scale(0.92); }
