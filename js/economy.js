@@ -1,5 +1,8 @@
 const Economy = {
-    baseCosts: { colhedora: 15, jardim: 150 },
+    costs: {
+        colhedora: 15,
+        jardim: 150
+    },
 
     getMPS() {
         return (GameState.upgrades.colhedora * 1) + (GameState.upgrades.jardim * 8);
@@ -10,7 +13,7 @@ const Economy = {
     },
 
     getUpgradeCost(type) {
-        return Math.floor(this.baseCosts[type] * Math.pow(1.15, GameState.upgrades[type]));
+        return Math.floor(this.costs[type] * Math.pow(1.15, GameState.upgrades[type]));
     },
 
     buyUpgrade(type) {
