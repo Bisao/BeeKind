@@ -5,7 +5,7 @@ const UI = {
     },
 
     updateStats() {
-        document.getElementById("honey").textContent = Math.floor(GameState.honey);
+        document.getElementById("honey").textContent = Math.floor(GameState.honey).toLocaleString();
         document.getElementById("mps").textContent = Economy.getMPS().toFixed(1);
         document.getElementById("lvlDisplay").textContent = GameState.level;
         
@@ -20,28 +20,32 @@ const UI = {
         
         for (let item in Economy.baseCosts) {
             const cost = Economy.getUpgradeCost(item);
-            const btn = document.createElement("button");
-            btn.className = "shop-item";
-            btn.innerHTML = `
-                <div style="display:flex; justify-content:space-between;">
-                    <b>${item.toUpperCase()}</b>
-                    <span>Nív. ${GameState.upgrades[item]}</span>
+            const div = document.createElement("div");
+            div.className = "shop-item";
+            div.innerHTML = `
+                <div>
+                    <b style="font-size: 1.1rem">${item.toUpperCase()}</b><br>
+                    <small>Nível: ${GameState.upgrades[item]}</small>
                 </div>
-                <div style="color: #f3f315; margin-top: 5px;">Custo: ${cost} 🍯</div>
+                <div style="display: flex; align-items: center; gap: 20px">
+                    <span style="font-weight: bold; color: var(--text-brown)">${cost} 🍯</span>
+                    <button ${GameState.honey < cost ? 'disabled' : ''} onclick="UI.buy('${item}')">Comprar</button>
+                </div>
             `;
-            btn.disabled = GameState.honey < cost;
-            btn.onclick = () => {
-                if (Economy.buyUpgrade(item)) {
-                    this.renderShop();
-                    this.updateStats();
-                }
-            };
-            container.appendChild(btn);
+            container.appendChild(div);
+        }
+    },
+
+    buy(item) {
+        if (Economy.buyUpgrade(item)) {
+            this.renderShop();
+            this.updateStats();
         }
     },
 
     openTab(id) {
-        document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-        document.getElementById(id).classList.add('active');
+        const tabs = document.querySelectorAll('.tab-content');
+        tabs.forEach(t => t.style.display = 'none');
+        document.getElementById(id).style.display = 'block';
     }
 };

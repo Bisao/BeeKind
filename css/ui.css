@@ -1,0 +1,112 @@
+/* Header de Stats */
+.stats-bar {
+    grid-column: 1 / 3;
+    background: var(--primary-honey);
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 40px;
+    color: var(--text-brown);
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.xp-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.xp-bar-container {
+    width: 200px;
+    height: 15px;
+    background: var(--white);
+    border-radius: 10px;
+    overflow: hidden;
+    border: 3px solid var(--text-brown);
+}
+
+#xpFill {
+    height: 100%;
+    background: var(--accent-green);
+    width: 0%;
+    transition: width 0.3s;
+}
+
+/* Área de Clique (Esquerda) */
+.click-area {
+    grid-row: 2 / 3;
+    background: var(--light-honey);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 4px dashed var(--primary-honey);
+}
+
+#beeContainer {
+    font-size: 150px;
+    cursor: pointer;
+    transition: transform 0.1s;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,0.1));
+}
+
+#beeContainer:hover { transform: scale(1.05) rotate(5deg); }
+#beeContainer:active { transform: scale(0.9); }
+
+/* Painel de Conteúdo (Direita) */
+.main-panel {
+    grid-row: 2 / 3;
+    padding: 30px;
+    overflow-y: auto;
+    background: var(--white);
+}
+
+.tabs {
+    grid-row: 3 / 4;
+    grid-column: 1 / 3;
+    display: flex;
+    background: var(--light-honey);
+    border-top: 4px solid var(--primary-honey);
+}
+
+.tabs button {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-weight: bold;
+    color: var(--text-brown);
+    cursor: pointer;
+    font-size: 1rem;
+    transition: 0.2s;
+}
+
+.tabs button:hover { background: var(--primary-honey); }
+
+/* Itens da Loja */
+.shop-item {
+    background: var(--bg-cream);
+    border: 3px solid var(--primary-honey);
+    border-radius: 20px;
+    padding: 20px;
+    margin-bottom: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: 0.2s;
+}
+
+.shop-item:not(:disabled):hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.shop-item button {
+    background: var(--accent-green);
+    border: none;
+    padding: 10px 20px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+}

@@ -1,29 +1,24 @@
 const Economy = {
-    baseCosts: {
-        colhedora: 15,
-        jardim: 150
+    costs: {
+        worker: 15,
+        factory: 100
     },
 
     getMPS() {
-        return (GameState.upgrades.colhedora * 1.5) + (GameState.upgrades.jardim * 10);
+        return (GameState.upgrades.worker * 1) + (GameState.upgrades.factory * 8);
     },
 
     getClickValue() {
         return 1 + (GameState.level * 0.5);
     },
 
-    getUpgradeCost(type) {
-        return Math.floor(this.baseCosts[type] * Math.pow(1.15, GameState.upgrades[type]));
-    },
-
     buyUpgrade(type) {
-        const cost = this.getUpgradeCost(type);
+        const cost = Math.floor(this.costs[type] * Math.pow(1.15, GameState.upgrades[type]));
         if (GameState.honey >= cost) {
             GameState.honey -= cost;
             GameState.upgrades[type]++;
+            UI.notify("Sucesso!", "Upgrade adquirido.");
             GameState.save();
-            return true;
         }
-        return false;
     }
 };
