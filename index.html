@@ -2,98 +2,101 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <title>BeeKind | Cozy Bee Empire 🐝</title>
+    <title>BeeKind | Royal Honey Simulator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/main.css">
     <link rel="stylesheet" href="css/ui.css">
 </head>
-<body oncontextmenu="return false;">
-
-    <div id="startScreen">
-        <div class="home-card">
-            <div class="bee-logo"><img src="assets/bee.png" class="bee-img-logo"></div>
-            <h1 class="game-title">BeeKind</h1>
-            <p class="game-subtitle">"Bee kind to bees and earn honey"</p>
-            <div class="menu-actions">
-                <button class="btn-play" onclick="UI.requestStart()">JOGAR AGORA 🍯</button>
-                <div class="btn-row">
-                    <button class="btn-alt" onclick="UI.toggleModal('logModal')">LOGS 📜</button>
-                    <button class="btn-alt" onclick="UI.toggleModal('configModal')">AJUSTES ⚙️</button>
-                </div>
-            </div>
-            <div class="studio-tag">fun <span class="cookie">🍪</span> cook studio</div>
-        </div>
-    </div>
+<body>
 
     <div id="loadingScreen" class="hidden">
         <div class="loading-container">
             <div class="loading-bee-wrapper"><img src="assets/bee.png" class="bee-img-small"></div>
             <div class="progress-bg"><div id="loadingBar"></div></div>
-            <p class="loading-text" style="font-weight: bold; margin-top: 15px;">Preparando as flores e o néctar...</p>
+            <h2 class="loading-text">REFINANDO NÉCTAR...</h2>
         </div>
-        <div class="rotating-cookie">🍪</div>
+    </div>
+
+    <div id="startScreen">
+        <div class="home-card">
+            <img src="assets/bee.png" class="bee-img-logo">
+            <h1 class="game-title">BeeKind</h1>
+            <p style="font-size: 1.5rem; opacity: 0.7; margin-bottom: 50px;">O império de mel mais doce do mundo</p>
+            <button class="btn-play" onclick="UI.requestStart()">INICIAR COLHEITA</button>
+            <div class="btn-row" style="margin-top: 30px; display: flex; gap: 20px; justify-content: center;">
+                <button onclick="UI.toggleModal('logModal')" style="cursor: pointer; background: none; border: none; font-weight: bold; color: var(--h-dark);">ATUALIZAÇÕES</button>
+                <button onclick="UI.toggleModal('configModal')" style="cursor: pointer; background: none; border: none; font-weight: bold; color: var(--h-dark);">CONFIGURAÇÕES</button>
+            </div>
+            <p style="margin-top: 60px; font-weight: 800; opacity: 0.5;">fun 🍪 cook studio</p>
+        </div>
     </div>
 
     <div id="gameUI" class="hidden">
         <header class="stats-bar">
-            <div class="stat-bubble">🍯 Mel: <span id="honey">0</span></div>
-            <div class="stat-bubble">🏺 Potes: <span id="jars">0</span></div>
-            <div class="stat-bubble">💰 Moedas: <span id="coins">0</span></div>
-            <div class="xp-bubble">
+            <div class="stat-bubble">🍯 <span id="honey">0</span> <small style="font-size: 0.8rem; opacity: 0.6;">BRUTO</small></div>
+            <div class="stat-bubble">🏺 <span id="jars">0</span> <small style="font-size: 0.8rem; opacity: 0.6;">POTES</small></div>
+            <div class="stat-bubble">💰 <span id="coins">0</span> <small style="font-size: 0.8rem; opacity: 0.6;">OURO</small></div>
+            <div class="xp-container" style="text-align: center;">
+                <b style="font-size: 1.2rem;">Lvl <span id="lvlDisplay">1</span></b>
                 <div class="xp-bar-container"><div id="xpFill"></div></div>
-                <small><b>Nível <span id="lvlDisplay">1</span></b></small>
             </div>
-            <button class="btn-mini" onclick="UI.backToMenu()">Sair 🏠</button>
         </header>
 
         <main class="game-layout">
-            <aside class="click-area">
-                <div id="beeContainer"><img src="assets/bee.png" class="bee-img-main"></div>
-                <p style="font-weight: bold; font-size: 1.2rem;">Clique para coletar!</p>
-                <div style="font-size: 2rem;">🌸🌻🌼</div>
-            </aside>
+            <section class="click-area">
+                <div id="beeContainer">
+                    <img src="assets/bee.png" class="bee-img-main" alt="Bee">
+                </div>
+                <div class="click-particle-area"></div>
+            </section>
 
             <section class="main-panel">
                 <div id="shop" class="tab-content active">
-                    <h2 style="color: var(--honey-dark)">🛒 Loja da Colmeia</h2>
+                    <h2 style="font-size: 2rem; margin-bottom: 30px;">🏠 Loja da Colmeia</h2>
                     <div id="shopList"></div>
                 </div>
 
                 <div id="industrial" class="tab-content hidden">
-                    <h2 style="color: var(--honey-dark)">🏭 Laboratório Industrial</h2>
-                    <div class="industrial-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
-                        <div class="industrial-card" style="flex-direction: column;">
-                            <h3>Refinaria</h3>
-                            <p>Custo: 700 🍯</p>
-                            <button class="btn-play" style="font-size: 1rem; padding: 10px;" onclick="UI.handleCraft()">CRAFTAR POTE 🏺</button>
+                    <h2 style="font-size: 2rem; margin-bottom: 30px;">🏭 Industrialização</h2>
+                    <div class="shop-item" style="flex-direction: column; align-items: flex-start; gap: 15px;">
+                        <div>
+                            <b>Refinaria de Mel</b>
+                            <p style="margin: 5px 0; opacity: 0.7;">Transforme 700 🍯 em 1 🏺</p>
                         </div>
-                        <div class="industrial-card" style="flex-direction: column;">
-                            <h3>Mercado</h3>
-                            <p>Ganho: +50 💰</p>
-                            <button class="btn-play" style="font-size: 1rem; padding: 10px; background: var(--green); box-shadow: 0 8px 0 #689F38;" onclick="UI.handleSell()">VENDER POTE 💰</button>
+                        <button class="btn-play" style="font-size: 1rem; padding: 15px 30px; width: 100%;" onclick="UI.handleCraft()">REFINAR AGORA</button>
+                    </div>
+                    <div class="shop-item" style="flex-direction: column; align-items: flex-start; gap: 15px;">
+                        <div>
+                            <b>Mercado Real</b>
+                            <p style="margin: 5px 0; opacity: 0.7;">Venda 1 🏺 por 50 💰</p>
                         </div>
+                        <button class="btn-play" style="font-size: 1rem; padding: 15px 30px; width: 100%; background: #4CAF50; box-shadow: 0 8px 0 #2E7D32;" onclick="UI.handleSell()">VENDER POTE</button>
                     </div>
                 </div>
 
                 <div id="talents" class="tab-content hidden">
-                    <h2 style="color: var(--honey-dark)">🌳 Jardim de Talentos</h2>
-                    <p>Pontos de Talento: <b id="talentPoints">0</b></p>
+                    <h2 style="font-size: 2rem; margin-bottom: 30px;">🌳 Talentos Reais</h2>
+                    <div class="stat-bubble" style="width: 100%; text-align: center;">Pontos: <span id="talentPoints">0</span></div>
                 </div>
             </section>
         </main>
 
         <nav class="tabs">
-            <button class="tab-btn active-tab" id="btn-shop" onclick="UI.openTab('shop')">LOJA</button>
-            <button class="tab-btn" id="btn-industrial" onclick="UI.openTab('industrial')">INDÚSTRIA</button>
-            <button class="tab-btn" id="btn-talents" onclick="UI.openTab('talents')">TALENTOS</button>
+            <button class="tab-btn active-tab" onclick="UI.openTab('shop')">ESTRUTURAS</button>
+            <button class="tab-btn" onclick="UI.openTab('industrial')">INDÚSTRIA</button>
+            <button class="tab-btn" onclick="UI.openTab('talents')">TALENTOS</button>
         </nav>
     </div>
 
     <div id="logModal" class="modal-overlay hidden">
         <div class="modal-card">
-            <h3 style="color: var(--honey-dark)">Notas de Lançamento 📜</h3>
-            <p>- Interface Desktop "Fofa & Cozy" v1.0</p>
-            <p>- Sistema de Industrialização de Mel</p>
-            <button class="tab-btn" onclick="UI.toggleModal('logModal')">Fechar</button>
+            <h2 style="color: var(--h-dark)">O que há de novo?</h2>
+            <div style="text-align: left; background: #fdfdfd; padding: 20px; border-radius: 20px;">
+                <p>💎 <b>UI Premium:</b> Design totalmente novo com efeito vidro.</p>
+                <p>⚙️ <b>Economia:</b> Sistema industrial de refino de mel.</p>
+                <p>🐝 <b>Animações:</b> Movimentos suaves e feedback visual.</p>
+            </div>
+            <button class="tab-btn active-tab" style="margin-top: 20px; width: 100%;" onclick="UI.toggleModal('logModal')">ENTENDIDO</button>
         </div>
     </div>
 
