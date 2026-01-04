@@ -1,108 +1,161 @@
-/* Variáveis mantidas do anterior */
 :root {
-    --primary-honey: #FFC107;
-    --light-honey: #FFECB3;
-    --dark-honey: #FFA000;
-    --bg-cream: #FFFDE7;
-    --text-brown: #5D4037;
+    --honey: #FFB300;
+    --honey-light: #FFECB3;
+    --honey-dark: #F57C00;
+    --cream: #FFFDF5;
+    --brown: #5D4037;
+    --green: #8BC34A;
+    --sky: #E3F2FD;
     --white: #FFFFFF;
+}
+
+* { box-sizing: border-box; font-family: 'Segoe UI', cursive, sans-serif; }
+
+body {
+    background: var(--sky);
+    margin: 0;
+    color: var(--brown);
+    overflow: hidden;
+    height: 100vh;
 }
 
 /* TELA INICIAL */
 #startScreen {
     position: fixed;
     inset: 0;
-    background: var(--bg-cream);
+    background: linear-gradient(180deg, var(--sky) 0%, var(--cream) 100%);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 2000;
-    background-image: url('https://www.transparenttextures.com/patterns/honey-comb.png');
 }
 
-.menu-container {
-    text-align: center;
+.home-card {
     background: var(--white);
-    padding: 60px;
-    border-radius: 50px;
-    border: 10px solid var(--primary-honey);
-    box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-    position: relative;
+    padding: 50px;
+    border-radius: 60px;
+    border: 8px solid var(--honey);
+    text-align: center;
+    box-shadow: 0 20px 0 var(--honey-light), 0 30px 50px rgba(0,0,0,0.1);
     width: 500px;
+    animation: floating 4s infinite ease-in-out;
 }
+
+@keyframes floating {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+}
+
+.main-bee-icon { font-size: 100px; display: inline-block; }
 
 .game-title {
     font-size: 4rem;
-    color: var(--dark-honey);
-    margin: 0;
-    text-shadow: 3px 3px 0px var(--text-brown);
+    margin: 10px 0;
+    color: var(--honey-dark);
+    text-shadow: 2px 2px 0px var(--brown);
 }
 
-.game-subtitle {
-    font-style: italic;
-    color: var(--text-brown);
-    margin-bottom: 40px;
-    font-size: 1.1rem;
-}
+.game-subtitle { font-style: italic; margin-bottom: 30px; opacity: 0.8; }
 
-.menu-buttons {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.btn-main {
-    background: var(--primary-honey);
-    color: var(--text-brown);
-    font-size: 1.5rem;
-    padding: 20px;
-    border-radius: 20px;
+.btn-play {
+    background: var(--honey);
     border: none;
-    cursor: pointer;
+    padding: 20px;
+    border-radius: 25px;
+    font-size: 1.5rem;
     font-weight: bold;
-    box-shadow: 0 8px 0 var(--dark-honey);
+    color: var(--brown);
+    cursor: pointer;
+    box-shadow: 0 8px 0 var(--honey-dark);
+    width: 100%;
     transition: 0.1s;
 }
 
-.btn-main:active {
-    transform: translateY(4px);
-    box-shadow: 0 4px 0 var(--dark-honey);
-}
+.btn-play:active { transform: translateY(4px); box-shadow: 0 4px 0 var(--honey-dark); }
 
-.btn-secondary {
-    background: var(--light-honey);
-    border: 3px solid var(--primary-honey);
-    padding: 12px;
+.btn-row { display: flex; gap: 10px; margin-top: 15px; }
+
+.btn-alt {
+    flex: 1;
+    background: var(--honey-light);
+    border: 3px solid var(--honey);
+    padding: 10px;
     border-radius: 15px;
     cursor: pointer;
     font-weight: bold;
-    color: var(--text-brown);
+    color: var(--brown);
 }
 
-.studio-footer {
-    margin-top: 50px;
+.studio-tag { margin-top: 40px; font-weight: bold; opacity: 0.6; }
+
+/* LAYOUT DO JOGO */
+#gameUI {
+    display: grid;
+    grid-template-rows: 80px 1fr 70px;
+    height: 100vh;
+}
+
+.stats-bar {
+    background: var(--honey);
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 0 20px;
+}
+
+.game-layout {
+    display: grid;
+    grid-template-columns: 350px 1fr;
+    background: var(--white);
+}
+
+.click-area {
+    background: var(--light-honey);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-right: 4px dashed var(--honey);
+}
+
+#beeContainer { font-size: 120px; cursor: pointer; transition: transform 0.1s; }
+#beeContainer:active { transform: scale(0.9); }
+
+.main-panel { padding: 30px; overflow-y: auto; }
+
+.tabs {
+    background: var(--honey-light);
+    display: flex;
+    border-top: 4px solid var(--honey);
+}
+
+.tabs button {
+    flex: 1;
+    border: none;
+    background: transparent;
     font-weight: bold;
-    color: var(--text-brown);
-    opacity: 0.8;
+    cursor: pointer;
 }
 
-/* MODAIS */
-.modal {
+.tabs button:hover { background: var(--honey); }
+
+/* UTILITÁRIOS */
+.hidden { display: none !important; }
+.modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(93, 64, 55, 0.7);
+    background: rgba(0,0,0,0.5);
     display: flex;
     justify-content: center;
     align-items: center;
     z-index: 3000;
 }
 
-.modal-content {
-    background: var(--white);
-    padding: 40px;
+.modal-card {
+    background: white;
+    padding: 30px;
     border-radius: 30px;
+    border: 5px solid var(--honey);
     width: 400px;
-    border: 6px solid var(--primary-honey);
+    text-align: center;
 }
-
-.hidden { display: none !important; }
