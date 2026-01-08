@@ -10,21 +10,21 @@
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* HUDs */
+        /* HUD de Nível e XP */
+        #xp-hud {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            width: 300px; background: var(--bg-dark); padding: 10px; border-radius: 12px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.1); z-index: 500;
+            backdrop-filter: blur(5px);
+        }
+        #xp-bar-container { width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; margin-top: 5px; overflow: hidden; }
+        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s ease; }
+        #lvl-text { font-weight: bold; font-size: 14px; color: var(--primary); text-transform: uppercase; }
+
+        /* Outros HUDs */
         #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 160px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
         #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
         
-        /* HUD de XP (Topo Central) */
-        #lvl-hud {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            background: var(--bg-dark); padding: 8px 20px; border-radius: 20px;
-            text-align: center; min-width: 200px; backdrop-filter: blur(5px); z-index: 100;
-            border: 1px solid rgba(255,255,255,0.1); display: none;
-        }
-        #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 5px; overflow: hidden; }
-        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; }
-        #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; }
-
         #pollen-hud { 
             position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
             background: var(--bg-dark); padding: 15px; border-radius: 10px;
@@ -59,7 +59,7 @@
 </head>
 <body>
 
-    <div id="lvl-hud">
+    <div id="xp-hud">
         <div id="lvl-text">Nível 1</div>
         <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
     </div>
@@ -93,6 +93,8 @@
         const gameOverModal = document.getElementById('game-over-modal');
         const pollenHud = document.getElementById('pollen-hud');
         const pollenVal = document.getElementById('pollen-val');
+        const xpBarFill = document.getElementById('xp-bar-fill');
+        const lvlText = document.getElementById('lvl-text');
         const moveBase = document.getElementById('move-base');
         const aimBase = document.getElementById('aim-base');
         const moveStick = document.getElementById('move-stick');
@@ -105,7 +107,11 @@
 
         let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, healTimer: 0, destroyed: false };
         let players = { 
-            me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100 }, 
+            me: { 
+                x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", 
+                hp: 100, isDead: false, pollen: 0,
+                lvl: 1, xp: 0, nextLvlXp: 100
+            }, 
             peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1 } 
         };
         
@@ -118,23 +124,22 @@
 
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        function addXp(amount) {
-            if(players.me.isDead) return;
+        function gainXp(amount) {
             players.me.xp += amount;
-            if(players.me.xp >= players.me.nextXp) {
-                players.me.xp -= players.me.nextXp;
+            if(players.me.xp >= players.me.nextLvlXp) {
+                players.me.xp -= players.me.nextLvlXp;
                 players.me.lvl++;
-                players.me.nextXp = players.me.lvl * 100;
-                addMsg("SISTEMA", `LEVEL UP! Agora você é nível ${players.me.lvl}!`, "msg-sys");
-                createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
+                players.me.nextLvlXp = Math.floor(players.me.nextLvlXp * 1.5);
+                addMsg("SISTEMA", `LEVEL UP! Você agora está no nível ${players.me.lvl}!`, "msg-sys");
+                createParticles(players.me.x, players.me.y, "#f1c40f", 30, 'smoke');
             }
             updateXpHud();
         }
 
         function updateXpHud() {
-            const perc = (players.me.xp / players.me.nextXp) * 100;
-            document.getElementById('xp-bar-fill').style.width = perc + "%";
-            document.getElementById('lvl-text').innerText = `Nível ${players.me.lvl}`;
+            const perc = (players.me.xp / players.me.nextLvlXp) * 100;
+            xpBarFill.style.width = perc + "%";
+            lvlText.innerText = `Nível ${players.me.lvl}`;
         }
 
         function createParticles(x, y, color, count, type = 'pixel') {
@@ -157,6 +162,7 @@
                     vy = (Math.random() - 0.5) * 3;
                     decay = 0.015;
                 }
+
                 particles.push({ x, y, vx, vy, life, decay, color, type });
             }
         }
@@ -281,13 +287,19 @@
         }
 
         function updateMechanics() {
-            // Partículas de Pólen Suaves na Abelha
+            // XP por Coleta de Pólen
             if(players.me.pollen > 5 && Math.random() < players.me.pollen/250) {
                 createParticles(players.me.x + (Math.random()-0.5)*15, players.me.y + (Math.random()-0.5)*15, "#fffa65", 1, 'pollen');
             }
 
-            // Partículas de Pólen Ambientais nas Flores
             flowers.forEach(f => {
+                if(f.cooldown > 0) f.cooldown -= 1/60;
+                else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+                    players.me.pollen += 0.4;
+                    gainXp(0.1); // Ganha XP coletando
+                    if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
+                }
+                // Partículas ambientais
                 if(f.cooldown <= 0 && Math.random() < 0.05) {
                     createParticles(f.x + (Math.random()-0.5)*30, f.y + (Math.random()-0.5)*30, "#fffa65", 1, 'pollen');
                 }
@@ -305,24 +317,17 @@
                 }
             }
 
-            flowers.forEach(f => {
-                if(f.cooldown > 0) f.cooldown -= 1/60;
-                else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-                    players.me.pollen += 0.4;
-                    addXp(0.1); // XP por coletar pólen
-                    if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
-                }
-            });
-
+            // XP por Reparar Colmeia
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-                    addXp(25); // XP por consertar colmeia
+                    gainXp(50); // Bônus de reparo
                     if(conn && conn.open) conn.send({ type: 'repair' });
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
             }
 
+            // Inimigos e XP por Abate
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
@@ -332,9 +337,9 @@
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 30) {
                         en.hp -= 25; projectiles.splice(pI, 1);
                         if(en.hp <= 0) { 
-                            if(p.owner === 'me') addXp(15); // XP por matar inimigo
                             createParticles(en.x, en.y, "#000", 10); 
                             enemies.splice(index, 1); 
+                            gainXp(20); // XP por matar inimigo
                         }
                     }
                 });
@@ -388,14 +393,13 @@
 
         function startGame() {
             document.getElementById('menu').style.display = 'none';
-            document.getElementById('lvl-hud').style.display = 'block';
             chatWrapper.style.display = 'flex'; chatWrapper.style.left = "10px";
             canvas.style.display = 'block';
+            updateXpHud();
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 moveBase.style.display = 'block'; aimBase.style.display = 'block';
                 setupMultitouch();
             }
-            updateXpHud();
             resize(); requestAnimationFrame(gameLoop);
         }
 
@@ -457,7 +461,9 @@
             runWaveLogic(); updateMechanics();
 
             if(performance.now() - lastNetUpdate > 30) { 
-                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
+                if(conn && conn.open) {
+                    conn.send({ ...players.me, type: 'pos' }); 
+                }
                 lastNetUpdate = performance.now(); 
             }
 
@@ -465,7 +471,7 @@
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
                 const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick} (Lvl ${players.peer.lvl})</span><span class="dist-val">${d}m</span></div>`;
+                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● Lvl ${players.peer.lvl} ${players.peer.nick}</span><span class="dist-val">${d}m</span></div>`;
             }
             if(!hive.destroyed) {
                 const hivePerc = Math.floor((hive.hp/hive.maxHp)*100);
@@ -531,7 +537,7 @@
                 if(!assets.bee[p.dir].complete || p.isDead) return;
                 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
                 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
-                ctx.fillStyle = "black"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x+1, p.y-39); ctx.fillStyle = c; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
+                ctx.fillStyle = "black"; ctx.fillText(p.nick, p.x+1, p.y-39); ctx.fillStyle = c; ctx.fillText(p.nick, p.x, p.y-40);
                 drawHealthBar(p.x, p.y, p.hp);
                 if(p.pollen > 0 && p.pollen < 100) {
                     ctx.fillStyle = "white"; ctx.fillRect(p.x - 15, p.y + 35, 30, 4);
