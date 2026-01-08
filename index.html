@@ -3,18 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Multitouch Twin Stick</title>
+    <title>Bee World - Combat & Radar Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* HUD */
-        #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid #3498db; font-family: monospace; font-size: 14px; z-index: 100; min-width: 140px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
+        /* PAINEL DE SESSÃO (Lista de Jogadores) */
+        #player-list { 
+            position: absolute; top: 15px; left: 15px; 
+            background: var(--bg-dark); padding: 10px; 
+            border-radius: 8px; border-left: 4px solid var(--primary); 
+            font-family: monospace; font-size: 14px; z-index: 100; 
+            min-width: 150px; pointer-events: none; display: none; 
+            backdrop-filter: blur(5px); 
+        }
+        .player-item { display: flex; justify-content: space-between; gap: 15px; text-shadow: 1px 1px 2px black; }
+        .dist-val { color: var(--primary); font-weight: bold; }
+
+        /* HUD Coordenadas */
         #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
 
-        /* Chat */
+        /* Chat Mobile */
         #chat-wrapper { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
         #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
@@ -26,7 +37,7 @@
         input[type="text"] { padding: 12px; width: 220px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 10px; text-align: center; }
         .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; }
 
-        /* CONTROLES MOBILE (MULTITOUCH) */
+        /* Joysticks Mobile */
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
         #move-base { left: 40px; }
         #aim-base { right: 40px; border-color: rgba(255, 0, 0, 0.3); }
@@ -71,6 +82,7 @@
         const aimBase = document.getElementById('aim-base');
         const moveStick = document.getElementById('move-stick');
         const aimStick = document.getElementById('aim-stick');
+        const playerListUI = document.getElementById('player-list');
         
         const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
@@ -122,12 +134,19 @@
         }
 
         function setupConn() {
-            conn.on('open', () => { players.peer.active = true; startGame(); conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color }); });
+            conn.on('open', () => { 
+                players.peer.active = true; startGame(); 
+                conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
+            });
             conn.on('data', data => {
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-                else { players.peer.tX = data.x; players.peer.tY = data.y; players.peer.dir = data.dir; players.peer.active = true; }
+                else { 
+                    players.peer.tX = data.x; players.peer.tY = data.y; 
+                    players.peer.dir = data.dir; players.peer.nick = data.nick; 
+                    players.peer.active = true; 
+                }
             });
         }
 
@@ -154,7 +173,7 @@
         function addMsg(author, text, senderType) {
             const d = document.createElement('div');
             d.innerHTML = `<span style="color:${senderType === "me" ? players.me.color : players.peer.color}; font-weight:bold">${author}:</span> ${text}`;
-            chatDisplay.appendChild(d); chatDisplay.scrollTop = 99999;
+            document.getElementById('chat-display').appendChild(d); document.getElementById('chat-display').scrollTop = 99999;
         }
 
         function startGame() {
@@ -192,8 +211,7 @@
                         const r = aimBase.getBoundingClientRect();
                         const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
                         const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
-                        joyAim.angle = Math.atan2(dy, dx);
-                        joyAim.active = true;
+                        joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
                         aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
                     }
                 }
@@ -207,7 +225,6 @@
             window.addEventListener('touchstart', handleStart, {passive: false});
             window.addEventListener('touchmove', handleMove, {passive: false});
             window.addEventListener('touchend', handleEnd);
-            window.addEventListener('touchcancel', handleEnd);
         }
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -221,24 +238,46 @@
             if (dx !== 0 || dy !== 0) {
                 const m = Math.sqrt(dx*dx + dy*dy);
                 players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-                // Sprite muda apenas com movimento
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up';
                 if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); lastNetUpdate = performance.now(); }
             }
 
-            // Disparo
             if(joyAim.active) fire(joyAim.angle);
             else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
 
-            if(players.peer.active) { players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; }
+            if(players.peer.active) { 
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+                
+                // ATUALIZAÇÃO DO PAINEL DE SESSÃO
+                const d = Math.floor(Math.sqrt(Math.pow(players.peer.x-players.me.x,2)+Math.pow(players.peer.y-players.me.y,2))/10);
+                playerListUI.style.display = "block";
+                playerListUI.innerHTML = `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span class="dist-val">${d}m</span></div>`;
+            } else { playerListUI.style.display = "none"; }
+
             projectiles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1); });
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
             document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
-            const pL = document.getElementById('player-list');
-            if(players.peer.active) {
-                const d = Math.floor(Math.sqrt(Math.pow(players.peer.x-players.me.x,2)+Math.pow(players.peer.y-players.me.y,2))/10);
-                pL.style.display = "block"; pL.innerHTML = `<div style="color:${players.peer.color}">● ${players.peer.nick} (${d}m)</div>`;
-            }
+        }
+
+        // FUNÇÃO DA SETA DE DIREÇÃO (RADAR)
+        function drawFriendArrow() {
+            if (!players.peer.active) return;
+            const dx = players.peer.x - players.me.x;
+            const dy = players.peer.y - players.me.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 150) return; // Só mostra se estiver longe
+
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.translate(players.me.x, players.me.y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(70, 0); ctx.lineTo(55, -8); ctx.lineTo(55, 8);
+            ctx.closePath();
+            ctx.fillStyle = players.peer.color;
+            ctx.shadowBlur = 10; ctx.shadowColor = "white";
+            ctx.fill();
+            ctx.restore();
         }
 
         function draw() {
@@ -248,6 +287,8 @@
             for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE) 
                 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
+
+            drawFriendArrow(); // CHAMA O RADAR
 
             projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
