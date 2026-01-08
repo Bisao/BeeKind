@@ -3,41 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Compass & HUD</title>
+    <title>Bee World - Battle Royale Compass</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Arial', sans-serif; color: white; touch-action: none; }
         canvas { background: #222; display: none; }
         
-        /* Menu */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.85); padding: 30px; border-radius: 15px; width: 280px; z-index: 100; border: 2px solid #f1c40f; }
-        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
-        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
-        
-        /* HUD - Interface de Cima */
+        /* HUD Superior */
         #hud-container {
-            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center;
-            pointer-events: none; z-index: 50; width: 200px;
-        }
-        #compass-bar {
-            width: 100%; height: 30px; background: rgba(0,0,0,0.6);
-            border: 2px solid #f1c40f; border-radius: 5px; position: relative; overflow: hidden;
-        }
-        #compass-line {
-            position: absolute; width: 2px; height: 100%; background: #ff4757;
-            left: 50%; transform: translateX(-50%); z-index: 2;
-        }
-        #compass-letters {
-            position: absolute; white-space: nowrap; transition: 0.1s linear;
-            font-weight: bold; font-size: 14px; line-height: 26px; width: 1000px; text-align: center;
-        }
-        #coordinates {
-            margin-top: 8px; background: rgba(0,0,0,0.5); padding: 4px 12px;
-            border-radius: 20px; font-size: 14px; color: #f1c40f; font-family: monospace;
+            pointer-events: none; z-index: 50; width: 400px;
         }
 
-        /* Joystick */
+        /* Bússola Estilo Warzone/PUBG */
+        #compass-viewport {
+            width: 300px; height: 40px; background: rgba(0,0,0,0.4);
+            border-bottom: 2px solid rgba(255,215,0,0.8);
+            position: relative; overflow: hidden;
+            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+            -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
+        }
+        #compass-tape {
+            position: absolute; height: 100%; display: flex; align-items: flex-end;
+            transition: transform 0.05s linear; will-change: transform;
+        }
+        .compass-mark {
+            position: absolute; width: 60px; text-align: center; font-size: 12px;
+            font-weight: bold; padding-bottom: 5px; color: #ddd;
+        }
+        .compass-mark.cardinal { color: #f1c40f; font-size: 16px; }
+        
+        #compass-center-mark {
+            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+            width: 2px; height: 100%; background: #f1c40f; z-index: 5;
+        }
+
+        /* Marcador do Amigo na Bússola */
+        #friend-marker-compass {
+            position: absolute; top: 5px; width: 12px; height: 12px;
+            background: #3498db; border-radius: 2px; transform: rotate(45deg);
+            border: 1px solid white; z-index: 4; display: none;
+        }
+
+        #coordinates {
+            margin-top: 5px; font-size: 12px; color: #aaa; font-family: monospace;
+            background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;
+        }
+
+        /* Menu e Joystick (mantidos) */
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.9); padding: 30px; border-radius: 15px; width: 280px; z-index: 100; border: 2px solid #f1c40f; }
+        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; }
+        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
         #joy-base { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); }
         #joy-stick { position: absolute; width: 40px; height: 40px; background: rgba(241, 196, 15, 0.5); border-radius: 50%; top: 30px; left: 30px; }
     </style>
@@ -45,9 +62,11 @@
 <body>
 
     <div id="hud-container">
-        <div id="compass-bar">
-            <div id="compass-line"></div>
-            <div id="compass-letters">N · · · E · · · S · · · W · · · N</div>
+        <div id="compass-viewport">
+            <div id="compass-center-mark"></div>
+            <div id="friend-marker-compass"></div>
+            <div id="compass-tape" style="left: 150px;">
+                </div>
         </div>
         <div id="coordinates">X: 0 | Y: 0</div>
     </div>
@@ -57,7 +76,6 @@
         <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
         <button onclick="startSession(true)" style="background: #f1c40f;">CRIAR SALA</button>
         <button onclick="startSession(false)" style="background: #3498db; color: white;">ENTRAR NA SALA</button>
-        <p id="status" style="font-size: 12px;">Pronto para voar?</p>
     </div>
 
     <div id="joy-base"><div id="joy-stick"></div></div>
@@ -70,7 +88,8 @@
         const joyBase = document.getElementById('joy-base');
         const joyStick = document.getElementById('joy-stick');
         const coordDisplay = document.getElementById('coordinates');
-        const compassLetters = document.getElementById('compass-letters');
+        const compassTape = document.getElementById('compass-tape');
+        const friendMarker = document.getElementById('friend-marker-compass');
 
         const assets = {
             bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() },
@@ -78,7 +97,6 @@
             flowers: [new Image(), new Image(), new Image()]
         };
 
-        // Carregamento de Sprites
         assets.bee.Down.src = 'BeeDown.png';
         assets.bee.Left.src = 'BeeLeft.png';
         assets.bee.Up.src = 'BeeUp.png';
@@ -90,13 +108,32 @@
 
         let peer, conn, isHost = false;
         let players = {
-            me: { x: 500, y: 500, dir: 'Down' },
+            me: { x: 500, y: 500, dir: 'Down', angle: 180 },
             peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false }
         };
         
         let camera = { x: 0, y: 0 };
         const TILE_SIZE = 64;
         let lastSendTime = 0;
+
+        // --- GERAR MARCAÇÕES DA BÚSSOLA ---
+        function createCompass() {
+            const points = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
+            for(let i = -180; i <= 540; i += 15) {
+                const mark = document.createElement('div');
+                mark.className = 'compass-mark';
+                const angle = (i + 360) % 360;
+                if(points[angle]) {
+                    mark.classList.add('cardinal');
+                    mark.innerText = points[angle];
+                } else {
+                    mark.innerText = angle;
+                }
+                mark.style.left = (i * 2) + 'px'; // 2px por grau
+                compassTape.appendChild(mark);
+            }
+        }
+        createCompass();
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -138,6 +175,11 @@
             players.me.x += dx * speed;
             players.me.y += dy * speed;
 
+            // Calcula o ângulo do movimento (0-360)
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+            if(angle < 0) angle += 360;
+            players.me.angle = angle;
+
             if (Math.abs(dx) > Math.abs(dy)) {
                 players.me.dir = dx > 0 ? 'Right' : 'Left';
             } else {
@@ -159,20 +201,35 @@
             }
         });
 
+        function updateHUD() {
+            coordDisplay.innerText = `X: ${Math.floor(players.me.x)} | Y: ${Math.floor(players.me.y)}`;
+
+            // Desliza a fita da bússola (150px é o centro do viewport de 300px)
+            // Multiplicamos por -2 porque cada grau na fita tem 2px de largura
+            compassTape.style.transform = `translateX(${150 - (players.me.angle * 2)}px)`;
+
+            // Marcador do Amigo na Bússola
+            if(players.peer.active) {
+                const dx = players.peer.x - players.me.x;
+                const dy = players.peer.y - players.me.y;
+                let angleToFriend = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
+                if(angleToFriend < 0) angleToFriend += 360;
+
+                // Diferença entre meu ângulo e o ângulo do amigo
+                let diff = angleToFriend - players.me.angle;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+
+                // Posiciona o marcador (150px é o centro)
+                const markerX = 150 + (diff * 2);
+                friendMarker.style.display = (markerX > 0 && markerX < 300) ? 'block' : 'none';
+                friendMarker.style.left = markerX + 'px';
+            }
+        }
+
         function pseudoRandom(x, y) {
             let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
             return n - Math.floor(n);
-        }
-
-        function updateHUD() {
-            // Atualiza Coordenadas
-            coordDisplay.innerText = `X: ${Math.floor(players.me.x)} | Y: ${Math.floor(players.me.y)}`;
-
-            // Atualiza Bússola
-            // Calcula o ângulo em relação ao ponto (0,0) do mundo
-            const angle = Math.atan2(0 - players.me.y, 0 - players.me.x) * (180 / Math.PI);
-            // Move o texto das letras da bússola
-            compassLetters.style.left = `${-angle - 400}px`;
         }
 
         function drawInfiniteGround() {
@@ -196,23 +253,6 @@
             }
         }
 
-        function drawFriendPointer() {
-            if (!players.peer.active) return;
-            const dx = players.peer.x - players.me.x;
-            const dy = players.peer.y - players.me.y;
-            const angle = Math.atan2(dy, dx);
-            const radius = 55; 
-            ctx.save();
-            ctx.translate(players.me.x, players.me.y);
-            ctx.rotate(angle);
-            ctx.beginPath();
-            ctx.moveTo(radius, 0); ctx.lineTo(radius - 12, -6); ctx.lineTo(radius - 12, 6);
-            ctx.closePath();
-            ctx.fillStyle = "#3498db";
-            ctx.fill();
-            ctx.restore();
-        }
-
         function gameLoop() {
             if (players.peer.active) {
                 players.peer.x += (players.peer.targetX - players.peer.x) * 0.12;
@@ -225,16 +265,13 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.save();
             ctx.translate(-camera.x, -camera.y);
-
             drawInfiniteGround();
-            drawFriendPointer();
 
             if (players.peer.active) drawBee(players.peer, true);
             drawBee(players.me, false);
-
             ctx.restore();
             
-            updateHUD(); // Atualiza a bússola e coordenadas a cada frame
+            updateHUD();
             requestAnimationFrame(gameLoop);
         }
 
