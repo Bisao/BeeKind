@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Natural Particles Edition</title>
+    <title>Bee World - Mobile Fixed Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
-        canvas { display: none; image-rendering: pixelated; }
+        canvas { display: none; image-rendering: pixelated; z-index: 1; }
 
         /* HUDs */
         #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 160px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
@@ -24,23 +24,32 @@
         #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
         /* Modais */
-        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; }
         .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-        /* Chat */
-        #chat-wrapper { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
-        #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
-        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 8px; font-size: 13px; outline: none; }
-        #btn-minimize { position: absolute; right: -30px; top: 0; background: var(--bg-dark); color: var(--primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 0 5px 5px 0; cursor: pointer; padding: 5px; font-weight: bold; pointer-events: auto; }
+        /* Chat - Fixado para Mobile */
+        #chat-wrapper { 
+            position: absolute; top: 50%; left: 10px; transform: translateY(-50%); 
+            width: 220px; z-index: 500; display: none; flex-direction: column; 
+            transition: left 0.3s ease; pointer-events: auto; 
+        }
+        #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); user-select: text; }
+        #chat-input-area { display: flex; background: rgba(0,0,0,0.9); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); pointer-events: auto; }
+        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 8px; font-size: 14px; outline: none; user-select: text; -webkit-user-select: text; }
+        #btn-minimize { 
+            position: absolute; right: -35px; top: 0; width: 35px; height: 35px;
+            background: var(--bg-dark); color: var(--primary); border: 1px solid rgba(255,255,255,0.1); 
+            border-radius: 0 8px 8px 0; cursor: pointer; font-weight: bold; 
+            pointer-events: auto; z-index: 501;
+        }
 
-        /* Menu */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 300; }
+        /* Menu Principal */
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 1000; }
         input[type="text"] { padding: 12px; width: 220px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 10px; text-align: center; }
         .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; }
 
-        /* Joysticks */
-        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
+        /* Joysticks - Fixados para Mobile */
+        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; touch-action: none; }
         #move-base { left: 40px; }
         #aim-base { right: 40px; border-color: rgba(255, 0, 0, 0.3); }
         .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7; }
@@ -51,12 +60,18 @@
     <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
     <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button></div>
     <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button></div>
-    <div id="player-list"></div><div id="coords">LOC: 1000, 1000</div>
+    
+    <div id="player-list"></div>
+    <div id="coords">LOC: 1000, 1000</div>
+
     <div id="chat-wrapper">
-        <button id="btn-minimize">«</button>
+        <button id="btn-minimize" onclick="toggleChat()">«</button>
         <div id="chat-display"></div>
-        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="..." autocomplete="off"></div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Conversar..." autocomplete="off">
+        </div>
     </div>
+
     <div id="menu">
         <h1 style="color:var(--primary); margin:0 0 20px 0;">BEE WORLD</h1>
         <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
@@ -64,8 +79,10 @@
         <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
         <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR</button>
     </div>
+
     <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
     <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
+
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -73,15 +90,8 @@
         const ctx = canvas.getContext('2d', { alpha: false });
         const chatInput = document.getElementById('chat-input');
         const chatWrapper = document.getElementById('chat-wrapper');
-        const deathModal = document.getElementById('death-modal');
-        const gameOverModal = document.getElementById('game-over-modal');
-        const pollenHud = document.getElementById('pollen-hud');
-        const pollenVal = document.getElementById('pollen-val');
         const moveBase = document.getElementById('move-base');
         const aimBase = document.getElementById('aim-base');
-        const moveStick = document.getElementById('move-stick');
-        const aimStick = document.getElementById('aim-stick');
-        const playerListUI = document.getElementById('player-list');
         
         const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
@@ -99,8 +109,17 @@
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
         let mousePos = { x: 0, y: 0 }, isMouseDown = false;
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
-
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
+
+        // Toggle Chat Function
+        function toggleChat() {
+            let hidden = chatWrapper.style.left === "-210px";
+            chatWrapper.style.left = hidden ? "10px" : "-210px";
+            document.getElementById('btn-minimize').innerText = hidden ? "«" : "»";
+        }
+
+        // Prevenir scroll e zoom acidental
+        document.addEventListener('touchmove', e => { if(e.target.id === 'gameCanvas') e.preventDefault(); }, {passive: false});
 
         function createParticles(x, y, color, count, type = 'pixel') {
             for(let i=0; i<count; i++) {
@@ -109,9 +128,8 @@
                     vx: (Math.random() - 0.5) * (type === 'smoke' ? 2 : 1),
                     vy: type === 'pollen' ? Math.random() * 0.5 : (Math.random() - 0.5) * 2,
                     life: 1.0,
-                    decay: type === 'pollen' ? 0.005 : (Math.random() * 0.02 + 0.01),
-                    color,
-                    type 
+                    decay: type === 'pollen' ? 0.006 : (Math.random() * 0.02 + 0.01),
+                    color, type 
                 });
             }
         }
@@ -120,31 +138,29 @@
             const types = ["🌸", "🌻", "🌷"];
             for(let i=0; i<18; i++) {
                 flowers.push({
-                    x: Math.random() * 4000 - 1000,
-                    y: Math.random() * 4000 - 1000,
+                    x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
                     emoji: types[Math.floor(Math.random() * types.length)],
-                    cooldown: 0,
-                    maxCooldown: 300
+                    cooldown: 0, maxCooldown: 300
                 });
             }
         }
         generateFlowers();
 
-        document.getElementById('btn-minimize').onclick = () => {
-            let hidden = chatWrapper.style.left === "-200px";
-            chatWrapper.style.left = hidden ? "10px" : "-200px";
-            document.getElementById('btn-minimize').innerText = hidden ? "«" : "»";
-        };
-
-        window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
-        window.addEventListener('mousedown', () => isMouseDown = true);
-        window.addEventListener('mouseup', () => isMouseDown = false);
+        // Teclado PC
         window.addEventListener('keydown', e => {
-            if(document.activeElement === chatInput) { if(e.key === 'Enter') sendMsg(); return; }
+            if(document.activeElement === chatInput) {
+                if(e.key === 'Enter') { sendMsg(); chatInput.blur(); }
+                return;
+            }
             if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
             keys[e.code] = true;
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
+
+        // Mouse PC
+        window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
+        window.addEventListener('mousedown', e => { if(e.target.id === 'gameCanvas') isMouseDown = true; });
+        window.addEventListener('mouseup', () => isMouseDown = false);
 
         function startSession(host) {
             const code = document.getElementById('room-code').value.trim();
@@ -169,10 +185,7 @@
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
                 else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 5); } }
                 else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; }
-                else if(data.type === 'repair') { 
-                    hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
-                    createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross');
-                }
+                else if(data.type === 'repair') { hive.hp = Math.min(hive.maxHp, hive.hp + 50); createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross'); }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.nick = data.nick; 
@@ -188,7 +201,7 @@
             createParticles(players.me.x, players.me.y, "#ff0000", 5);
             if(players.me.hp <= 0) {
                 players.me.hp = 0; players.me.isDead = true;
-                deathModal.style.display = 'flex';
+                document.getElementById('death-modal').style.display = 'flex';
                 players.me.pollen = 0;
             }
         }
@@ -196,7 +209,7 @@
         function respawnPlayer() {
             players.me.x = 1000 + 100; players.me.y = 1000 + 100;
             players.me.hp = 100; players.me.isDead = false;
-            deathModal.style.display = 'none';
+            document.getElementById('death-modal').style.display = 'none';
         }
 
         function fire(angle) {
@@ -227,7 +240,7 @@
                 hive.hp = 0; hive.destroyed = true; 
                 createParticles(hive.x, hive.y, "#f39c12", 100, 'pixel');
                 createParticles(hive.x, hive.y, "#7f8c8d", 60, 'smoke');
-                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
+                setTimeout(() => document.getElementById('game-over-modal').style.display = 'flex', 1500); 
             }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
                 conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, flowers: flowers });
@@ -235,21 +248,14 @@
         }
 
         function updateMechanics() {
-            // Partículas de Pólen (Lentas e Suaves)
             if(players.me.pollen > 5 && Math.random() < players.me.pollen/300) {
                 particles.push({
-                    x: players.me.x + (Math.random()-0.5)*20, 
-                    y: players.me.y + (Math.random()-0.5)*20,
-                    vx: (Math.random() - 0.5) * 0.3, 
-                    vy: Math.random() * 0.4 + 0.1, 
-                    life: 1.0, 
-                    decay: 0.006, 
-                    color: "#fffa65", 
-                    type: 'pollen'
+                    x: players.me.x, y: players.me.y,
+                    vx: (Math.random() - 0.5) * 0.3, vy: Math.random() * 0.4 + 0.1, 
+                    life: 1.0, decay: 0.006, color: "#fffa65", type: 'pollen'
                 });
             }
 
-            // Cura passiva na Colmeia
             if(!players.me.isDead && !hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
                 hive.healTimer += 1/60;
                 if(hive.healTimer >= 25) {
@@ -291,13 +297,8 @@
             });
 
             particles.forEach((p, i) => {
-                if(p.type === 'pollen') {
-                    p.x += p.vx + Math.sin(performance.now()/500) * 0.1; // Flutuação lateral
-                } else {
-                    p.x += p.vx;
-                }
-                p.y += p.vy;
-                p.life -= p.decay;
+                p.x += (p.type === 'pollen') ? (p.vx + Math.sin(performance.now()/500) * 0.1) : p.vx;
+                p.y += p.vy; p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
             });
         }
@@ -325,7 +326,7 @@
             if(text && conn && conn.open) {
                 conn.send({ type: 'chat', msg: text });
                 addMsg(players.me.nick, text, "me");
-                chatInput.value = ""; chatInput.blur();
+                chatInput.value = ""; 
             }
         }
 
@@ -347,22 +348,23 @@
             resize(); requestAnimationFrame(gameLoop);
         }
 
+        // CORREÇÃO DO MULTITOUCH MOBILE
         function setupMultitouch() {
             const handleStart = (e) => {
                 for(let t of e.changedTouches) {
+                    if (e.target.id === 'chat-input' || e.target.id === 'btn-minimize') return;
                     const rM = moveBase.getBoundingClientRect(), rA = aimBase.getBoundingClientRect();
                     if(t.clientX > rM.left && t.clientX < rM.right && t.clientY > rM.top && t.clientY < rM.bottom) touchIds.move = t.identifier;
                     if(t.clientX > rA.left && t.clientX < rA.right && t.clientY > rA.top && t.clientY < rA.bottom) touchIds.aim = t.identifier;
                 }
             };
             const handleMove = (e) => {
-                e.preventDefault();
                 for(let t of e.touches) {
                     if(t.identifier === touchIds.move) {
                         const r = moveBase.getBoundingClientRect();
                         const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
                         const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40), a = Math.atan2(dy, dx);
-                        moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+                        document.getElementById('move-stick').style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
                         joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
                     }
                     if(t.identifier === touchIds.aim) {
@@ -370,19 +372,20 @@
                         const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
                         const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
                         joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
-                        aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
+                        document.getElementById('aim-stick').style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
                     }
                 }
             };
             const handleEnd = (e) => {
                 for(let t of e.changedTouches) {
-                    if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; moveStick.style.transform = 'none'; }
-                    if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; aimStick.style.transform = 'none'; }
+                    if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; document.getElementById('move-stick').style.transform = 'none'; }
+                    if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; document.getElementById('aim-stick').style.transform = 'none'; }
                 }
             };
             window.addEventListener('touchstart', handleStart, {passive: false});
             window.addEventListener('touchmove', handleMove, {passive: false});
             window.addEventListener('touchend', handleEnd);
+            window.addEventListener('touchcancel', handleEnd);
         }
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -456,29 +459,25 @@
             }); ctx.globalAlpha = 1.0;
 
             if(!hive.destroyed) {
-                ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
+                ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
                 drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
             }
 
             drawIndicators();
-            enemies.forEach(en => { ctx.font = "30px Arial"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
+            enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
             projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
-                if(p.type === 'cross') {
-                    ctx.fillStyle = p.color; ctx.font = "bold 16px Arial"; ctx.fillText("+", p.x, p.y);
-                } else if(p.type === 'smoke') {
-                    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill();
-                } else {
-                    ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
-                }
+                if(p.type === 'cross') { ctx.fillStyle = p.color; ctx.font = "bold 16px Arial"; ctx.fillText("+", p.x, p.y); }
+                else if(p.type === 'smoke') { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill(); }
+                else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); }
             }); ctx.globalAlpha = 1.0;
 
             const drawB = (p, c, a) => {
                 if(!assets.bee[p.dir].complete || p.isDead) return;
                 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
-                ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
+                ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.textAlign = "center";
                 ctx.fillStyle = "black"; ctx.fillText(p.nick, p.x+1, p.y-39); ctx.fillStyle = c; ctx.fillText(p.nick, p.x, p.y-40);
                 drawHealthBar(p.x, p.y, p.hp);
                 if(p.pollen > 0 && p.pollen < 100) {
