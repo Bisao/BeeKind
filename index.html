@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Twin Stick Shooter</title>
+    <title>Bee World - Multitouch Twin Stick</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
         /* HUD */
         #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid #3498db; font-family: monospace; font-size: 14px; z-index: 100; min-width: 140px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
         #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
 
-        /* Chat Mobile */
+        /* Chat */
         #chat-wrapper { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
-        #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); }
+        #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 5px; font-size: 13px; outline: none; }
         #btn-minimize { position: absolute; right: -30px; top: 0; background: var(--bg-dark); color: var(--primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 0 5px 5px 0; cursor: pointer; padding: 5px; font-weight: bold; pointer-events: auto; }
@@ -26,8 +26,8 @@
         input[type="text"] { padding: 12px; width: 220px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 10px; text-align: center; }
         .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; }
 
-        /* CONTROLES MOBILE */
-        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; touch-action: none; }
+        /* CONTROLES MOBILE (MULTITOUCH) */
+        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
         #move-base { left: 40px; }
         #aim-base { right: 40px; border-color: rgba(255, 0, 0, 0.3); }
         .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7; }
@@ -43,9 +43,7 @@
     <div id="chat-wrapper">
         <button id="btn-minimize">«</button>
         <div id="chat-display"></div>
-        <div id="chat-input-area">
-            <input type="text" id="chat-input" placeholder="..." autocomplete="off">
-        </div>
+        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="..." autocomplete="off"></div>
     </div>
 
     <div id="menu">
@@ -71,6 +69,8 @@
         const btnMinimize = document.getElementById('btn-minimize');
         const moveBase = document.getElementById('move-base');
         const aimBase = document.getElementById('aim-base');
+        const moveStick = document.getElementById('move-stick');
+        const aimStick = document.getElementById('aim-stick');
         
         const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
@@ -85,6 +85,13 @@
         const TILE_SIZE = 64;
         let lastNetUpdate = 0;
         let lastShootTime = 0;
+        let mousePos = { x: 0, y: 0 };
+        let isMouseDown = false;
+
+        // Gerenciamento Multitouch
+        let touchIds = { move: null, aim: null };
+        let joyMove = { dx: 0, dy: 0 };
+        let joyAim = { angle: 0, active: false };
 
         btnMinimize.onclick = () => {
             let hidden = chatWrapper.style.left === "-200px";
@@ -92,13 +99,9 @@
             btnMinimize.innerText = hidden ? "«" : "»";
         };
 
-        // Desktop Mouse Aim
-        let mouseX = 0, mouseY = 0;
-        window.addEventListener('mousemove', e => {
-            mouseX = e.clientX; mouseY = e.clientY;
-        });
-
-        window.addEventListener('mousedown', e => { if(canvas.style.display === 'block') shootPC(); });
+        window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
+        window.addEventListener('mousedown', () => isMouseDown = true);
+        window.addEventListener('mouseup', () => isMouseDown = false);
         window.addEventListener('keydown', e => {
             if(document.activeElement === chatInput) { if(e.key === 'Enter') sendMsg(); return; }
             if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
@@ -128,13 +131,8 @@
             });
         }
 
-        function shootPC() {
-            if(Date.now() - lastShootTime < 200) return;
-            const angle = Math.atan2(mouseY - canvas.height/2, mouseX - canvas.width/2);
-            fire(angle);
-        }
-
         function fire(angle) {
+            if(Date.now() - lastShootTime < 180) return;
             spawnProjectile(players.me.x, players.me.y, angle, true);
             if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
             lastShootTime = Date.now();
@@ -154,10 +152,9 @@
         }
 
         function addMsg(author, text, senderType) {
-            const d = document.createElement('div'); d.className = "message";
+            const d = document.createElement('div');
             d.innerHTML = `<span style="color:${senderType === "me" ? players.me.color : players.peer.color}; font-weight:bold">${author}:</span> ${text}`;
-            document.getElementById('chat-display').appendChild(d);
-            document.getElementById('chat-display').scrollTop = 99999;
+            chatDisplay.appendChild(d); chatDisplay.scrollTop = 99999;
         }
 
         function startGame() {
@@ -165,41 +162,52 @@
             chatWrapper.style.display = 'flex'; chatWrapper.style.left = "10px";
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                moveBase.style.display = 'block';
-                aimBase.style.display = 'block';
-                setupMobile();
+                moveBase.style.display = 'block'; aimBase.style.display = 'block';
+                setupMultitouch();
             }
             resize(); requestAnimationFrame(gameLoop);
         }
 
-        let joyMove = { dx: 0, dy: 0 }, joyAim = { active: false, angle: 0 };
-        function setupMobile() {
-            const handleJoy = (base, stick, callback) => {
-                base.addEventListener('touchstart', e => { e.preventDefault(); callback(e, true); }, {passive: false});
-                base.addEventListener('touchmove', e => { e.preventDefault(); callback(e, true); }, {passive: false});
-                base.addEventListener('touchend', e => { callback(e, false); stick.style.transform = `translate(0px, 0px)`; }, {passive: false});
+        function setupMultitouch() {
+            const handleStart = (e) => {
+                for(let t of e.changedTouches) {
+                    const rM = moveBase.getBoundingClientRect();
+                    const rA = aimBase.getBoundingClientRect();
+                    if(t.clientX > rM.left && t.clientX < rM.right && t.clientY > rM.top && t.clientY < rM.bottom) touchIds.move = t.identifier;
+                    if(t.clientX > rA.left && t.clientX < rA.right && t.clientY > rA.top && t.clientY < rA.bottom) touchIds.aim = t.identifier;
+                }
             };
-
-            handleJoy(moveBase, document.getElementById('move-stick'), (e, active) => {
-                if(!active) { joyMove = {dx:0, dy:0}; return; }
-                const t = e.touches[0], r = moveBase.getBoundingClientRect();
-                let dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-                const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
-                const angle = Math.atan2(dy, dx);
-                document.getElementById('move-stick').style.transform = `translate(${Math.cos(angle)*d}px, ${Math.sin(angle)*d}px)`;
-                joyMove = { dx: Math.cos(angle)*(d/40), dy: Math.sin(angle)*(d/40) };
-            });
-
-            handleJoy(aimBase, document.getElementById('aim-stick'), (e, active) => {
-                joyAim.active = active;
-                if(!active) return;
-                const t = e.touches[0], r = aimBase.getBoundingClientRect();
-                let dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-                const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
-                joyAim.angle = Math.atan2(dy, dx);
-                document.getElementById('aim-stick').style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
-                if(Date.now() - lastShootTime > 200) fire(joyAim.angle);
-            });
+            const handleMove = (e) => {
+                e.preventDefault();
+                for(let t of e.touches) {
+                    if(t.identifier === touchIds.move) {
+                        const r = moveBase.getBoundingClientRect();
+                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        const a = Math.atan2(dy, dx);
+                        moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+                        joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
+                    }
+                    if(t.identifier === touchIds.aim) {
+                        const r = aimBase.getBoundingClientRect();
+                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        joyAim.angle = Math.atan2(dy, dx);
+                        joyAim.active = true;
+                        aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
+                    }
+                }
+            };
+            const handleEnd = (e) => {
+                for(let t of e.changedTouches) {
+                    if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; moveStick.style.transform = 'none'; }
+                    if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; aimStick.style.transform = 'none'; }
+                }
+            };
+            window.addEventListener('touchstart', handleStart, {passive: false});
+            window.addEventListener('touchmove', handleMove, {passive: false});
+            window.addEventListener('touchend', handleEnd);
+            window.addEventListener('touchcancel', handleEnd);
         }
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -213,14 +221,24 @@
             if (dx !== 0 || dy !== 0) {
                 const m = Math.sqrt(dx*dx + dy*dy);
                 players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+                // Sprite muda apenas com movimento
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up';
                 if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); lastNetUpdate = performance.now(); }
             }
+
+            // Disparo
+            if(joyAim.active) fire(joyAim.angle);
+            else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
+
             if(players.peer.active) { players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; }
-            
             projectiles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1); });
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
             document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+            const pL = document.getElementById('player-list');
+            if(players.peer.active) {
+                const d = Math.floor(Math.sqrt(Math.pow(players.peer.x-players.me.x,2)+Math.pow(players.peer.y-players.me.y,2))/10);
+                pL.style.display = "block"; pL.innerHTML = `<div style="color:${players.peer.color}">● ${players.peer.nick} (${d}m)</div>`;
+            }
         }
 
         function draw() {
