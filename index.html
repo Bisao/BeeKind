@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Friend Pointer</title>
+    <title>Bee World - Lag Fixed</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
@@ -51,12 +51,16 @@
         assets.flowers[2].src = 'GrassFlower3.png';
 
         let peer, conn, isHost = false;
+        
+        // Posições REAIS vs Posições VISUAIS (Interpolação)
         let players = {
             me: { x: 500, y: 500, dir: 'Down' },
-            peer: { x: 500, y: 500, dir: 'Down', active: false }
+            peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false }
         };
+        
         let camera = { x: 0, y: 0 };
         const TILE_SIZE = 64;
+        let lastSendTime = 0;
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -79,7 +83,13 @@
 
         function setupConnection() {
             conn.on('open', () => { if (!isHost) startGame(); });
-            conn.on('data', data => { players.peer = data; players.peer.active = true; });
+            conn.on('data', data => {
+                // Em vez de mudar a posição direto, salvamos como o "alvo"
+                players.peer.targetX = data.x;
+                players.peer.targetY = data.y;
+                players.peer.dir = data.dir;
+                players.peer.active = true;
+            });
         }
 
         function startGame() {
@@ -92,12 +102,19 @@
         function movePlayer(dx, dy, speed) {
             players.me.x += dx * speed;
             players.me.y += dy * speed;
+
             if (Math.abs(dx) > Math.abs(dy)) {
                 players.me.dir = dx > 0 ? 'Right' : 'Left';
             } else {
                 players.me.dir = dy > 0 ? 'Down' : 'Up';
             }
-            if (conn && conn.open) conn.send(players.me);
+
+            // OTMIZAÇÃO: Só envia dados se passou 33ms (30fps de rede)
+            const now = Date.now();
+            if (now - lastSendTime > 33) {
+                if (conn && conn.open) conn.send(players.me);
+                lastSendTime = now;
+            }
         }
 
         window.addEventListener('mousemove', (e) => {
@@ -134,37 +151,31 @@
             }
         }
 
-        // --- NOVA FUNÇÃO: SETA DE DIREÇÃO ---
         function drawFriendPointer() {
             if (!players.peer.active) return;
-
-            // Calcula o ângulo entre eu e o amigo
             const dx = players.peer.x - players.me.x;
             const dy = players.peer.y - players.me.y;
             const angle = Math.atan2(dy, dx);
-            
-            // Distância da seta em relação ao centro da minha abelha
             const radius = 55; 
-
             ctx.save();
             ctx.translate(players.me.x, players.me.y);
             ctx.rotate(angle);
-            
-            // Desenha o triângulo da seta
             ctx.beginPath();
-            ctx.moveTo(radius, 0);          // Ponta da seta
-            ctx.lineTo(radius - 15, -8);    // Lado esquerdo
-            ctx.lineTo(radius - 15, 8);     // Lado direito
+            ctx.moveTo(radius, 0); ctx.lineTo(radius - 12, -6); ctx.lineTo(radius - 12, 6);
             ctx.closePath();
-            
-            ctx.fillStyle = "#3498db";      // Cor azul para o amigo
-            ctx.shadowBlur = 10;
-            ctx.shadowColor = "white";
+            ctx.fillStyle = "#3498db";
             ctx.fill();
             ctx.restore();
         }
 
         function gameLoop() {
+            // INTERPOLAÇÃO: Faz a abelha do amigo deslizar suavemente até o alvo
+            // O valor 0.1 cria um deslize suave. Se aumentar para 0.2, fica mais rápido.
+            if (players.peer.active) {
+                players.peer.x += (players.peer.targetX - players.peer.x) * 0.12;
+                players.peer.y += (players.peer.targetY - players.peer.y) * 0.12;
+            }
+
             camera.x = players.me.x - canvas.width / 2;
             camera.y = players.me.y - canvas.height / 2;
 
@@ -173,8 +184,6 @@
             ctx.translate(-camera.x, -camera.y);
 
             drawInfiniteGround();
-            
-            // Seta de direção (desenhada antes para não ficar por cima das abelhas se quiser)
             drawFriendPointer();
 
             if (players.peer.active) drawBee(players.peer, true);
@@ -193,7 +202,7 @@
 
         function initJoystick() {
             let active = false;
-            joyBase.addEventListener('touchstart', () => active = true);
+            joyBase.addEventListener('touchstart', (e) => { active = true; e.preventDefault(); });
             window.addEventListener('touchend', () => { active = false; joyStick.style.transform = `translate(0px, 0px)`; });
             window.addEventListener('touchmove', (e) => {
                 if (!active) return;
@@ -204,8 +213,8 @@
                 const dist = Math.sqrt(dx*dx + dy*dy);
                 if (dist > 40) { dx *= 40/dist; dy *= 40/dist; }
                 joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-                movePlayer(dx, dy, 0.3);
-            });
+                movePlayer(dx, dy, 0.35);
+            }, { passive: false });
         }
     </script>
 </body>
