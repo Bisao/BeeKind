@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Hive Defense & Pollen Medic</title>
+    <title>Bee World - Resource Management</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
@@ -14,7 +14,6 @@
         #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 160px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
         #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
         
-        /* HUD de Pólen (Direito Central) */
         #pollen-hud { 
             position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
             background: var(--bg-dark); padding: 15px; border-radius: 10px;
@@ -113,7 +112,7 @@
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500 };
+        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, healTimer: 0 };
         let players = { 
             me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0 }, 
             peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0 } 
@@ -121,7 +120,7 @@
         
         let projectiles = []; 
         let enemies = [];
-        let flowers = []; // Novo sistema de flores
+        let flowers = []; 
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
@@ -132,14 +131,15 @@
         let isWaveActive = false;
         let enemiesSpawnedInWave = 0;
 
-        // Gerar Flores Fixas
         function generateFlowers() {
             const types = ["🌸", "🌻", "🌷"];
-            for(let i=0; i<15; i++) {
+            for(let i=0; i<18; i++) {
                 flowers.push({
-                    x: Math.random() * 3000 - 500,
-                    y: Math.random() * 3000 - 500,
-                    emoji: types[Math.floor(Math.random() * types.length)]
+                    x: Math.random() * 4000 - 1000,
+                    y: Math.random() * 4000 - 1000,
+                    emoji: types[Math.floor(Math.random() * types.length)],
+                    cooldown: 0, // Segundos restantes de cooldown
+                    maxCooldown: 300 // 5 minutos em segundos
                 });
             }
         }
@@ -183,7 +183,7 @@
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
                 else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') hive.hp -= 5; }
-                else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; }
+                else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; }
                 else if(data.type === 'repair') { hive.hp = Math.min(hive.maxHp, hive.hp + 50); addMsg("SISTEMA", "Colmeia reparada pelo aliado!", "msg-sys"); }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
@@ -243,31 +243,46 @@
             }
             if (hive.hp <= 0) { hive.hp = 0; gameOverModal.style.display = 'flex'; }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
-                conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp });
+                conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, flowers: flowers });
             }
         }
 
         function updateMechanics() {
-            // Coleta de Pólen
-            let onFlower = false;
+            // Cura passiva na Colmeia (1 HP / 25s)
+            if(!players.me.isDead && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
+                hive.healTimer += 1/60;
+                if(hive.healTimer >= 25) {
+                    players.me.hp = Math.min(100, players.me.hp + 1);
+                    hive.healTimer = 0;
+                }
+            } else { hive.healTimer = 0; }
+
+            // Atualizar Cooldown das Flores e Coleta
             flowers.forEach(f => {
-                if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 40) {
-                    onFlower = true;
-                    if(players.me.pollen < 100) players.me.pollen += 0.4;
+                if(f.cooldown > 0) {
+                    f.cooldown -= 1/60;
+                } else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+                    players.me.pollen += 0.4;
+                    if(players.me.pollen >= 100) {
+                        players.me.pollen = 100;
+                        f.cooldown = f.maxCooldown; // Entra em cooldown
+                        addMsg("SISTEMA", "Pólen coletado! Flor esgotada por 5m.", "msg-sys");
+                    }
                 }
             });
+
             if(players.me.pollen > 0) {
                 pollenHud.style.display = 'block';
                 pollenVal.innerText = Math.floor(players.me.pollen) + "%";
             } else { pollenHud.style.display = 'none'; }
 
-            // Reparo da Colmeia
+            // Reparo
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0;
                     hive.hp = Math.min(hive.maxHp, hive.hp + 50);
                     if(conn && conn.open) conn.send({ type: 'repair' });
-                    addMsg("SISTEMA", "Você reparou a colmeia!", "msg-sys");
+                    addMsg("SISTEMA", "Reparo concluído!", "msg-sys");
                 }
             }
 
@@ -433,8 +448,23 @@
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
             // Flores
-            ctx.font = "24px Arial"; ctx.textAlign = "center";
-            flowers.forEach(f => ctx.fillText(f.emoji, f.x, f.y));
+            ctx.textAlign = "center";
+            flowers.forEach(f => {
+                if(f.cooldown > 0) {
+                    ctx.globalAlpha = 0.3;
+                    ctx.font = "24px Arial";
+                    ctx.fillText(f.emoji, f.x, f.y);
+                    ctx.globalAlpha = 1.0;
+                    // Indicador de Cooldown (Círculo)
+                    ctx.strokeStyle = "rgba(255,255,255,0.5)";
+                    ctx.beginPath();
+                    ctx.arc(f.x, f.y, 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * (f.cooldown/f.maxCooldown)));
+                    ctx.stroke();
+                } else {
+                    ctx.font = "28px Arial";
+                    ctx.fillText(f.emoji, f.x, f.y);
+                }
+            });
 
             // Colmeia
             ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
