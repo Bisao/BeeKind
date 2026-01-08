@@ -2,159 +2,156 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P2P Circle Game - 6 Digits</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bee P2P Game</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { background: #000; border: 3px solid #333; border-radius: 8px; display: none; cursor: none; }
-        #menu { text-align: center; background: #2d2d2d; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 320px; }
-        h1 { margin-bottom: 25px; color: #00d4ff; }
-        input { width: 80%; padding: 12px; border-radius: 8px; border: 2px solid #444; background: #1a1a1a; color: white; font-size: 18px; margin-bottom: 15px; text-align: center; }
-        button { width: 90%; padding: 12px; cursor: pointer; background: #00d4ff; color: #000; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 5px 0; transition: 0.3s; }
-        button:hover { background: #0099bb; transform: scale(1.02); }
-        #status { margin-top: 15px; font-size: 14px; color: #aaa; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
+        canvas { background: #2c3e50; display: none; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #333; padding: 30px; border-radius: 15px; width: 280px; z-index: 10; }
+        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; }
+        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
+        #joystick-container { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; touch-action: none; border: 2px solid rgba(255,255,255,0.2); }
+        #joystick-knob { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; top: 35px; left: 35px; }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1>Circle P2P</h1>
+        <h1 style="color: #f1c40f;">Bee P2P</h1>
         <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
-        <button onclick="startSession(true)">Criar Sessão (Host)</button>
-        <button onclick="startSession(false)" style="background: #a200ff; color: white;">Entrar na Sessão</button>
-        <p id="status">Digite um código para começar</p>
+        <button onclick="startSession(true)" style="background: #f1c40f;">Criar Sessão</button>
+        <button onclick="startSession(false)" style="background: #3498db; color: white;">Entrar na Sessão</button>
+        <p id="status">Aguardando código...</p>
     </div>
 
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    <canvas id="gameCanvas"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const menu = document.getElementById('menu');
         const statusMsg = document.getElementById('status');
-        const codeInput = document.getElementById('room-code');
-        
-        let peer;
-        let conn;
-        let isHost = false;
-        
-        // Estado dos jogadores
+        const joyContainer = document.getElementById('joystick-container');
+        const joyKnob = document.getElementById('joystick-knob');
+
+        const beeImg = new Image();
+        beeImg.src = 'Bee.png'; // Procura no mesmo diretório
+
+        let peer, conn, isHost = false;
         let players = {
-            me: { x: 400, y: 300, color: '#00d4ff' },
-            peer: { x: -100, y: -100, color: '#ff0077' } // Fora da tela até conectar
+            me: { x: 100, y: 100, targetX: 100, targetY: 100 },
+            peer: { x: -100, y: -100 }
         };
 
+        // Ajustar canvas para o tamanho da tela
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
         function startSession(hostMode) {
-            const code = codeInput.value;
-            if (code.length < 4) {
-                alert("Use um código de pelo menos 4 a 6 dígitos.");
-                return;
-            }
+            const code = document.getElementById('room-code').value;
+            if (code.length < 4) return alert("Código muito curto!");
 
             isHost = hostMode;
-            statusMsg.innerText = "Conectando ao sinal...";
+            peer = hostMode ? new Peer('bee-' + code) : new Peer();
 
-            // Criamos o Peer usando o código digitado como ID
-            // Se for Host, o ID será o código. Se for convidado, o ID será aleatório.
-            peer = hostMode ? new Peer('game-' + code) : new Peer();
-
-            peer.on('open', (id) => {
+            peer.on('open', () => {
                 if (hostMode) {
-                    statusMsg.innerText = "Aguardando amigo... Código: " + code;
-                    // O Host já pode entrar no jogo sozinho
+                    statusMsg.innerText = "Esperando amigo no código: " + code;
                     startGame();
                 } else {
-                    statusMsg.innerText = "Conectando ao Host...";
-                    conn = peer.connect('game-' + code);
+                    conn = peer.connect('bee-' + code);
                     setupConnection();
                 }
             });
 
-            peer.on('error', (err) => {
-                console.error(err);
-                if (err.type === 'unavailable-id') {
-                    alert("Este código já está em uso! Tente outro.");
-                } else {
-                    alert("Erro na conexão: " + err.type);
-                }
-                location.reload();
-            });
-
-            // O Host escuta quando o Peer (amigo) se conecta
-            peer.on('connection', (c) => {
-                conn = c;
-                setupConnection();
-            });
+            peer.on('connection', c => { conn = c; setupConnection(); });
+            peer.on('error', () => { alert("Erro de conexão!"); location.reload(); });
         }
 
         function setupConnection() {
-            conn.on('open', () => {
-                statusMsg.innerText = "Conectado!";
-                if (!isHost) startGame();
-            });
-
-            conn.on('data', (data) => {
-                // Recebe posição do outro player
-                players.peer.x = data.x;
-                players.peer.y = data.y;
-            });
+            conn.on('open', () => { if (!isHost) startGame(); });
+            conn.on('data', data => { players.peer.x = data.x; players.peer.y = data.y; });
         }
 
         function startGame() {
             menu.style.display = 'none';
             canvas.style.display = 'block';
+            if ('ontouchstart' in window) {
+                joyContainer.style.display = 'block';
+                initJoystick();
+            }
             gameLoop();
         }
 
-        // Captura movimento do mouse
+        // --- Movimento Mouse (PC) ---
         window.addEventListener('mousemove', (e) => {
-            const rect = canvas.getBoundingClientRect();
-            players.me.x = e.clientX - rect.left;
-            players.me.y = e.clientY - rect.top;
-
-            // Envia posição via P2P
-            if (conn && conn.open) {
-                conn.send({ x: players.me.x, y: players.me.y });
-            }
+            if (joyContainer.style.display === 'block') return;
+            players.me.x = e.clientX;
+            players.me.y = e.clientY;
+            sendPos();
         });
+
+        // --- Joystick Virtual (Mobile) ---
+        function initJoystick() {
+            let active = false;
+            const limit = 40;
+            const startPos = { x: 0, y: 0 };
+
+            const handleMove = (e) => {
+                if (!active) return;
+                const touch = e.touches[0];
+                let dx = touch.clientX - (joyContainer.offsetLeft + 60);
+                let dy = touch.clientY - (joyContainer.offsetTop + 60);
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist > limit) {
+                    dx *= limit / dist;
+                    dy *= limit / dist;
+                }
+
+                joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                
+                // Mover a abelha baseado na inclinação do joystick
+                players.me.x += dx * 0.2; 
+                players.me.y += dy * 0.2;
+                sendPos();
+            };
+
+            joyContainer.addEventListener('touchstart', () => active = true);
+            window.addEventListener('touchend', () => {
+                active = false;
+                joyKnob.style.transform = `translate(0px, 0px)`;
+            });
+            window.addEventListener('touchmove', handleMove);
+        }
+
+        function sendPos() {
+            if (conn && conn.open) conn.send({ x: players.me.x, y: players.me.y });
+        }
 
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Desenha Grade de fundo (opcional, para dar noção de movimento)
-            drawGrid();
-
-            // Desenha o outro jogador (se estiver conectado)
-            drawCircle(players.peer.x, players.peer.y, players.peer.color, true);
             
-            // Desenha você por cima
-            drawCircle(players.me.x, players.me.y, players.me.color, false);
+            // Desenha o outro player
+            drawBee(players.peer.x, players.peer.y, 0.7); // Um pouco transparente
+            
+            // Desenha você
+            drawBee(players.me.x, players.me.y, 1);
 
             requestAnimationFrame(gameLoop);
         }
 
-        function drawCircle(x, y, color, isPeer) {
-            ctx.shadowBlur = 15;
-            ctx.shadowColor = color;
-            ctx.beginPath();
-            ctx.arc(x, y, 25, 0, Math.PI * 2);
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.closePath();
-            ctx.shadowBlur = 0;
-        }
-
-        function drawGrid() {
-            ctx.strokeStyle = "#222";
-            ctx.lineWidth = 1;
-            for(let i=0; i<canvas.width; i+=40) {
-                ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height);
-            }
-            for(let i=0; i<canvas.height; i+=40) {
-                ctx.moveTo(0, i); ctx.lineTo(canvas.width, i);
-            }
-            ctx.stroke();
+        function drawBee(x, y, alpha) {
+            ctx.globalAlpha = alpha;
+            // Centraliza a imagem no ponto X, Y (tamanho 60x60)
+            ctx.drawImage(beeImg, x - 30, y - 30, 60, 60);
+            ctx.globalAlpha = 1.0;
         }
     </script>
 </body>
