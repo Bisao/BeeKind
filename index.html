@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Combat & Radar Edition</title>
+    <title>Bee World - Combat & Health Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* PAINEL DE SESSÃO (Lista de Jogadores) */
+        /* PAINEL DE SESSÃO */
         #player-list { 
             position: absolute; top: 15px; left: 15px; 
             background: var(--bg-dark); padding: 10px; 
@@ -89,8 +89,8 @@
         assets.ground.src = 'Grass.png';
 
         let players = { 
-            me: { x: 1000, y: 1000, dir: 'Down', nick: "", color: "#f1c40f" }, 
-            peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', nick: "Amigo", color: "#3498db", active: false } 
+            me: { x: 1000, y: 1000, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false }, 
+            peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false } 
         };
         let projectiles = []; 
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
@@ -100,7 +100,6 @@
         let mousePos = { x: 0, y: 0 };
         let isMouseDown = false;
 
-        // Gerenciamento Multitouch
         let touchIds = { move: null, aim: null };
         let joyMove = { dx: 0, dy: 0 };
         let joyAim = { angle: 0, active: false };
@@ -142,23 +141,50 @@
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
+                else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.nick = data.nick; 
+                    players.peer.hp = data.hp; players.peer.isDead = data.isDead;
                     players.peer.active = true; 
                 }
             });
         }
 
+        function takeDamage(amount) {
+            if(players.me.isDead) return;
+            players.me.hp -= amount;
+            if(players.me.hp <= 0) {
+                players.me.hp = 0;
+                players.me.isDead = true;
+                addMsg("SISTEMA", "Você foi derrotado! Renascendo...", "msg-sys");
+                setTimeout(respawn, 2000);
+            }
+        }
+
+        function respawn() {
+            players.me.x = 1000;
+            players.me.y = 1000;
+            players.me.hp = 100;
+            players.me.isDead = false;
+        }
+
         function fire(angle) {
-            if(Date.now() - lastShootTime < 180) return;
+            if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
             spawnProjectile(players.me.x, players.me.y, angle, true);
             if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
             lastShootTime = Date.now();
         }
 
         function spawnProjectile(x, y, angle, isMe) {
-            projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color });
+            projectiles.push({ 
+                x, y, 
+                vx: Math.cos(angle)*12, 
+                vy: Math.sin(angle)*12, 
+                life: 60, 
+                color: isMe ? players.me.color : players.peer.color,
+                owner: isMe ? 'me' : 'peer'
+            });
         }
 
         function sendMsg() {
@@ -231,15 +257,21 @@
         window.addEventListener('resize', resize);
 
         function update() {
-            let dx = joyMove.dx, dy = joyMove.dy;
-            if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
-            if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+            if(!players.me.isDead) {
+                let dx = joyMove.dx, dy = joyMove.dy;
+                if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+                if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
-            if (dx !== 0 || dy !== 0) {
-                const m = Math.sqrt(dx*dx + dy*dy);
-                players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-                if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up';
-                if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); lastNetUpdate = performance.now(); }
+                if (dx !== 0 || dy !== 0) {
+                    const m = Math.sqrt(dx*dx + dy*dy);
+                    players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+                    if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up';
+                }
+            }
+
+            if(performance.now() - lastNetUpdate > 30) { 
+                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
+                lastNetUpdate = performance.now(); 
             }
 
             if(joyAim.active) fire(joyAim.angle);
@@ -249,23 +281,46 @@
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
                 players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
                 
-                // ATUALIZAÇÃO DO PAINEL DE SESSÃO
                 const d = Math.floor(Math.sqrt(Math.pow(players.peer.x-players.me.x,2)+Math.pow(players.peer.y-players.me.y,2))/10);
                 playerListUI.style.display = "block";
                 playerListUI.innerHTML = `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span class="dist-val">${d}m</span></div>`;
             } else { playerListUI.style.display = "none"; }
 
-            projectiles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1); });
+            // Lógica de Projéteis e Colisão (FOGO AMIGO)
+            projectiles.forEach((p, i) => { 
+                p.x += p.vx; p.y += p.vy; p.life--; 
+
+                // Colisão com o Amigo (Se eu atirei)
+                if(p.owner === 'me' && players.peer.active && !players.peer.isDead) {
+                    let dPeer = Math.sqrt(Math.pow(p.x - players.peer.x, 2) + Math.pow(p.y - players.peer.y, 2));
+                    if(dPeer < 25) {
+                        projectiles.splice(i, 1);
+                        if(conn && conn.open) conn.send({ type: 'hit', target: 'me' }); // Diz ao amigo que ele foi atingido
+                    }
+                }
+                
+                // Colisão comigo mesmo (Fogo amigo do outro ou ricochete se houvesse)
+                if(p.owner === 'peer' && !players.me.isDead) {
+                    let dMe = Math.sqrt(Math.pow(p.x - players.me.x, 2) + Math.pow(p.y - players.me.y, 2));
+                    if(dMe < 25) {
+                        projectiles.splice(i, 1);
+                        // O dano é processado localmente para evitar atraso (lag)
+                        takeDamage(10);
+                    }
+                }
+
+                if(p.life <= 0) projectiles.splice(i, 1); 
+            });
+
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
             document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
         }
 
-        // FUNÇÃO DA SETA DE DIREÇÃO (RADAR)
         function drawFriendArrow() {
-            if (!players.peer.active) return;
+            if (!players.peer.active || players.peer.isDead) return;
             const dx = players.peer.x - players.me.x;
             const dy = players.peer.y - players.me.y;
-            if (Math.sqrt(dx*dx + dy*dy) < 150) return; // Só mostra se estiver longe
+            if (Math.sqrt(dx*dx + dy*dy) < 150) return;
 
             const angle = Math.atan2(dy, dx);
             ctx.save();
@@ -280,6 +335,15 @@
             ctx.restore();
         }
 
+        function drawHealthBar(x, y, hp, color) {
+            const width = 50;
+            const height = 6;
+            ctx.fillStyle = "rgba(0,0,0,0.5)";
+            ctx.fillRect(x - width/2, y - 55, width, height);
+            ctx.fillStyle = hp > 30 ? "#2ecc71" : "#e74c3c";
+            ctx.fillRect(x - width/2, y - 55, width * (hp/100), height);
+        }
+
         function draw() {
             ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
             ctx.save(); ctx.translate(-camera.x, -camera.y);
@@ -288,18 +352,19 @@
                 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
-            drawFriendArrow(); // CHAMA O RADAR
+            drawFriendArrow();
 
             projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
-            const drawB = (p, c, a) => {
-                if(!assets.bee[p.dir].complete) return;
+            const drawB = (p, c, a, isMe) => {
+                if(!assets.bee[p.dir].complete || p.isDead) return;
                 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
                 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.textAlign = "center";
                 ctx.fillStyle = "black"; ctx.fillText(p.nick, p.x+1, p.y-39); ctx.fillStyle = c; ctx.fillText(p.nick, p.x, p.y-40);
+                drawHealthBar(p.x, p.y, p.hp, c);
             };
-            drawB(players.me, players.me.color, 1);
-            if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
+            drawB(players.me, players.me.color, 1, true);
+            if(players.peer.active) drawB(players.peer, players.peer.color, 0.6, false);
             ctx.restore();
         }
 
