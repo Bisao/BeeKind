@@ -3,62 +3,71 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Fix</title>
+    <title>Bee World - Chat Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
         canvas { display: none; }
 
-        /* HUD Superior */
-        #hud {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            z-index: 100; pointer-events: none; text-align: center;
-        }
-        #compass-window {
-            width: 260px; height: 40px; background: rgba(0,0,0,0.6);
-            border-bottom: 2px solid #f1c40f; position: relative; overflow: hidden;
-            display: flex; align-items: center; justify-content: center;
-        }
-        #compass-tape {
-            position: absolute; display: flex; white-space: nowrap;
-            font-family: monospace; font-weight: bold; transition: transform 0.1s ease-out;
-        }
+        /* HUD Superior (Bússola) */
+        #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 100; pointer-events: none; text-align: center; }
+        #compass-window { width: 260px; height: 40px; background: rgba(0,0,0,0.6); border-bottom: 2px solid #f1c40f; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+        #compass-tape { position: absolute; display: flex; white-space: nowrap; font-family: monospace; font-weight: bold; transition: transform 0.1s ease-out; }
         .marker { width: 60px; text-align: center; display: inline-block; color: #fff; }
         .norte { color: #f1c40f; font-size: 1.2em; }
         #pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: #f1c40f; z-index: 10; }
 
-        /* Menu */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; z-index: 200; }
-        input { padding: 12px; width: 80%; margin-bottom: 10px; border-radius: 5px; border: none; }
-        button { padding: 12px; width: 85%; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; background: #f1c40f; margin-top: 5px; }
+        /* Sistema de Chat */
+        #chat-container {
+            position: absolute; bottom: 20px; left: 20px; width: 250px; 
+            z-index: 200; display: none; flex-direction: column;
+        }
+        #chat-box {
+            height: 120px; background: rgba(0,0,0,0.5); border-radius: 10px;
+            padding: 10px; overflow-y: auto; margin-bottom: 5px;
+            font-size: 14px; display: flex; flex-direction: column;
+            pointer-events: auto;
+        }
+        .chat-msg { margin-bottom: 4px; line-height: 1.2; }
+        .chat-me { color: #f1c40f; font-weight: bold; }
+        .chat-peer { color: #3498db; font-weight: bold; }
+        #chat-input-row { display: flex; gap: 5px; }
+        #chat-input {
+            flex: 1; padding: 8px; border-radius: 5px; border: none;
+            background: rgba(255,255,255,0.9); color: #000; outline: none;
+        }
+        #chat-send { background: #f1c40f; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer; font-weight: bold; }
 
-        /* Joystick Mobile */
-        #joy-base { 
-            position: absolute; bottom: 50px; right: 50px; width: 120px; height: 120px; 
-            background: rgba(255,255,255,0.15); border-radius: 50%; display: none; 
-            border: 2px solid rgba(255,255,255,0.3); z-index: 150; touch-action: none;
-        }
-        #joy-stick { 
-            position: absolute; width: 50px; height: 50px; background: #f1c40f; 
-            border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7;
-        }
+        /* Menu e Outros */
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; z-index: 300; }
+        input[type="text"] { padding: 12px; width: 80%; margin-bottom: 10px; border-radius: 5px; border: none; }
+        button.main-btn { padding: 12px; width: 85%; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; background: #f1c40f; }
+
+        /* Joystick */
+        #joy-base { position: absolute; bottom: 50px; right: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.15); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.3); z-index: 150; touch-action: none; }
+        #joy-stick { position: absolute; width: 50px; height: 50px; background: #f1c40f; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7; }
     </style>
 </head>
 <body>
 
     <div id="hud">
-        <div id="compass-window">
-            <div id="pointer"></div>
-            <div id="compass-tape"></div>
-        </div>
+        <div id="compass-window"><div id="pointer"></div><div id="compass-tape"></div></div>
         <div id="coords" style="font-family: monospace; color: #f1c40f; margin-top: 5px;">X:0 Y:0</div>
+    </div>
+
+    <div id="chat-container">
+        <div id="chat-box"></div>
+        <div id="chat-input-row">
+            <input type="text" id="chat-input" placeholder="Mensagem..." maxlength="50">
+            <button id="chat-send">></button>
+        </div>
     </div>
 
     <div id="menu">
         <h1 style="color:#f1c40f">BEE P2P</h1>
         <input type="text" id="room-code" placeholder="Código 6 dígitos">
-        <button onclick="startSession(true)">CRIAR SALA</button>
-        <button onclick="startSession(false)" style="background:#3498db; color:white;">ENTRAR</button>
+        <button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
+        <button class="main-btn" style="background:#3498db; color:white; margin-top: 10px;" onclick="startSession(false)">ENTRAR</button>
     </div>
 
     <div id="joy-base"><div id="joy-stick"></div></div>
@@ -68,30 +77,20 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const compassTape = document.getElementById('compass-tape');
-        const joyBase = document.getElementById('joy-base');
-        const joyStick = document.getElementById('joy-stick');
+        const chatContainer = document.getElementById('chat-container');
+        const chatBox = document.getElementById('chat-box');
+        const chatInput = document.getElementById('chat-input');
+        const chatSend = document.getElementById('chat-send');
         
-        // Assets
-        const assets = {
-            bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() },
-            ground: new Image()
-        };
-        assets.bee.Down.src = 'BeeDown.png';
-        assets.bee.Left.src = 'BeeLeft.png';
-        assets.bee.Up.src = 'BeeUp.png';
-        assets.bee.Right.src = 'BeeRight.png';
+        const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
+        assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        let players = {
-            me: { x: 500, y: 500, dir: 'Down', angle: 0 },
-            peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false }
-        };
-        
+        let players = { me: { x: 500, y: 500, dir: 'Down', angle: 0 }, peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false } };
         let camera = { x: 0, y: 0 };
-        let peer, conn;
-        const keys = {};
+        let peer, conn, keys = {};
 
-        // Gerar Bússola
+        // Inicializar Bússola
         function initCompass() {
             const dirs = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' };
             for(let i = -180; i <= 540; i += 45) {
@@ -104,151 +103,126 @@
         }
         initCompass();
 
-        // Controles Teclado
-        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keydown', e => {
+            if(document.activeElement === chatInput) {
+                if(e.key === 'Enter') sendMessage();
+                return;
+            }
+            if(e.key === 'Enter') chatInput.focus();
+            keys[e.code] = true;
+        });
         window.addEventListener('keyup', e => keys[e.code] = false);
-
-        function resize() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resize);
-        resize();
 
         function startSession(host) {
             const code = document.getElementById('room-code').value;
             peer = host ? new Peer('bee-'+code) : new Peer();
-            peer.on('open', () => {
-                if(host) startGame();
-                else { conn = peer.connect('bee-'+code); setupConn(); }
-            });
+            peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-'+code); setupConn(); } });
             peer.on('connection', c => { conn = c; setupConn(); });
         }
 
         function setupConn() {
-            conn.on('open', () => { players.peer.active = true; startGame(); });
+            conn.on('open', () => { players.peer.active = true; startGame(); addChatMessage("Sistema", "Amigo conectado!", "chat-peer"); });
             conn.on('data', data => {
-                players.peer.targetX = data.x;
-                players.peer.targetY = data.y;
-                players.peer.dir = data.dir;
-                players.peer.active = true;
+                if(data.type === 'chat') {
+                    addChatMessage("Amigo", data.msg, "chat-peer");
+                } else {
+                    players.peer.targetX = data.x; players.peer.targetY = data.y; players.peer.dir = data.dir; players.peer.active = true;
+                }
             });
+        }
+
+        function sendMessage() {
+            const msg = chatInput.value.trim();
+            if(msg && conn && conn.open) {
+                conn.send({ type: 'chat', msg: msg });
+                addChatMessage("Você", msg, "chat-me");
+                chatInput.value = "";
+                chatInput.blur();
+            }
+        }
+        chatSend.onclick = sendMessage;
+
+        function addChatMessage(sender, msg, colorClass) {
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            div.innerHTML = `<span class="${colorClass}">${sender}:</span> ${msg}`;
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
         function startGame() {
             document.getElementById('menu').style.display = 'none';
+            chatContainer.style.display = 'flex';
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                joyBase.style.display = 'block';
+                document.getElementById('joy-base').style.display = 'block';
                 setupMobileControls();
             }
-            requestAnimationFrame(gameLoop);
+            resize(); requestAnimationFrame(gameLoop);
         }
 
-        // Lógica de Movimento Desktop + Mobile
+        // Joystick e Loop (mesma lógica otimizada anterior)
         let joyDX = 0, joyDY = 0;
-
         function setupMobileControls() {
-            joyBase.addEventListener('touchstart', e => { e.preventDefault(); }, {passive: false});
+            const joyBase = document.getElementById('joy-base');
+            const joyStick = document.getElementById('joy-stick');
+            joyBase.addEventListener('touchstart', e => e.preventDefault(), {passive: false});
             joyBase.addEventListener('touchmove', e => {
-                e.preventDefault();
                 const touch = e.touches[0];
                 const rect = joyBase.getBoundingClientRect();
                 const centerX = rect.left + rect.width / 2;
                 const centerY = rect.top + rect.height / 2;
-                
-                let dx = touch.clientX - centerX;
-                let dy = touch.clientY - centerY;
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                const max = 40;
-
+                let dx = touch.clientX - centerX, dy = touch.clientY - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy), max = 40;
                 if(dist > max) { dx *= max/dist; dy *= max/dist; }
-                
                 joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-                joyDX = dx / max;
-                joyDY = dy / max;
+                joyDX = dx / max; joyDY = dy / max;
             }, {passive: false});
-
-            window.addEventListener('touchend', () => {
-                joyStick.style.transform = `translate(0px, 0px)`;
-                joyDX = 0; joyDY = 0;
-            });
+            window.addEventListener('touchend', () => { joyStick.style.transform = `translate(0px, 0px)`; joyDX = 0; joyDY = 0; });
         }
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
 
         function update() {
             let dx = joyDX, dy = joyDY;
-            
             if (keys['KeyW'] || keys['ArrowUp']) dy = -1;
             if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
             if (keys['KeyA'] || keys['ArrowLeft']) dx = -1;
             if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
             if (dx !== 0 || dy !== 0) {
-                const speed = 5;
-                players.me.x += dx * speed;
-                players.me.y += dy * speed;
-                
-                // Ângulo para a bússola
+                players.me.x += dx * 5; players.me.y += dy * 5;
                 players.me.angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
-                
-                // Direção para o Sprite
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left';
                 else players.me.dir = dy > 0 ? 'Down' : 'Up';
-
                 if(conn && conn.open) conn.send(players.me);
             }
-
-            // Suavização do Amigo
-            if(players.peer.active) {
-                players.peer.x += (players.peer.targetX - players.peer.x) * 0.1;
-                players.peer.y += (players.peer.targetY - players.peer.y) * 0.1;
-            }
-
-            camera.x = players.me.x - canvas.width/2;
-            camera.y = players.me.y - canvas.height/2;
+            if(players.peer.active) { players.peer.x += (players.peer.targetX - players.peer.x) * 0.1; players.peer.y += (players.peer.targetY - players.peer.y) * 0.1; }
+            camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
         }
 
         function draw() {
             ctx.clearRect(0,0,canvas.width, canvas.height);
-            ctx.save();
-            ctx.translate(-camera.x, -camera.y);
-
-            // Chão básico infinito
-            const startX = Math.floor(camera.x / 64) * 64;
-            const startY = Math.floor(camera.y / 64) * 64;
-            for(let x = startX; x < startX + canvas.width + 64; x += 64) {
-                for(let y = startY; y < startY + canvas.height + 64; y += 64) {
+            ctx.save(); ctx.translate(-camera.x, -camera.y);
+            const sX = Math.floor(camera.x / 64) * 64, sY = Math.floor(camera.y / 64) * 64;
+            for(let x = sX; x < sX + canvas.width + 64; x += 64) {
+                for(let y = sY; y < sY + canvas.height + 64; y += 64) {
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, 64, 64);
                 }
             }
-
-            // Players
-            drawBee(players.me, 1);
-            if(players.peer.active) drawBee(players.peer, 0.6);
-
+            drawBee(players.me, 1); if(players.peer.active) drawBee(players.peer, 0.6);
             ctx.restore();
-
-            // UI Update
             document.getElementById('coords').innerText = `X:${Math.floor(players.me.x)} Y:${Math.floor(players.me.y)}`;
-            // Bússola: Cada 45 graus = 60px na fita. 60/45 = 1.333px por grau.
-            const offset = (players.me.angle * (60/45));
-            compassTape.style.transform = `translateX(${-offset}px)`;
+            compassTape.style.transform = `translateX(${-players.me.angle * 1.33}px)`;
         }
 
         function drawBee(p, a) {
             const img = assets.bee[p.dir];
-            if(img.complete) {
-                ctx.globalAlpha = a;
-                ctx.drawImage(img, p.x-32, p.y-32, 64, 64);
-                ctx.globalAlpha = 1;
-            }
+            if(img.complete) { ctx.globalAlpha = a; ctx.drawImage(img, p.x-32, p.y-32, 64, 64); ctx.globalAlpha = 1; }
         }
 
-        function gameLoop() {
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
     </script>
 </body>
 </html>
