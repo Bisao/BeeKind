@@ -1,170 +1,250 @@
-// ... (mantenha o CSS e HTML igual) ...
-
-<script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    const menu = document.getElementById('menu');
-    const statusMsg = document.getElementById('status');
-    const joyContainer = document.getElementById('joystick-container');
-    const joyKnob = document.getElementById('joystick-knob');
-
-    // Carregamento de Sprites com verificação
-    const sprites = {
-        Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image()
-    };
-    sprites.Down.src = 'BeeDown.png';
-    sprites.Left.src = 'BeeLeft.png';
-    sprites.Up.src = 'BeeUp.png';
-    sprites.Right.src = 'BeeRight.png';
-
-    // Log para Debug: Veja se as imagens carregaram no F12
-    Object.keys(sprites).forEach(key => {
-        sprites[key].onerror = () => console.error(`Erro ao carregar: Bee${key}.png`);
-        sprites[key].onload = () => console.log(`Bee${key}.png carregada com sucesso!`);
-    });
-
-    let peer, conn, isHost = false;
-    // Posição inicial garantida no centro
-    let players = {
-        me: { x: 500, y: 500, dir: 'Down' },
-        peer: { x: 550, y: 500, dir: 'Down', active: false }
-    };
-
-    let camera = { x: 0, y: 0 };
-
-    function resize() {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resize);
-    resize();
-
-    function startSession(hostMode) {
-        const code = document.getElementById('room-code').value;
-        if (code.length < 4) return alert("Código muito curto!");
-        isHost = hostMode;
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bee Multiplayer P2P</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
+        canvas { background: #2c3e50; display: none; }
         
-        // Se for Host, usa o ID fixo. Se for Client, ID aleatório.
-        peer = hostMode ? new Peer('bee-' + code) : new Peer();
+        /* Menu Inicial */
+        #menu { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            text-align: center; background: rgba(45, 45, 45, 0.9); padding: 30px; 
+            border-radius: 15px; width: 300px; z-index: 10; border: 2px solid #f1c40f;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        input { width: 85%; padding: 12px; margin-bottom: 15px; border-radius: 8px; border: none; text-align: center; font-size: 18px; }
+        button { width: 95%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; font-size: 16px; transition: 0.2s; }
+        button:hover { opacity: 0.9; transform: scale(1.02); }
         
-        peer.on('open', (id) => {
-            console.log("Meu ID Peer:", id);
-            if (hostMode) {
-                statusMsg.innerText = "Aguardando amigo...";
-                startGame();
-            } else {
-                statusMsg.innerText = "Conectando ao Host...";
-                conn = peer.connect('bee-' + code);
+        /* Joystick Mobile */
+        #joystick-container { 
+            position: absolute; bottom: 50px; right: 50px; width: 120px; height: 120px; 
+            background: rgba(255,255,255,0.1); border-radius: 50%; display: none; 
+            touch-action: none; border: 2px solid rgba(255,255,255,0.2); z-index: 5;
+        }
+        #joystick-knob { 
+            position: absolute; width: 50px; height: 50px; background: rgba(241, 196, 15, 0.5); 
+            border-radius: 50%; top: 35px; left: 35px; pointer-events: none;
+        }
+
+        #debug { position: fixed; top: 10px; left: 10px; font-size: 12px; color: #0f0; pointer-events: none; }
+    </style>
+</head>
+<body>
+
+    <div id="debug"></div>
+
+    <div id="menu">
+        <h1 style="color: #f1c40f; margin-top: 0;">BEE P2P</h1>
+        <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
+        <button onclick="startSession(true)" style="background: #f1c40f; color: #000;">CRIAR SALA (HOST)</button>
+        <button onclick="startSession(false)" style="background: #3498db; color: white;">ENTRAR NA SALA</button>
+        <p id="status" style="color: #bbb; font-size: 14px;">Aguardando ação...</p>
+    </div>
+
+    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    <canvas id="gameCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const menu = document.getElementById('menu');
+        const statusMsg = document.getElementById('status');
+        const joyContainer = document.getElementById('joystick-container');
+        const joyKnob = document.getElementById('joystick-knob');
+        const debugDiv = document.getElementById('debug');
+
+        // 1. Carregamento de Imagens
+        const sprites = {
+            Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image()
+        };
+        sprites.Down.src = 'BeeDown.png';
+        sprites.Left.src = 'BeeLeft.png';
+        sprites.Up.src = 'BeeUp.png';
+        sprites.Right.src = 'BeeRight.png';
+
+        let peer, conn, isHost = false;
+        let players = {
+            me: { x: 0, y: 0, dir: 'Down' },
+            peer: { x: 0, y: 0, dir: 'Down', active: false }
+        };
+        let camera = { x: 0, y: 0 };
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 2. Lógica de Conexão
+        function startSession(hostMode) {
+            const code = document.getElementById('room-code').value;
+            if (code.length < 4) return alert("Digite um código de 4 a 6 dígitos!");
+
+            isHost = hostMode;
+            statusMsg.innerText = "Conectando ao servidor Peer...";
+
+            // O Host usa o código como ID fixo. O convidado ganha um ID aleatório.
+            peer = hostMode ? new Peer('bee-' + code) : new Peer();
+
+            peer.on('open', (id) => {
+                if (hostMode) {
+                    statusMsg.innerText = "Sala aberta! Código: " + code;
+                    startGame(); 
+                } else {
+                    statusMsg.innerText = "Conectando ao amigo...";
+                    conn = peer.connect('bee-' + code);
+                    setupConnection();
+                }
+            });
+
+            peer.on('connection', (c) => {
+                conn = c;
                 setupConnection();
+            });
+
+            peer.on('error', (err) => {
+                console.error(err);
+                alert("Erro: O código pode já estar em uso ou rede instável.");
+                location.reload();
+            });
+        }
+
+        function setupConnection() {
+            conn.on('open', () => {
+                players.peer.active = true;
+                if (!isHost) startGame();
+            });
+            conn.on('data', (data) => {
+                players.peer = data;
+                players.peer.active = true;
+            });
+        }
+
+        // 3. Inicialização do Jogo
+        function startGame() {
+            menu.style.display = 'none';
+            canvas.style.display = 'block';
+            if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                joyContainer.style.display = 'block';
+                initJoystick();
+            }
+            gameLoop();
+        }
+
+        function updateMovement(dx, dy, speed) {
+            players.me.x += dx * speed;
+            players.me.y += dy * speed;
+
+            // Define a direção do sprite
+            if (Math.abs(dx) > Math.abs(dy)) {
+                players.me.dir = dx > 0 ? 'Right' : 'Left';
+            } else {
+                players.me.dir = dy > 0 ? 'Down' : 'Up';
+            }
+
+            if (conn && conn.open) {
+                conn.send(players.me);
+            }
+        }
+
+        // Controle Mouse (PC)
+        window.addEventListener('mousemove', (e) => {
+            if (canvas.style.display === 'block' && joyContainer.style.display !== 'block') {
+                const dx = e.clientX - canvas.width / 2;
+                const dy = e.clientY - canvas.height / 2;
+                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
+                    updateMovement(dx, dy, 0.03);
+                }
             }
         });
 
-        peer.on('connection', c => {
-            conn = c;
-            setupConnection();
-        });
-
-        peer.on('error', err => console.error("Erro Peer:", err));
-    }
-
-    function setupConnection() {
-        conn.on('open', () => {
-            statusMsg.innerText = "Conectado!";
-            players.peer.active = true;
-            if (!isHost) startGame();
-        });
-        conn.on('data', data => {
-            players.peer = data;
-            players.peer.active = true;
-        });
-    }
-
-    function startGame() {
-        menu.style.display = 'none';
-        canvas.style.display = 'block';
-        if ('ontouchstart' in window) {
-            joyContainer.style.display = 'block';
-            initJoystick();
+        // Controle Touch (Mobile)
+        function initJoystick() {
+            let active = false;
+            joyContainer.addEventListener('touchstart', (e) => { active = true; });
+            window.addEventListener('touchend', () => {
+                active = false;
+                joyKnob.style.transform = `translate(0px, 0px)`;
+            });
+            window.addEventListener('touchmove', (e) => {
+                if (!active) return;
+                const touch = e.touches[0];
+                const rect = joyContainer.getBoundingClientRect();
+                const centerX = rect.left + rect.width / 2;
+                const centerY = rect.top + rect.height / 2;
+                
+                let dx = touch.clientX - centerX;
+                let dy = touch.clientY - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                
+                if (dist > 40) { dx *= 40/dist; dy *= 40/dist; }
+                
+                joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                updateMovement(dx, dy, 0.2);
+            }, { passive: false });
         }
-        gameLoop();
-    }
 
-    function updateMovement(dx, dy, speed) {
-        players.me.x += dx * speed;
-        players.me.y += dy * speed;
+        // 4. Renderização
+        function drawBee(p, isPeer) {
+            const img = sprites[p.dir];
+            ctx.save();
+            if (isPeer) ctx.globalAlpha = 0.7;
 
-        if (Math.abs(dx) > Math.abs(dy)) {
-            players.me.dir = dx > 0 ? 'Right' : 'Left';
-        } else {
-            players.me.dir = dy > 0 ? 'Down' : 'Up';
-        }
-        if (conn && conn.open) conn.send(players.me);
-    }
-
-    // Movimento Mouse PC
-    window.addEventListener('mousemove', (e) => {
-        if (menu.style.display === 'none' && joyContainer.style.display !== 'block') {
-            const dx = e.clientX - canvas.width/2;
-            const dy = e.clientY - canvas.height/2;
-            if (Math.abs(dx) > 10 || Math.abs(dy) > 10) {
-                updateMovement(dx, dy, 0.02);
+            // Se a imagem carregou, usa imagem. Senão, usa um círculo de segurança.
+            if (img.complete && img.naturalWidth !== 0) {
+                ctx.drawImage(img, p.x - 30, p.y - 30, 60, 60);
+            } else {
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 25, 0, Math.PI*2);
+                ctx.fillStyle = isPeer ? "#ff0077" : "#f1c40f";
+                ctx.fill();
             }
+            ctx.restore();
         }
-    });
 
-    function initJoystick() {
-        let active = false;
-        joyContainer.addEventListener('touchstart', () => active = true);
-        window.addEventListener('touchend', () => {
-            active = false;
-            joyKnob.style.transform = `translate(0px, 0px)`;
-        });
-        window.addEventListener('touchmove', (e) => {
-            if (!active) return;
-            const touch = e.touches[0];
-            let dx = touch.clientX - (joyContainer.offsetLeft + 50);
-            let dy = touch.clientY - (joyContainer.offsetTop + 50);
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist > 40) { dx *= 40/dist; dy *= 40/dist; }
-            joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-            updateMovement(dx, dy, 0.2);
-        });
-    }
-
-    function drawBee(p, isPeer) {
-        const img = sprites[p.dir];
-        ctx.save();
-        if (isPeer) ctx.globalAlpha = 0.7;
-
-        // SE A IMAGEM CARREGOU, DESENHA ELA. SENÃO, DESENHA UM CÍRCULO.
-        if (img.complete && img.naturalWidth !== 0) {
-            ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
-        } else {
+        function drawGrid() {
+            const size = 100;
+            ctx.strokeStyle = "#34495e";
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 20, 0, Math.PI*2);
-            ctx.fillStyle = isPeer ? "red" : "yellow";
-            ctx.fill();
+            const startX = Math.floor(camera.x / size) * size;
+            const startY = Math.floor(camera.y / size) * size;
+            for (let x = startX; x < startX + canvas.width + size; x += size) {
+                ctx.moveTo(x, startY); ctx.lineTo(x, startY + canvas.height + size);
+            }
+            for (let y = startY; y < startY + canvas.height + size; y += size) {
+                ctx.moveTo(startX, y); ctx.lineTo(startX + canvas.width + size, y);
+            }
+            ctx.stroke();
         }
-        ctx.restore();
-    }
 
-    function gameLoop() {
-        // Câmera segue você
-        camera.x = players.me.x - canvas.width / 2;
-        camera.y = players.me.y - canvas.height / 2;
+        function gameLoop() {
+            // Câmera segue o seu player
+            camera.x = players.me.x - canvas.width / 2;
+            camera.y = players.me.y - canvas.height / 2;
 
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.save();
-        ctx.translate(-camera.x, -camera.y);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
 
-        // Desenha o outro apenas se ele enviou dados
-        if (players.peer.active) {
-            drawBee(players.peer, true);
+            drawGrid();
+
+            if (players.peer.active) drawBee(players.peer, true);
+            drawBee(players.me, false);
+
+            ctx.restore();
+
+            // Debug info
+            debugDiv.innerText = `Sua Pos: ${Math.round(players.me.x)}, ${Math.round(players.me.y)} | Peer: ${players.peer.active ? 'ON' : 'OFF'}`;
+            
+            requestAnimationFrame(gameLoop);
         }
-        
-        drawBee(players.me, false);
-
-        ctx.restore();
-        requestAnimationFrame(gameLoop);
-    }
-</script>
+    </script>
+</body>
+</html>
