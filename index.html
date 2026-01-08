@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Particles & Effects</title>
+    <title>Bee World - Visual Effects Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
@@ -23,10 +23,7 @@
         #pollen-hud b { display: block; font-size: 10px; color: #aaa; margin-bottom: 5px; }
         #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
-        /* Alertas e Modais */
-        #wave-alert { position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); color: #e74c3c; font-size: 40px; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 20px black; z-index: 500; display: none; text-align: center; animation: pulse 1s infinite; pointer-events: none; }
-        @keyframes pulse { 0% { scale: 1; } 50% { scale: 1.1; } 100% { scale: 1; } }
-
+        /* Modais */
         #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
@@ -51,45 +48,24 @@
 </head>
 <body>
 
-    <div id="wave-alert">INVASÃO DE FORMIGAS!</div>
-    
-    <div id="pollen-hud">
-        <b>CARGA PÓLEN</b>
-        <div id="pollen-val">0%</div>
-    </div>
-
-    <div id="death-modal">
-        <h2 class="modal-title">Derrotado</h2>
-        <button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
-    </div>
-
-    <div id="game-over-modal">
-        <h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
-        <button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
-    </div>
-
-    <div id="player-list"></div>
-    <div id="coords">LOC: 1000, 1000</div>
-
+    <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
+    <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button></div>
+    <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button></div>
+    <div id="player-list"></div><div id="coords">LOC: 1000, 1000</div>
     <div id="chat-wrapper">
         <button id="btn-minimize">«</button>
         <div id="chat-display"></div>
         <div id="chat-input-area"><input type="text" id="chat-input" placeholder="..." autocomplete="off"></div>
     </div>
-
     <div id="menu">
         <h1 style="color:var(--primary); margin:0 0 20px 0;">BEE WORLD</h1>
         <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
-        <br>
-        <input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
-        <br>
-        <button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
+        <br><input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
+        <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
         <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR</button>
     </div>
-
     <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
     <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
-
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -99,7 +75,6 @@
         const chatWrapper = document.getElementById('chat-wrapper');
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
-        const waveAlert = document.getElementById('wave-alert');
         const pollenHud = document.getElementById('pollen-hud');
         const pollenVal = document.getElementById('pollen-val');
         const moveBase = document.getElementById('move-base');
@@ -112,37 +87,33 @@
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        // Mundo
         let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, healTimer: 0, destroyed: false };
         let players = { 
             me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0 }, 
             peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0 } 
         };
         
-        let projectiles = []; 
-        let enemies = [];
-        let flowers = []; 
-        let particles = []; // Gerenciador de partículas
+        let projectiles = [], enemies = [], flowers = [], particles = []; 
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
         let mousePos = { x: 0, y: 0 }, isMouseDown = false;
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
 
-        let waveTimer = 180; 
-        let isWaveActive = false;
-        let enemiesSpawnedInWave = 0;
+        let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        function createParticle(x, y, color, type = 'pixel') {
-            particles.push({
-                x, y,
-                vx: (Math.random() - 0.5) * 4,
-                vy: (Math.random() - 0.5) * 4,
-                life: 1.0,
-                decay: 0.02 + Math.random() * 0.03,
-                color,
-                type
-            });
+        function createParticles(x, y, color, count, type = 'pixel') {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 5,
+                    vy: (Math.random() - 0.5) * 5,
+                    life: 1.0,
+                    decay: Math.random() * 0.02 + 0.01,
+                    color,
+                    type // 'pixel', 'cross' (healing), 'smoke'
+                });
+            }
         }
 
         function generateFlowers() {
@@ -196,30 +167,25 @@
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-                else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') hive.hp -= 5; }
-                else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; if(hive.hp <=0) hiveExplosion(); }
-                else if(data.type === 'repair') { hive.hp = Math.min(hive.maxHp, hive.hp + 50); createParticle(hive.x, hive.y, "#2ecc71", "heart"); }
+                else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 5); } }
+                else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; }
+                else if(data.type === 'repair') { 
+                    hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
+                    createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross');
+                }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.nick = data.nick; 
                     players.peer.hp = data.hp; players.peer.isDead = data.isDead;
-                    players.peer.pollen = data.pollen;
-                    players.peer.active = true; 
+                    players.peer.active = true; players.peer.pollen = data.pollen;
                 }
             });
-        }
-
-        function hiveExplosion() {
-            if(hive.destroyed) return;
-            hive.destroyed = true;
-            for(let i=0; i<60; i++) createParticle(hive.x, hive.y, "#e67e22", "pixel");
-            for(let i=0; i<30; i++) createParticle(hive.x, hive.y, "#2c3e50", "pixel");
-            setTimeout(() => { gameOverModal.style.display = 'flex'; }, 1000);
         }
 
         function takeDamage(amount) {
             if(players.me.isDead) return;
             players.me.hp -= amount;
+            createParticles(players.me.x, players.me.y, "#ff0000", 5);
             if(players.me.hp <= 0) {
                 players.me.hp = 0; players.me.isDead = true;
                 deathModal.style.display = 'flex';
@@ -247,79 +213,65 @@
         function runWaveLogic() {
             if (!peer || !peer.id.startsWith('bee-')) return; 
             waveTimer -= 1/60;
-            if (waveTimer <= 0 && !isWaveActive) {
-                isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180;
-            }
+            if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
             if (isWaveActive) {
-                waveAlert.style.display = 'block';
                 let now = Date.now();
                 if (enemiesSpawnedInWave < 20 && now - lastEnemySpawnTime > 2000) {
                     const angle = Math.random() * Math.PI * 2;
-                    const spawnX = hive.x + Math.cos(angle) * 1000;
-                    const spawnY = hive.y + Math.sin(angle) * 1000;
-                    enemies.push({ x: spawnX, y: spawnY, hp: 100 });
+                    enemies.push({ x: hive.x + Math.cos(angle) * 1000, y: hive.y + Math.sin(angle) * 1000, hp: 100 });
                     enemiesSpawnedInWave++; lastEnemySpawnTime = now;
                 }
-                if (enemies.length === 0 && enemiesSpawnedInWave >= 20) {
-                    isWaveActive = false; waveAlert.style.display = 'none';
-                }
+                if (enemies.length === 0 && enemiesSpawnedInWave >= 20) isWaveActive = false;
             }
-            if (hive.hp <= 0 && !hive.destroyed) { hive.hp = 0; hiveExplosion(); }
+            if (hive.hp <= 0 && !hive.destroyed) { 
+                hive.hp = 0; hive.destroyed = true; 
+                createParticles(hive.x, hive.y, "#f39c12", 100);
+                createParticles(hive.x, hive.y, "#7f8c8d", 50, 'smoke');
+                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
+            }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
                 conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, flowers: flowers });
             }
         }
 
         function updateMechanics() {
-            // Efeitos de Pólen (Partículas Amarelas caindo)
-            if(!players.me.isDead && players.me.pollen > 20 && Math.random() > 0.7) {
-                createParticle(players.me.x, players.me.y + 20, "#fffa65", "pixel");
-            }
-            if(players.peer.active && players.peer.pollen > 20 && Math.random() > 0.7) {
-                createParticle(players.peer.x, players.peer.y + 20, "#fffa65", "pixel");
+            // Partículas de Pólen (Amarelas Suaves)
+            if(players.me.pollen > 10 && Math.random() < players.me.pollen/200) {
+                particles.push({
+                    x: players.me.x, y: players.me.y,
+                    vx: (Math.random() - 0.5), vy: Math.random() * 2,
+                    life: 1.0, decay: 0.02, color: "#fffa65", type: 'pixel'
+                });
             }
 
-            // Cura passiva na Colmeia e Efeito visual
+            // Cura passiva na Colmeia
             if(!players.me.isDead && !hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
                 hive.healTimer += 1/60;
                 if(hive.healTimer >= 25) {
                     if(players.me.hp < 100) {
                         players.me.hp = Math.min(100, players.me.hp + 1);
-                        createParticle(players.me.x, players.me.y - 30, "#2ecc71", "heart");
+                        createParticles(players.me.x, players.me.y, "#2ecc71", 3, 'cross');
                     }
                     hive.healTimer = 0;
                 }
-            } else { hive.healTimer = 0; }
+            }
 
-            // Flores
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                     players.me.pollen += 0.4;
-                    if(Math.random() > 0.5) createParticle(f.x, f.y, "#fffa65", "pixel");
-                    if(players.me.pollen >= 100) {
-                        players.me.pollen = 100;
-                        f.cooldown = f.maxCooldown;
-                    }
+                    if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                 }
             });
 
-            if(players.me.pollen > 0) {
-                pollenHud.style.display = 'block';
-                pollenVal.innerText = Math.floor(players.me.pollen) + "%";
-            } else { pollenHud.style.display = 'none'; }
-
-            // Reparo
-            if(!hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
+            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
-                    players.me.pollen = 0;
-                    hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-                    createParticle(hive.x, hive.y, "#2ecc71", "heart");
+                    players.me.pollen = 0; hive.hp = Math.min(hive.maxHp, hive.hp + 50);
                     if(conn && conn.open) conn.send({ type: 'repair' });
+                    createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross');
                 }
             }
 
-            // Inimigos
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
@@ -328,13 +280,11 @@
                 projectiles.forEach((p, pI) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 30) {
                         en.hp -= 25; projectiles.splice(pI, 1);
-                        createParticle(en.x, en.y, "#c0392b", "pixel");
-                        if(en.hp <= 0) enemies.splice(index, 1);
+                        if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); enemies.splice(index, 1); }
                     }
                 });
             });
 
-            // Atualizar Partículas
             particles.forEach((p, i) => {
                 p.x += p.vx; p.y += p.vy; p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
@@ -451,8 +401,10 @@
                 const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
                 playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span class="dist-val">${d}m</span></div>`;
             }
-            const hivePerc = Math.floor((hive.hp/hive.maxHp)*100);
-            playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Colmeia</span><span>${hive.destroyed ? 'PERDIDA' : hivePerc + '%'}</span></div>`;
+            if(!hive.destroyed) {
+                const hivePerc = Math.floor((hive.hp/hive.maxHp)*100);
+                playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hivePerc}%</span></div>`;
+            }
             playerListUI.style.display = "block"; playerListUI.innerHTML = playerListHtml;
 
             projectiles.forEach((p, i) => { 
@@ -464,6 +416,8 @@
             });
 
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+            pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
+            pollenVal.innerText = Math.floor(players.me.pollen) + "%";
             document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
         }
 
@@ -480,41 +434,35 @@
                 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
-            // Flores
-            ctx.textAlign = "center";
             flowers.forEach(f => {
+                ctx.globalAlpha = f.cooldown > 0 ? 0.3 : 1.0;
+                ctx.font = f.cooldown > 0 ? "24px Arial" : "28px Arial";
+                ctx.textAlign = "center"; ctx.fillText(f.emoji, f.x, f.y);
                 if(f.cooldown > 0) {
-                    ctx.globalAlpha = 0.3; ctx.font = "24px Arial"; ctx.fillText(f.emoji, f.x, f.y); ctx.globalAlpha = 1.0;
-                    ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.beginPath();
-                    ctx.arc(f.x, f.y, 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * (f.cooldown/f.maxCooldown))); ctx.stroke();
-                } else { ctx.font = "28px Arial"; ctx.fillText(f.emoji, f.x, f.y); }
-            });
+                    ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
+                    ctx.beginPath(); ctx.arc(f.x, f.y, 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * (f.cooldown/f.maxCooldown))); ctx.stroke();
+                }
+            }); ctx.globalAlpha = 1.0;
 
-            // Colmeia
             if(!hive.destroyed) {
                 ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
                 drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
             }
 
-            // Partículas
+            drawIndicators();
+            enemies.forEach(en => { ctx.font = "30px Arial"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
+            projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
+
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
-                if(p.type === 'heart') {
-                    ctx.font = "16px Arial"; ctx.fillText("💚", p.x, p.y);
+                if(p.type === 'cross') {
+                    ctx.fillStyle = p.color; ctx.font = "bold 16px Arial"; ctx.fillText("+", p.x, p.y);
+                } else if(p.type === 'smoke') {
+                    ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill();
                 } else {
                     ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
                 }
-            });
-            ctx.globalAlpha = 1.0;
-
-            drawIndicators(); 
-
-            enemies.forEach(en => {
-                ctx.font = "30px Arial"; ctx.fillText("🐜", en.x, en.y);
-                drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30);
-            });
-
-            projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
+            }); ctx.globalAlpha = 1.0;
 
             const drawB = (p, c, a) => {
                 if(!assets.bee[p.dir].complete || p.isDead) return;
