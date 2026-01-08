@@ -6,82 +6,116 @@
     <title>Bee World - RPG Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; --xp-color: #3498db; }
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+        :root { --primary: #f1c40f; --bg-dark: rgba(15, 15, 15, 0.75); --text-main: #ffffff; --xp-color: #3498db; --glass: backdrop-filter: blur(8px); }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* HUD de Nível e XP */
-        #xp-hud {
+        /* Interface Central de Topo (XP e Coords) */
+        #top-center-hud {
             position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            width: 300px; background: var(--bg-dark); padding: 10px; border-radius: 12px;
-            text-align: center; border: 1px solid rgba(255,255,255,0.1); z-index: 500;
-            backdrop-filter: blur(5px);
+            display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 500; pointer-events: none;
         }
-        #xp-bar-container { width: 100%; height: 10px; background: rgba(255,255,255,0.1); border-radius: 5px; margin-top: 5px; overflow: hidden; }
-        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s ease; }
-        #lvl-text { font-weight: bold; font-size: 14px; color: var(--primary); text-transform: uppercase; }
 
-        /* Outros HUDs */
-        #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 160px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
-        #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
-        
+        #xp-hud {
+            width: 280px; background: var(--bg-dark); padding: 12px; border-radius: 16px;
+            text-align: center; border: 1px solid rgba(255,255,255,0.15); 
+            var(--glass); box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #xp-bar-container { width: 100%; height: 8px; background: rgba(255,255,255,0.1); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        #lvl-text { font-weight: 800; font-size: 13px; color: var(--primary); text-transform: uppercase; letter-spacing: 1px; }
+
+        #coords { 
+            font-family: 'Courier New', monospace; color: #aaa; background: rgba(0,0,0,0.5); 
+            padding: 4px 15px; border-radius: 20px; font-size: 11px; 
+            border: 1px solid rgba(255,255,255,0.05); var(--glass);
+        }
+
+        /* Painel de Sessão (Lista de Jogadores) */
+        #session-panel {
+            position: absolute; top: 110px; left: 15px;
+            display: flex; flex-direction: column; gap: 10px; z-index: 100; pointer-events: none;
+        }
+        #player-list { 
+            background: var(--bg-dark); padding: 12px; border-radius: 12px; 
+            border-left: 4px solid var(--primary); font-size: 13px; 
+            min-width: 150px; var(--glass); border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .player-item { display: flex; justify-content: space-between; margin-bottom: 5px; font-family: monospace; }
+        .hive-status { margin-top: 8px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,0.1); font-weight: bold; }
+
+        /* HUD de Pólen Lateral */
         #pollen-hud { 
             position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
-            background: var(--bg-dark); padding: 15px; border-radius: 10px;
+            background: var(--bg-dark); padding: 15px; border-radius: 15px;
             border-right: 5px solid #fffa65; display: none; text-align: center;
-            min-width: 80px; backdrop-filter: blur(5px); z-index: 100;
+            min-width: 70px; var(--glass); z-index: 100;
         }
-        #pollen-hud b { display: block; font-size: 10px; color: #aaa; margin-bottom: 5px; }
-        #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
+        #pollen-hud b { display: block; font-size: 9px; color: #aaa; margin-bottom: 5px; text-transform: uppercase; }
+        #pollen-val { font-size: 22px; font-weight: 900; color: #fffa65; }
 
         /* Modais */
-        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
+        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 2000; var(--glass); }
+        .modal-title { color: #e74c3c; font-size: 42px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; font-weight: 900; }
 
         /* Chat */
-        #chat-wrapper { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
-        #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
-        #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
+        #chat-wrapper { position: absolute; bottom: 180px; left: 15px; width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
+        #chat-display { height: 120px; background: var(--bg-dark); border-radius: 12px 12px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); var(--glass); }
+        #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 8px; border-radius: 0 0 12px 12px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 5px; font-size: 13px; outline: none; }
         #btn-minimize { position: absolute; right: -30px; top: 0; background: var(--bg-dark); color: var(--primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 0 5px 5px 0; cursor: pointer; padding: 5px; font-weight: bold; pointer-events: auto; }
 
         /* Menu */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 300; }
-        input[type="text"] { padding: 12px; width: 220px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 10px; text-align: center; }
-        .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 24px; border: 2px solid var(--primary); z-index: 3000; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        input[type="text"] { padding: 14px; width: 240px; border-radius: 12px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 12px; text-align: center; outline: none; }
+        input[type="text"]:focus { border-color: var(--primary); }
+        .main-btn { padding: 14px; cursor: pointer; border-radius: 12px; border: none; font-weight: 800; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; transition: 0.2s; }
+        .main-btn:active { transform: scale(0.95); }
 
         /* Joysticks */
-        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
-        #move-base { left: 40px; }
-        #aim-base { right: 40px; border-color: rgba(255, 0, 0, 0.3); }
-        .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7; }
+        .joy-container { position: absolute; bottom: 40px; width: 110px; height: 110px; background: rgba(255,255,255,0.08); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.15); z-index: 150; }
+        #move-base { left: 30px; }
+        #aim-base { right: 30px; border-color: rgba(255, 71, 87, 0.2); }
+        .joy-stick { position: absolute; width: 45px; height: 45px; border-radius: 50%; top: 32.5px; left: 32.5px; pointer-events: none; opacity: 0.8; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
     </style>
 </head>
 <body>
 
-    <div id="xp-hud">
-        <div id="lvl-text">Nível 1</div>
-        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+    <div id="top-center-hud">
+        <div id="xp-hud">
+            <div id="lvl-text">Nível 1</div>
+            <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+        </div>
+        <div id="coords">LOC: 1000, 1000</div>
     </div>
 
-    <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
+    <div id="session-panel">
+        <div id="player-list"></div>
+    </div>
+
+    <div id="pollen-hud"><b>COLETA</b><div id="pollen-val">0%</div></div>
+    
     <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button></div>
     <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button></div>
-    <div id="player-list"></div><div id="coords">LOC: 1000, 1000</div>
+    
     <div id="chat-wrapper">
         <button id="btn-minimize">«</button>
         <div id="chat-display"></div>
-        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="..." autocomplete="off"></div>
+        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Mensagem..." autocomplete="off"></div>
     </div>
+
     <div id="menu">
-        <h1 style="color:var(--primary); margin:0 0 20px 0;">BEE WORLD</h1>
-        <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
-        <br><input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
+        <h1 style="color:var(--primary); margin:0 0 5px 0; font-size: 32px; font-weight: 900;">BEE WORLD</h1>
+        <p style="color: #888; margin-bottom: 25px; font-size: 14px;">RPG MULTIPLAYER</p>
+        <input type="text" id="player-nick" placeholder="SEU NICKNAME" maxlength="12">
+        <br><input type="text" id="room-code" placeholder="CÓDIGO DA SALA" maxlength="6">
         <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
-        <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR</button>
+        <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR NA SALA</button>
     </div>
+
     <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
     <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
+    
     <canvas id="gameCanvas"></canvas>
 
     <script>
@@ -130,8 +164,8 @@
                 players.me.xp -= players.me.nextLvlXp;
                 players.me.lvl++;
                 players.me.nextLvlXp = Math.floor(players.me.nextLvlXp * 1.5);
-                addMsg("SISTEMA", `LEVEL UP! Você agora está no nível ${players.me.lvl}!`, "msg-sys");
-                createParticles(players.me.x, players.me.y, "#f1c40f", 30, 'smoke');
+                addMsg("SISTEMA", `LEVEL UP! Agora você é Nível ${players.me.lvl}!`, "msg-sys");
+                createParticles(players.me.x, players.me.y, "#f1c40f", 40, 'smoke');
             }
             updateXpHud();
         }
@@ -162,7 +196,6 @@
                     vy = (Math.random() - 0.5) * 3;
                     decay = 0.015;
                 }
-
                 particles.push({ x, y, vx, vy, life, decay, color, type });
             }
         }
@@ -182,8 +215,8 @@
         generateFlowers();
 
         document.getElementById('btn-minimize').onclick = () => {
-            let hidden = chatWrapper.style.left === "-200px";
-            chatWrapper.style.left = hidden ? "10px" : "-200px";
+            let hidden = chatWrapper.style.left === "-220px";
+            chatWrapper.style.left = hidden ? "15px" : "-220px";
             document.getElementById('btn-minimize').innerText = hidden ? "«" : "»";
         };
 
@@ -287,7 +320,6 @@
         }
 
         function updateMechanics() {
-            // XP por Coleta de Pólen
             if(players.me.pollen > 5 && Math.random() < players.me.pollen/250) {
                 createParticles(players.me.x + (Math.random()-0.5)*15, players.me.y + (Math.random()-0.5)*15, "#fffa65", 1, 'pollen');
             }
@@ -296,16 +328,14 @@
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                     players.me.pollen += 0.4;
-                    gainXp(0.1); // Ganha XP coletando
+                    gainXp(0.12);
                     if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                 }
-                // Partículas ambientais
                 if(f.cooldown <= 0 && Math.random() < 0.05) {
                     createParticles(f.x + (Math.random()-0.5)*30, f.y + (Math.random()-0.5)*30, "#fffa65", 1, 'pollen');
                 }
             });
 
-            // Cura passiva na Colmeia
             if(!players.me.isDead && !hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
                 hive.healTimer += 1/60;
                 if(hive.healTimer >= 25) {
@@ -317,17 +347,15 @@
                 }
             }
 
-            // XP por Reparar Colmeia
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-                    gainXp(50); // Bônus de reparo
+                    gainXp(60);
                     if(conn && conn.open) conn.send({ type: 'repair' });
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
             }
 
-            // Inimigos e XP por Abate
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
@@ -339,7 +367,7 @@
                         if(en.hp <= 0) { 
                             createParticles(en.x, en.y, "#000", 10); 
                             enemies.splice(index, 1); 
-                            gainXp(20); // XP por matar inimigo
+                            gainXp(25);
                         }
                     }
                 });
@@ -393,7 +421,7 @@
 
         function startGame() {
             document.getElementById('menu').style.display = 'none';
-            chatWrapper.style.display = 'flex'; chatWrapper.style.left = "10px";
+            chatWrapper.style.display = 'flex'; chatWrapper.style.left = "15px";
             canvas.style.display = 'block';
             updateXpHud();
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
@@ -416,15 +444,15 @@
                 for(let t of e.touches) {
                     if(t.identifier === touchIds.move) {
                         const r = moveBase.getBoundingClientRect();
-                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40), a = Math.atan2(dy, dx);
+                        const dx = t.clientX - (r.left + 55), dy = t.clientY - (r.top + 55);
+                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 35), a = Math.atan2(dy, dx);
                         moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-                        joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
+                        joyMove = { dx: Math.cos(a)*(d/35), dy: Math.sin(a)*(d/35) };
                     }
                     if(t.identifier === touchIds.aim) {
                         const r = aimBase.getBoundingClientRect();
-                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        const dx = t.clientX - (r.left + 55), dy = t.clientY - (r.top + 55);
+                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 35);
                         joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
                         aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
                     }
@@ -461,9 +489,7 @@
             runWaveLogic(); updateMechanics();
 
             if(performance.now() - lastNetUpdate > 30) { 
-                if(conn && conn.open) {
-                    conn.send({ ...players.me, type: 'pos' }); 
-                }
+                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
                 lastNetUpdate = performance.now(); 
             }
 
@@ -471,11 +497,11 @@
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
                 const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● Lvl ${players.peer.lvl} ${players.peer.nick}</span><span class="dist-val">${d}m</span></div>`;
+                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● Lvl ${players.peer.lvl} ${players.peer.nick}</span><span style="color:#888">${d}m</span></div>`;
             }
             if(!hive.destroyed) {
                 const hivePerc = Math.floor((hive.hp/hive.maxHp)*100);
-                playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hivePerc}%</span></div>`;
+                playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base da Colmeia</span><span>${hivePerc}%</span></div>`;
             }
             playerListUI.style.display = "block"; playerListUI.innerHTML = playerListHtml;
 
@@ -490,7 +516,7 @@
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
             pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
             pollenVal.innerText = Math.floor(players.me.pollen) + "%";
-            document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+            document.getElementById('coords').innerText = `LOC: ${Math.floor(players.me.x)}, ${Math.floor(players.me.y)}`;
         }
 
         function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
