@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Visual Effects Edition</title>
+    <title>Bee World - Natural Particles Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
@@ -31,7 +31,7 @@
         #chat-wrapper { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
         #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
-        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 5px; font-size: 13px; outline: none; }
+        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 8px; font-size: 13px; outline: none; }
         #btn-minimize { position: absolute; right: -30px; top: 0; background: var(--bg-dark); color: var(--primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 0 5px 5px 0; cursor: pointer; padding: 5px; font-weight: bold; pointer-events: auto; }
 
         /* Menu */
@@ -106,12 +106,12 @@
             for(let i=0; i<count; i++) {
                 particles.push({
                     x, y,
-                    vx: (Math.random() - 0.5) * 5,
-                    vy: (Math.random() - 0.5) * 5,
+                    vx: (Math.random() - 0.5) * (type === 'smoke' ? 2 : 1),
+                    vy: type === 'pollen' ? Math.random() * 0.5 : (Math.random() - 0.5) * 2,
                     life: 1.0,
-                    decay: Math.random() * 0.02 + 0.01,
+                    decay: type === 'pollen' ? 0.005 : (Math.random() * 0.02 + 0.01),
                     color,
-                    type // 'pixel', 'cross' (healing), 'smoke'
+                    type 
                 });
             }
         }
@@ -225,8 +225,8 @@
             }
             if (hive.hp <= 0 && !hive.destroyed) { 
                 hive.hp = 0; hive.destroyed = true; 
-                createParticles(hive.x, hive.y, "#f39c12", 100);
-                createParticles(hive.x, hive.y, "#7f8c8d", 50, 'smoke');
+                createParticles(hive.x, hive.y, "#f39c12", 100, 'pixel');
+                createParticles(hive.x, hive.y, "#7f8c8d", 60, 'smoke');
                 setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
             }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
@@ -235,12 +235,17 @@
         }
 
         function updateMechanics() {
-            // Partículas de Pólen (Amarelas Suaves)
-            if(players.me.pollen > 10 && Math.random() < players.me.pollen/200) {
+            // Partículas de Pólen (Lentas e Suaves)
+            if(players.me.pollen > 5 && Math.random() < players.me.pollen/300) {
                 particles.push({
-                    x: players.me.x, y: players.me.y,
-                    vx: (Math.random() - 0.5), vy: Math.random() * 2,
-                    life: 1.0, decay: 0.02, color: "#fffa65", type: 'pixel'
+                    x: players.me.x + (Math.random()-0.5)*20, 
+                    y: players.me.y + (Math.random()-0.5)*20,
+                    vx: (Math.random() - 0.5) * 0.3, 
+                    vy: Math.random() * 0.4 + 0.1, 
+                    life: 1.0, 
+                    decay: 0.006, 
+                    color: "#fffa65", 
+                    type: 'pollen'
                 });
             }
 
@@ -268,7 +273,7 @@
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; hive.hp = Math.min(hive.maxHp, hive.hp + 50);
                     if(conn && conn.open) conn.send({ type: 'repair' });
-                    createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross');
+                    createParticles(hive.x, hive.y, "#2ecc71", 15, 'cross');
                 }
             }
 
@@ -280,13 +285,19 @@
                 projectiles.forEach((p, pI) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 30) {
                         en.hp -= 25; projectiles.splice(pI, 1);
-                        if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); enemies.splice(index, 1); }
+                        if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10, 'pixel'); enemies.splice(index, 1); }
                     }
                 });
             });
 
             particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+                if(p.type === 'pollen') {
+                    p.x += p.vx + Math.sin(performance.now()/500) * 0.1; // Flutuação lateral
+                } else {
+                    p.x += p.vx;
+                }
+                p.y += p.vy;
+                p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
             });
         }
