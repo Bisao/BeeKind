@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Resource Management</title>
+    <title>Bee World - Particles & Effects</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
@@ -112,7 +112,8 @@
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, healTimer: 0 };
+        // Mundo
+        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, healTimer: 0, destroyed: false };
         let players = { 
             me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0 }, 
             peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0 } 
@@ -121,6 +122,7 @@
         let projectiles = []; 
         let enemies = [];
         let flowers = []; 
+        let particles = []; // Gerenciador de partículas
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
@@ -131,6 +133,18 @@
         let isWaveActive = false;
         let enemiesSpawnedInWave = 0;
 
+        function createParticle(x, y, color, type = 'pixel') {
+            particles.push({
+                x, y,
+                vx: (Math.random() - 0.5) * 4,
+                vy: (Math.random() - 0.5) * 4,
+                life: 1.0,
+                decay: 0.02 + Math.random() * 0.03,
+                color,
+                type
+            });
+        }
+
         function generateFlowers() {
             const types = ["🌸", "🌻", "🌷"];
             for(let i=0; i<18; i++) {
@@ -138,8 +152,8 @@
                     x: Math.random() * 4000 - 1000,
                     y: Math.random() * 4000 - 1000,
                     emoji: types[Math.floor(Math.random() * types.length)],
-                    cooldown: 0, // Segundos restantes de cooldown
-                    maxCooldown: 300 // 5 minutos em segundos
+                    cooldown: 0,
+                    maxCooldown: 300
                 });
             }
         }
@@ -183,15 +197,24 @@
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
                 else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') hive.hp -= 5; }
-                else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; }
-                else if(data.type === 'repair') { hive.hp = Math.min(hive.maxHp, hive.hp + 50); addMsg("SISTEMA", "Colmeia reparada pelo aliado!", "msg-sys"); }
+                else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; if(hive.hp <=0) hiveExplosion(); }
+                else if(data.type === 'repair') { hive.hp = Math.min(hive.maxHp, hive.hp + 50); createParticle(hive.x, hive.y, "#2ecc71", "heart"); }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.nick = data.nick; 
                     players.peer.hp = data.hp; players.peer.isDead = data.isDead;
+                    players.peer.pollen = data.pollen;
                     players.peer.active = true; 
                 }
             });
+        }
+
+        function hiveExplosion() {
+            if(hive.destroyed) return;
+            hive.destroyed = true;
+            for(let i=0; i<60; i++) createParticle(hive.x, hive.y, "#e67e22", "pixel");
+            for(let i=0; i<30; i++) createParticle(hive.x, hive.y, "#2c3e50", "pixel");
+            setTimeout(() => { gameOverModal.style.display = 'flex'; }, 1000);
         }
 
         function takeDamage(amount) {
@@ -241,32 +264,42 @@
                     isWaveActive = false; waveAlert.style.display = 'none';
                 }
             }
-            if (hive.hp <= 0) { hive.hp = 0; gameOverModal.style.display = 'flex'; }
+            if (hive.hp <= 0 && !hive.destroyed) { hive.hp = 0; hiveExplosion(); }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
                 conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, flowers: flowers });
             }
         }
 
         function updateMechanics() {
-            // Cura passiva na Colmeia (1 HP / 25s)
-            if(!players.me.isDead && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
+            // Efeitos de Pólen (Partículas Amarelas caindo)
+            if(!players.me.isDead && players.me.pollen > 20 && Math.random() > 0.7) {
+                createParticle(players.me.x, players.me.y + 20, "#fffa65", "pixel");
+            }
+            if(players.peer.active && players.peer.pollen > 20 && Math.random() > 0.7) {
+                createParticle(players.peer.x, players.peer.y + 20, "#fffa65", "pixel");
+            }
+
+            // Cura passiva na Colmeia e Efeito visual
+            if(!players.me.isDead && !hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
                 hive.healTimer += 1/60;
                 if(hive.healTimer >= 25) {
-                    players.me.hp = Math.min(100, players.me.hp + 1);
+                    if(players.me.hp < 100) {
+                        players.me.hp = Math.min(100, players.me.hp + 1);
+                        createParticle(players.me.x, players.me.y - 30, "#2ecc71", "heart");
+                    }
                     hive.healTimer = 0;
                 }
             } else { hive.healTimer = 0; }
 
-            // Atualizar Cooldown das Flores e Coleta
+            // Flores
             flowers.forEach(f => {
-                if(f.cooldown > 0) {
-                    f.cooldown -= 1/60;
-                } else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+                if(f.cooldown > 0) f.cooldown -= 1/60;
+                else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                     players.me.pollen += 0.4;
+                    if(Math.random() > 0.5) createParticle(f.x, f.y, "#fffa65", "pixel");
                     if(players.me.pollen >= 100) {
                         players.me.pollen = 100;
-                        f.cooldown = f.maxCooldown; // Entra em cooldown
-                        addMsg("SISTEMA", "Pólen coletado! Flor esgotada por 5m.", "msg-sys");
+                        f.cooldown = f.maxCooldown;
                     }
                 }
             });
@@ -277,12 +310,12 @@
             } else { pollenHud.style.display = 'none'; }
 
             // Reparo
-            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
+            if(!hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0;
                     hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                    createParticle(hive.x, hive.y, "#2ecc71", "heart");
                     if(conn && conn.open) conn.send({ type: 'repair' });
-                    addMsg("SISTEMA", "Reparo concluído!", "msg-sys");
                 }
             }
 
@@ -290,14 +323,21 @@
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
-                if (Math.hypot(en.x - hive.x, en.y - hive.y) < 50 && performance.now() % 60 < 2) hive.hp -= 2;
+                if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50 && performance.now() % 60 < 2) hive.hp -= 2;
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
                 projectiles.forEach((p, pI) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 30) {
                         en.hp -= 25; projectiles.splice(pI, 1);
+                        createParticle(en.x, en.y, "#c0392b", "pixel");
                         if(en.hp <= 0) enemies.splice(index, 1);
                     }
                 });
+            });
+
+            // Atualizar Partículas
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+                if(p.life <= 0) particles.splice(i, 1);
             });
         }
 
@@ -306,16 +346,9 @@
                 const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
                 if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
             }
-            const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
-            if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
-
-            if (enemies.length > 0) {
-                ctx.globalAlpha = (Math.sin(Date.now() / 100) + 1) / 2;
-                enemies.forEach(en => {
-                    const edx = en.x - players.me.x, edy = en.y - players.me.y;
-                    if (Math.hypot(edx, edy) > 250) drawArrow(edx, edy, "#e74c3c", 75);
-                });
-                ctx.globalAlpha = 1.0;
+            if(!hive.destroyed) {
+                const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
+                if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
             }
         }
 
@@ -419,7 +452,7 @@
                 playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span class="dist-val">${d}m</span></div>`;
             }
             const hivePerc = Math.floor((hive.hp/hive.maxHp)*100);
-            playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Colmeia</span><span>${hivePerc}%</span></div>`;
+            playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Colmeia</span><span>${hive.destroyed ? 'PERDIDA' : hivePerc + '%'}</span></div>`;
             playerListUI.style.display = "block"; playerListUI.innerHTML = playerListHtml;
 
             projectiles.forEach((p, i) => { 
@@ -451,24 +484,28 @@
             ctx.textAlign = "center";
             flowers.forEach(f => {
                 if(f.cooldown > 0) {
-                    ctx.globalAlpha = 0.3;
-                    ctx.font = "24px Arial";
-                    ctx.fillText(f.emoji, f.x, f.y);
-                    ctx.globalAlpha = 1.0;
-                    // Indicador de Cooldown (Círculo)
-                    ctx.strokeStyle = "rgba(255,255,255,0.5)";
-                    ctx.beginPath();
-                    ctx.arc(f.x, f.y, 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * (f.cooldown/f.maxCooldown)));
-                    ctx.stroke();
-                } else {
-                    ctx.font = "28px Arial";
-                    ctx.fillText(f.emoji, f.x, f.y);
-                }
+                    ctx.globalAlpha = 0.3; ctx.font = "24px Arial"; ctx.fillText(f.emoji, f.x, f.y); ctx.globalAlpha = 1.0;
+                    ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.beginPath();
+                    ctx.arc(f.x, f.y, 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * (f.cooldown/f.maxCooldown))); ctx.stroke();
+                } else { ctx.font = "28px Arial"; ctx.fillText(f.emoji, f.x, f.y); }
             });
 
             // Colmeia
-            ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
-            drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
+            if(!hive.destroyed) {
+                ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
+                drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
+            }
+
+            // Partículas
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                if(p.type === 'heart') {
+                    ctx.font = "16px Arial"; ctx.fillText("💚", p.x, p.y);
+                } else {
+                    ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3);
+                }
+            });
+            ctx.globalAlpha = 1.0;
 
             drawIndicators(); 
 
