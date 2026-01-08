@@ -3,99 +3,70 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Pro Chat</title>
+    <title>Bee World Multiplayer P2P</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root {
-            --primary: #f1c40f;
-            --bg-dark: rgba(20, 20, 20, 0.7);
-            --text-main: #ffffff;
-        }
-
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, sans-serif; color: var(--text-main); touch-action: none; }
+        :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* HUD Coordenadas */
+        /* HUD Superior */
         #coords { 
             position: absolute; top: 15px; right: 15px; 
-            font-family: 'Courier New', monospace; color: var(--primary); 
-            background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; 
-            font-size: 13px; z-index: 100; border-right: 3px solid var(--primary);
+            font-family: monospace; color: var(--primary); 
+            background: var(--bg-dark); padding: 5px 12px; 
+            border-radius: 5px; font-size: 13px; z-index: 100; 
+            border-right: 3px solid var(--primary); pointer-events: none; 
         }
 
-        /* --- CHAT PROFISSIONAL --- */
-        #chat-wrapper {
-            position: absolute; bottom: 25px; left: 20px; width: 280px; 
-            z-index: 200; display: none; flex-direction: column;
-            transition: all 0.3s ease;
-        }
-
-        #chat-display {
-            height: 160px; background: var(--bg-dark); 
-            border-radius: 8px 8px 0 0; padding: 12px; overflow-y: auto; 
-            display: flex; flex-direction: column; gap: 6px;
-            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+        /* Sistema de Chat Profissional */
+        #chat-wrapper { position: absolute; bottom: 25px; left: 20px; width: 280px; z-index: 200; display: none; flex-direction: column; }
+        #chat-display { 
+            height: 160px; background: var(--bg-dark); border-radius: 8px 8px 0 0; 
+            padding: 12px; overflow-y: auto; display: flex; flex-direction: column; 
+            gap: 6px; backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1); 
             scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
         }
-
-        /* Estilização da Scrollbar para Chrome/Edge */
-        #chat-display::-webkit-scrollbar { width: 4px; }
-        #chat-display::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
-
         .message { font-size: 14px; word-wrap: break-word; animation: fadeIn 0.2s ease; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-
-        .msg-author { font-weight: bold; margin-right: 5px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        .msg-author { font-weight: bold; margin-right: 5px; text-transform: uppercase; font-size: 11px; }
         .msg-me .msg-author { color: var(--primary); }
         .msg-peer .msg-author { color: #3498db; }
-        .msg-sys { color: #888; font-style: italic; font-size: 12px; text-align: center; margin: 5px 0; }
+        .msg-sys { color: #888; font-style: italic; font-size: 12px; text-align: center; }
+        #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
+        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 8px; font-size: 14px; outline: none; }
+        #chat-btn { background: var(--primary); border: none; border-radius: 4px; color: #000; font-weight: bold; padding: 0 15px; cursor: pointer; }
 
-        #chat-input-area { 
-            display: flex; background: rgba(0,0,0,0.8); 
-            padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1);
-            border-top: none;
+        /* Menu de Entrada */
+        #menu { 
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+            text-align: center; background: #222; padding: 40px; border-radius: 20px; 
+            border: 2px solid var(--primary); z-index: 300; box-shadow: 0 0 50px rgba(0,0,0,0.8);
         }
-
-        #chat-input {
-            flex: 1; background: transparent; border: none; color: white;
-            padding: 8px; font-size: 14px; outline: none;
-        }
-
-        #chat-btn {
-            background: var(--primary); border: none; border-radius: 4px;
-            color: #000; font-weight: bold; padding: 0 15px; cursor: pointer;
-            transition: background 0.2s;
-        }
-        #chat-btn:active { transform: scale(0.95); }
-
-        /* Menu */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 300; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
         input[type="text"] { padding: 12px; width: 200px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 15px; text-align: center; }
-        .main-btn { padding: 12px 30px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; transition: 0.3s; }
-        .main-btn:hover { filter: brightness(1.2); }
+        .main-btn { padding: 12px 30px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; transition: 0.3s; width: 100%; }
 
         /* Joystick Mobile */
-        #joy-base { position: absolute; bottom: 40px; right: 40px; width: 110px; height: 110px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 1px solid rgba(255,255,255,0.2); z-index: 150; backdrop-filter: blur(2px); }
+        #joy-base { position: absolute; bottom: 40px; right: 40px; width: 110px; height: 110px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 1px solid rgba(255,255,255,0.2); z-index: 150; }
         #joy-stick { position: absolute; width: 45px; height: 45px; background: var(--primary); border-radius: 50%; top: 32.5px; left: 32.5px; opacity: 0.5; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
 <body>
 
-    <div id="coords">X: 0 | Y: 0</div>
+    <div id="coords">LOC: 1000, 1000</div>
 
     <div id="chat-wrapper">
-        <div id="chat-display">
-            <div class="msg-sys">Bem-vindo ao Bee World Chat</div>
-        </div>
+        <div id="chat-display"><div class="msg-sys">Radar Bee Ativado</div></div>
         <div id="chat-input-area">
-            <input type="text" id="chat-input" placeholder="Pressione ENTER para falar..." autocomplete="off">
+            <input type="text" id="chat-input" placeholder="ENTER para falar..." autocomplete="off">
             <button id="chat-btn">ENVIAR</button>
         </div>
     </div>
 
     <div id="menu">
-        <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 5px;">BEE WORLD</h1>
-        <input type="text" id="room-code" placeholder="CÓDIGO DA SALA" maxlength="6">
+        <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
+        <input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
         <br>
         <button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
         <br>
@@ -111,6 +82,7 @@
         const chatInput = document.getElementById('chat-input');
         const chatDisplay = document.getElementById('chat-display');
         
+        // Carregamento de Recursos
         const assets = { 
             bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, 
             ground: new Image() 
@@ -121,14 +93,16 @@
         assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
+        // Estado do Jogo
         let players = { 
             me: { x: 1000, y: 1000, dir: 'Down' }, 
             peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', active: false } 
         };
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
+        let lastNetUpdate = 0;
 
-        // --- CONTROLES DE TECLADO ---
+        // Input Teclado
         window.addEventListener('keydown', e => {
             if(document.activeElement === chatInput) {
                 if(e.key === 'Enter') sendMsg();
@@ -140,25 +114,52 @@
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
+        // Inicialização P2P
         function startSession(host) {
             const code = document.getElementById('room-code').value.trim();
-            if(!code) return alert("Insira um código!");
-            peer = host ? new Peer('bee-'+code) : new Peer();
-            peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-'+code); setupConn(); } });
-            peer.on('connection', c => { conn = c; setupConn(); });
-            peer.on('error', () => alert("Erro: Sala ocupada ou conexão falhou."));
+            if(!code) return alert("Digite um código!");
+            
+            peer = host ? new Peer('bee-' + code) : new Peer();
+            
+            peer.on('open', (id) => {
+                if(host) startGame();
+                else {
+                    conn = peer.connect('bee-' + code);
+                    setupConn();
+                }
+            });
+
+            peer.on('connection', c => {
+                conn = c;
+                setupConn();
+            });
+
+            peer.on('error', (err) => {
+                alert("Erro de conexão. Verifique se o código está correto ou já em uso.");
+                location.reload();
+            });
         }
 
         function setupConn() {
             conn.on('open', () => { 
-                players.peer.active = true; startGame(); 
-                addMsg("SISTEMA", "Amigo conectado", "msg-sys"); 
+                players.peer.active = true; 
+                startGame(); 
+                addMsg("SISTEMA", "Amigo conectado!", "msg-sys"); 
             });
             conn.on('data', data => {
-                if(data.type === 'chat') addMsg("AMIGO", data.msg, "msg-peer");
-                else { players.peer.tX = data.x; players.peer.tY = data.y; players.peer.dir = data.dir; players.peer.active = true; }
+                if(data.type === 'chat') {
+                    addMsg("AMIGO", data.msg, "msg-peer");
+                } else {
+                    players.peer.tX = data.x;
+                    players.peer.tY = data.y;
+                    players.peer.dir = data.dir;
+                    players.peer.active = true;
+                }
             });
-            conn.on('close', () => { addMsg("SISTEMA", "Amigo desconectado", "msg-sys"); players.peer.active = false; });
+            conn.on('close', () => {
+                addMsg("SISTEMA", "Conexão perdida.", "msg-sys");
+                players.peer.active = false;
+            });
         }
 
         function sendMsg() {
@@ -175,30 +176,26 @@
         function addMsg(author, text, typeClass) {
             const div = document.createElement('div');
             div.className = `message ${typeClass}`;
-            if(typeClass !== 'msg-sys') {
-                div.innerHTML = `<span class="msg-author">${author}:</span><span class="msg-text">${text}</span>`;
-            } else {
-                div.innerText = text;
-            }
+            div.innerHTML = typeClass !== 'msg-sys' ? `<span class="msg-author">${author}:</span> ${text}` : text;
             chatDisplay.appendChild(div);
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
         }
 
+        // Loop Principal e Lógica
         function startGame() {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('chat-wrapper').style.display = 'flex';
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 document.getElementById('joy-base').style.display = 'block';
-                setupMobile();
+                setupMobileControls();
             }
             resize();
             requestAnimationFrame(gameLoop);
         }
 
-        // --- MOBILE ---
         let joyDX = 0, joyDY = 0;
-        function setupMobile() {
+        function setupMobileControls() {
             const jBase = document.getElementById('joy-base'), jStick = document.getElementById('joy-stick');
             jBase.addEventListener('touchstart', e => e.preventDefault(), {passive: false});
             jBase.addEventListener('touchmove', e => {
@@ -224,36 +221,77 @@
             if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
             if (dx !== 0 || dy !== 0) {
-                players.me.x += dx * 5; players.me.y += dy * 5;
+                // Normalização para velocidade constante
+                const mag = Math.sqrt(dx*dx + dy*dy);
+                players.me.x += (dx/mag) * 5; 
+                players.me.y += (dy/mag) * 5;
+
+                // Definir Sprite
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left';
                 else players.me.dir = dy > 0 ? 'Down' : 'Up';
-                if(conn && conn.open) conn.send(players.me);
+
+                // Envio Otimizado (Network Throttling)
+                const now = performance.now();
+                if(now - lastNetUpdate > 30) {
+                    if(conn && conn.open) conn.send(players.me);
+                    lastNetUpdate = now;
+                }
             }
-            if(players.peer.active) { 
-                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+
+            // Interpolação do Amigo
+            if(players.peer.active) {
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.15;
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.15;
             }
+
             camera.x = players.me.x - canvas.width/2;
             camera.y = players.me.y - canvas.height/2;
             document.getElementById('coords').innerText = `LOC: ${Math.floor(players.me.x)}, ${Math.floor(players.me.y)}`;
         }
 
+        function drawFriendArrow() {
+            if (!players.peer.active) return;
+            const dx = players.peer.x - players.me.x;
+            const dy = players.peer.y - players.me.y;
+            if (Math.sqrt(dx*dx + dy*dy) < 100) return;
+
+            const angle = Math.atan2(dy, dx);
+            ctx.save();
+            ctx.translate(players.me.x, players.me.y);
+            ctx.rotate(angle);
+            ctx.beginPath();
+            ctx.moveTo(65, 0); ctx.lineTo(50, -8); ctx.lineTo(50, 8);
+            ctx.closePath();
+            ctx.fillStyle = "#3498db";
+            ctx.shadowBlur = 8; ctx.shadowColor = "white";
+            ctx.fill();
+            ctx.restore();
+        }
+
         function draw() {
             ctx.fillStyle = '#1a1a1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
             ctx.save();
             ctx.translate(-camera.x, -camera.y);
 
-            const startX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
-            const startY = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE;
-            
-            for(let x = startX; x < startX + canvas.width + TILE_SIZE; x += TILE_SIZE) {
-                for(let y = startY; y < startY + canvas.height + TILE_SIZE; y += TILE_SIZE) {
+            // Render Chão Infinito (Culling)
+            const sX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
+            const sY = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE;
+            for(let x = sX; x < sX + canvas.width + TILE_SIZE; x += TILE_SIZE) {
+                for(let y = sY; y < sY + canvas.height + TILE_SIZE; y += TILE_SIZE) {
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
                 }
             }
 
-            if(assets.bee[players.me.dir].complete) ctx.drawImage(assets.bee[players.me.dir], players.me.x-32, players.me.y-32, 64, 64);
+            drawFriendArrow();
+
+            // Render Me
+            if(assets.bee[players.me.dir].complete) {
+                ctx.drawImage(assets.bee[players.me.dir], players.me.x-32, players.me.y-32, 64, 64);
+            }
+            
+            // Render Peer
             if(players.peer.active && assets.bee[players.peer.dir].complete) {
                 ctx.globalAlpha = 0.6;
                 ctx.drawImage(assets.bee[players.peer.dir], players.peer.x-32, players.peer.y-32, 64, 64);
@@ -262,7 +300,11 @@
             ctx.restore();
         }
 
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        function gameLoop() {
+            update();
+            draw();
+            requestAnimationFrame(gameLoop);
+        }
     </script>
 </body>
 </html>
