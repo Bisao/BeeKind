@@ -3,28 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Hive Defense Pro</title>
+    <title>Bee World - Hive Defense & Pollen Medic</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* PAINEL DE SESSÃO (Lista de Jogadores e Base) */
-        #player-list { 
-            position: absolute; top: 15px; left: 15px; 
-            background: var(--bg-dark); padding: 10px; 
-            border-radius: 8px; border-left: 4px solid var(--primary); 
-            font-family: monospace; font-size: 14px; z-index: 100; 
-            min-width: 160px; pointer-events: none; display: none; 
-            backdrop-filter: blur(5px); 
-        }
-        .player-item { display: flex; justify-content: space-between; gap: 15px; text-shadow: 1px 1px 2px black; margin-bottom: 5px; }
-        .dist-val { color: var(--primary); font-weight: bold; }
-        .hive-status { color: #2ecc71; font-weight: bold; border-top: 1px solid rgba(255,255,255,0.2); pt: 5px; margin-top: 5px; }
-
-        /* HUD Coordenadas */
+        /* HUDs */
+        #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 160px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
         #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
+        
+        /* HUD de Pólen (Direito Central) */
+        #pollen-hud { 
+            position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
+            background: var(--bg-dark); padding: 15px; border-radius: 10px;
+            border-right: 5px solid #fffa65; display: none; text-align: center;
+            min-width: 80px; backdrop-filter: blur(5px); z-index: 100;
+        }
+        #pollen-hud b { display: block; font-size: 10px; color: #aaa; margin-bottom: 5px; }
+        #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
         /* Alertas e Modais */
         #wave-alert { position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%); color: #e74c3c; font-size: 40px; font-weight: bold; text-transform: uppercase; text-shadow: 0 0 20px black; z-index: 500; display: none; text-align: center; animation: pulse 1s infinite; pointer-events: none; }
@@ -50,15 +48,16 @@
         #move-base { left: 40px; }
         #aim-base { right: 40px; border-color: rgba(255, 0, 0, 0.3); }
         .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7; }
-        #move-stick { background: var(--primary); }
-        #aim-stick { background: #ff4757; }
-
-        @keyframes blinkRed { 0% { opacity: 1; } 50% { opacity: 0.2; } 100% { opacity: 1; } }
     </style>
 </head>
 <body>
 
     <div id="wave-alert">INVASÃO DE FORMIGAS!</div>
+    
+    <div id="pollen-hud">
+        <b>CARGA PÓLEN</b>
+        <div id="pollen-val">0%</div>
+    </div>
 
     <div id="death-modal">
         <h2 class="modal-title">Derrotado</h2>
@@ -89,8 +88,8 @@
         <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR</button>
     </div>
 
-    <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick"></div></div>
-    <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick"></div></div>
+    <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
+    <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
 
     <canvas id="gameCanvas"></canvas>
 
@@ -102,6 +101,8 @@
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
         const waveAlert = document.getElementById('wave-alert');
+        const pollenHud = document.getElementById('pollen-hud');
+        const pollenVal = document.getElementById('pollen-val');
         const moveBase = document.getElementById('move-base');
         const aimBase = document.getElementById('aim-base');
         const moveStick = document.getElementById('move-stick');
@@ -112,16 +113,15 @@
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        // Estado do Mundo e Colmeia
         let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500 };
-        
         let players = { 
-            me: { x: 1050, y: 1050, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false }, 
-            peer: { x: 1050, y: 1050, tX: 1050, tY: 1050, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false } 
+            me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0 }, 
+            peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0 } 
         };
         
         let projectiles = []; 
         let enemies = [];
+        let flowers = []; // Novo sistema de flores
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
@@ -131,6 +131,19 @@
         let waveTimer = 180; 
         let isWaveActive = false;
         let enemiesSpawnedInWave = 0;
+
+        // Gerar Flores Fixas
+        function generateFlowers() {
+            const types = ["🌸", "🌻", "🌷"];
+            for(let i=0; i<15; i++) {
+                flowers.push({
+                    x: Math.random() * 3000 - 500,
+                    y: Math.random() * 3000 - 500,
+                    emoji: types[Math.floor(Math.random() * types.length)]
+                });
+            }
+        }
+        generateFlowers();
 
         document.getElementById('btn-minimize').onclick = () => {
             let hidden = chatWrapper.style.left === "-200px";
@@ -171,6 +184,7 @@
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
                 else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') hive.hp -= 5; }
                 else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; }
+                else if(data.type === 'repair') { hive.hp = Math.min(hive.maxHp, hive.hp + 50); addMsg("SISTEMA", "Colmeia reparada pelo aliado!", "msg-sys"); }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.nick = data.nick; 
@@ -186,11 +200,12 @@
             if(players.me.hp <= 0) {
                 players.me.hp = 0; players.me.isDead = true;
                 deathModal.style.display = 'flex';
+                players.me.pollen = 0;
             }
         }
 
         function respawnPlayer() {
-            players.me.x = 1000 + 50; players.me.y = 1000 + 50;
+            players.me.x = 1000 + 100; players.me.y = 1000 + 100;
             players.me.hp = 100; players.me.isDead = false;
             deathModal.style.display = 'none';
         }
@@ -208,15 +223,10 @@
 
         function runWaveLogic() {
             if (!peer || !peer.id.startsWith('bee-')) return; 
-
             waveTimer -= 1/60;
             if (waveTimer <= 0 && !isWaveActive) {
-                isWaveActive = true;
-                enemiesSpawnedInWave = 0;
-                waveTimer = 180;
-                addMsg("SISTEMA", "WAVE DE FORMIGAS INICIADA!", "msg-sys");
+                isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180;
             }
-
             if (isWaveActive) {
                 waveAlert.style.display = 'block';
                 let now = Date.now();
@@ -225,36 +235,48 @@
                     const spawnX = hive.x + Math.cos(angle) * 1000;
                     const spawnY = hive.y + Math.sin(angle) * 1000;
                     enemies.push({ x: spawnX, y: spawnY, hp: 100 });
-                    enemiesSpawnedInWave++;
-                    lastEnemySpawnTime = now;
+                    enemiesSpawnedInWave++; lastEnemySpawnTime = now;
                 }
                 if (enemies.length === 0 && enemiesSpawnedInWave >= 20) {
-                    isWaveActive = false;
-                    waveAlert.style.display = 'none';
+                    isWaveActive = false; waveAlert.style.display = 'none';
                 }
             }
-
-            if (hive.hp <= 0) {
-                hive.hp = 0;
-                gameOverModal.style.display = 'flex';
-            }
-
+            if (hive.hp <= 0) { hive.hp = 0; gameOverModal.style.display = 'flex'; }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
                 conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp });
             }
         }
 
-        function updateEnemies() {
+        function updateMechanics() {
+            // Coleta de Pólen
+            let onFlower = false;
+            flowers.forEach(f => {
+                if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 40) {
+                    onFlower = true;
+                    if(players.me.pollen < 100) players.me.pollen += 0.4;
+                }
+            });
+            if(players.me.pollen > 0) {
+                pollenHud.style.display = 'block';
+                pollenVal.innerText = Math.floor(players.me.pollen) + "%";
+            } else { pollenHud.style.display = 'none'; }
+
+            // Reparo da Colmeia
+            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
+                if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
+                    players.me.pollen = 0;
+                    hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                    if(conn && conn.open) conn.send({ type: 'repair' });
+                    addMsg("SISTEMA", "Você reparou a colmeia!", "msg-sys");
+                }
+            }
+
+            // Inimigos
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
-                en.x += Math.cos(angle) * 2.0; 
-                en.y += Math.sin(angle) * 2.0;
-
-                if (Math.hypot(en.x - hive.x, en.y - hive.y) < 50 && performance.now() % 60 < 2) {
-                    hive.hp -= 2;
-                }
+                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
+                if (Math.hypot(en.x - hive.x, en.y - hive.y) < 50 && performance.now() % 60 < 2) hive.hp -= 2;
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-                
                 projectiles.forEach((p, pI) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 30) {
                         en.hp -= 25; projectiles.splice(pI, 1);
@@ -265,20 +287,15 @@
         }
 
         function drawIndicators() {
-            // Seta para Amigo
             if (players.peer.active && !players.peer.isDead) {
                 const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
                 if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
             }
-
-            // Seta amarela para Colmeia (Home)
             const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
             if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
 
-            // Setas vermelhas para Inimigos
             if (enemies.length > 0) {
-                const alpha = (Math.sin(Date.now() / 100) + 1) / 2;
-                ctx.globalAlpha = alpha;
+                ctx.globalAlpha = (Math.sin(Date.now() / 100) + 1) / 2;
                 enemies.forEach(en => {
                     const edx = en.x - players.me.x, edy = en.y - players.me.y;
                     if (Math.hypot(edx, edy) > 250) drawArrow(edx, edy, "#e74c3c", 75);
@@ -289,15 +306,9 @@
 
         function drawArrow(dx, dy, color, radius = 70) {
             const angle = Math.atan2(dy, dx);
-            ctx.save();
-            ctx.translate(players.me.x, players.me.y);
-            ctx.rotate(angle);
-            ctx.beginPath();
-            ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8);
-            ctx.closePath();
-            ctx.fillStyle = color;
-            ctx.fill();
-            ctx.restore();
+            ctx.save(); ctx.translate(players.me.x, players.me.y); ctx.rotate(angle);
+            ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8); ctx.closePath();
+            ctx.fillStyle = color; ctx.fill(); ctx.restore();
         }
 
         function sendMsg() {
@@ -310,8 +321,9 @@
         }
 
         function addMsg(author, text, senderType) {
-            const d = document.createElement('div');
-            d.innerHTML = `<span style="color:${senderType === "me" ? players.me.color : players.peer.color}; font-weight:bold">${author}:</span> ${text}`;
+            const d = document.createElement('div'); d.className = "message";
+            const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
+            d.innerHTML = senderType === "msg-sys" ? text : `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
             document.getElementById('chat-display').appendChild(d); document.getElementById('chat-display').scrollTop = 99999;
         }
 
@@ -381,12 +393,10 @@
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
-            runWaveLogic(); 
-            updateEnemies();
+            runWaveLogic(); updateMechanics();
 
             if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); lastNetUpdate = performance.now(); }
 
-            // Lista de jogadores + Status da Colmeia
             let playerListHtml = "";
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
@@ -395,16 +405,12 @@
             }
             const hivePerc = Math.floor((hive.hp/hive.maxHp)*100);
             playerListHtml += `<div class="player-item hive-status" style="color:${hivePerc > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Colmeia</span><span>${hivePerc}%</span></div>`;
-            
-            playerListUI.style.display = "block";
-            playerListUI.innerHTML = playerListHtml;
+            playerListUI.style.display = "block"; playerListUI.innerHTML = playerListHtml;
 
             projectiles.forEach((p, i) => { 
                 p.x += p.vx; p.y += p.vy; p.life--; 
                 if(p.owner === 'me' && players.peer.active && !players.peer.isDead) {
-                    if(Math.hypot(p.x-players.peer.x, p.y-players.peer.y) < 25) {
-                        projectiles.splice(i, 1); if(conn && conn.open) conn.send({ type: 'hit', target: 'me' });
-                    }
+                    if(Math.hypot(p.x-players.peer.x, p.y-players.peer.y) < 25) { projectiles.splice(i, 1); if(conn && conn.open) conn.send({ type: 'hit', target: 'me' }); }
                 }
                 if(p.life <= 0) projectiles.splice(i, 1); 
             });
@@ -426,16 +432,18 @@
                 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
-            // Desenhar Colmeia
-            ctx.font = "60px Arial"; ctx.textAlign = "center";
-            ctx.fillText("🏠", hive.x, hive.y + 20);
+            // Flores
+            ctx.font = "24px Arial"; ctx.textAlign = "center";
+            flowers.forEach(f => ctx.fillText(f.emoji, f.x, f.y));
+
+            // Colmeia
+            ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
             drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 
             drawIndicators(); 
 
             enemies.forEach(en => {
-                ctx.font = "30px Arial"; ctx.textAlign = "center";
-                ctx.fillText("🐜", en.x, en.y);
+                ctx.font = "30px Arial"; ctx.fillText("🐜", en.x, en.y);
                 drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30);
             });
 
@@ -444,9 +452,13 @@
             const drawB = (p, c, a) => {
                 if(!assets.bee[p.dir].complete || p.isDead) return;
                 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
-                ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.textAlign = "center";
+                ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
                 ctx.fillStyle = "black"; ctx.fillText(p.nick, p.x+1, p.y-39); ctx.fillStyle = c; ctx.fillText(p.nick, p.x, p.y-40);
                 drawHealthBar(p.x, p.y, p.hp);
+                if(p.pollen > 0 && p.pollen < 100) {
+                    ctx.fillStyle = "white"; ctx.fillRect(p.x - 15, p.y + 35, 30, 4);
+                    ctx.fillStyle = "#fffa65"; ctx.fillRect(p.x - 15, p.y + 35, 30 * (p.pollen/100), 4);
+                }
             };
             drawB(players.me, players.me.color, 1);
             if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
