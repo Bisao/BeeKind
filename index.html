@@ -51,7 +51,28 @@
             box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
         }
 
-        .player-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        /* NOVO: BOTÃO DE MENU E PAINEL LATERAL */
+        #btn-open-menu {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 60px; background: var(--primary);
+            border-radius: 50%; border: 4px solid rgba(0,0,0,0.2);
+            cursor: pointer; z-index: 500; font-size: 24px; display: none;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+        }
+        #side-menu-panel {
+            position: absolute; top: 0; right: -300px; width: 280px; height: 100%;
+            background: var(--bg-dark); backdrop-filter: blur(15px);
+            border-left: 1px solid var(--border); z-index: 2000;
+            transition: right 0.3s ease; padding: 20px; box-sizing: border-box;
+        }
+        #side-menu-panel.active { right: 0; }
+        .menu-square-btn {
+            width: 80px; height: 80px; background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border); border-radius: 12px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 32px; transition: transform 0.2s;
+        }
+        .menu-square-btn:active { transform: scale(0.9); }
 
         /* HUD PÓLEN */
         #pollen-hud { 
@@ -63,7 +84,7 @@
         #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
         /* MODAIS */
-        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 3000; }
         .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
         /* CHAT */
@@ -77,30 +98,9 @@
         #btn-minimize-chat { position: absolute; right: -45px; bottom: 0; background: var(--primary); color: #111; border: none; border-radius: 0 8px 8px 0; cursor: pointer; width: 45px; height: 45px; font-size: 20px; font-weight: bold; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 
         /* MENU INICIAL */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 3000; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
+        #menu-inicial { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background: #1a1a1a; z-index: 5000; }
+        .menu-box { text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; color: #111; }
-
-        /* NOVO: MENU IN-GAME (HABILIDADES) */
-        #btn-open-ingame-menu {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            width: 60px; height: 60px; background: var(--primary); border-radius: 50%;
-            border: 4px solid #000; cursor: pointer; z-index: 200; font-size: 30px;
-            display: none; align-items: center; justify-content: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-        }
-        #ingame-menu-panel {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            background: var(--bg-dark); backdrop-filter: blur(15px);
-            padding: 30px; border-radius: 20px; border: 2px solid var(--primary);
-            z-index: 2000; display: none; text-align: center; min-width: 250px;
-        }
-        .square-skill-btn {
-            width: 80px; height: 80px; background: #333; border: 2px solid var(--primary);
-            border-radius: 12px; cursor: pointer; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; gap: 5px; transition: transform 0.2s;
-        }
-        .square-skill-btn:hover { transform: scale(1.05); background: #444; }
-        .square-skill-btn span { font-size: 10px; font-weight: bold; color: var(--primary); text-transform: uppercase; }
 
         /* JOYSTICKS */
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
@@ -127,6 +127,18 @@
         </div>
     </div>
 
+    <button id="btn-open-menu">⚙️</button>
+
+    <div id="side-menu-panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2 style="margin: 0; color: var(--primary);">MENU</h2>
+            <button onclick="toggleSideMenu()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer;">✕</button>
+        </div>
+        <div style="display: flex; flex-wrap: wrap; gap: 15px;">
+            <button class="menu-square-btn" title="Minhas Abelhas">🐝</button>
+        </div>
+    </div>
+
     <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
     <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button></div>
     <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button></div>
@@ -137,25 +149,14 @@
         <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Falar..." autocomplete="off"></div>
     </div>
 
-    <button id="btn-open-ingame-menu">🐝</button>
-
-    <div id="ingame-menu-panel">
-        <h3 style="margin-top:0; color:var(--primary)">MENU</h3>
-        <div style="display:flex; justify-content:center; gap:15px;">
-            <div class="square-skill-btn" onclick="alert('Árvore de Habilidades em breve!')">
-                <div style="font-size:30px;">🐝</div>
-                <span>Habilidades</span>
-            </div>
+    <div id="menu-inicial">
+        <div class="menu-box">
+            <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
+            <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12" style="padding: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box; background: #111; border: 1px solid #444; color: white; border-radius: 5px;">
+            <br><input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6" style="padding: 10px; margin-bottom: 10px; width: 100%; box-sizing: border-box; background: #111; border: 1px solid #444; color: white; border-radius: 5px;">
+            <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
+            <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR EM SALA</button>
         </div>
-        <button class="main-btn" onclick="toggleInGameMenu()" style="background:#e74c3c; color:white; margin-top:20px;">FECHAR</button>
-    </div>
-
-    <div id="menu">
-        <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
-        <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
-        <br><input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
-        <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
-        <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR EM SALA</button>
     </div>
 
     <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
@@ -169,8 +170,8 @@
         const chatInput = document.getElementById('chat-input');
         const chatWrapper = document.getElementById('chat-wrapper');
         const sessionPanel = document.getElementById('session-panel');
-        const ingameMenu = document.getElementById('ingame-menu-panel');
-        const btnOpenMenu = document.getElementById('btn-open-ingame-menu');
+        const sideMenu = document.getElementById('side-menu-panel');
+        const btnOpenMenu = document.getElementById('btn-open-menu');
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
         const pollenHud = document.getElementById('pollen-hud');
@@ -200,24 +201,28 @@
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        // --- INTERFACE LOGIC ---
-        btnOpenMenu.onclick = toggleInGameMenu;
+        // --- INTERFACE ---
 
-        function toggleInGameMenu() {
-            const isVisible = ingameMenu.style.display === "block";
-            ingameMenu.style.display = isVisible ? "none" : "block";
+        // Abrir/Fechar Menu Lateral
+        function toggleSideMenu() {
+            sideMenu.classList.toggle('active');
         }
+        btnOpenMenu.onclick = toggleSideMenu;
 
+        // Toggle Chat
         document.getElementById('btn-minimize-chat').onclick = () => {
             let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
             document.getElementById('btn-minimize-chat').innerHTML = isHidden ? "«" : "💬";
         };
 
+        // Toggle Session
         document.getElementById('btn-session-toggle').onclick = () => {
             sessionPanel.classList.toggle('active');
             document.getElementById('btn-session-toggle').innerHTML = sessionPanel.classList.contains('active') ? "«" : "👥";
         };
+
+        // --- LÓGICA DO JOGO ---
 
         function addXp(amount) {
             if(players.me.isDead) return;
@@ -377,34 +382,25 @@
             }
 
             let syncEvent = null;
-            enemies.forEach((en, index) => {
+            enemies.forEach((en) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
+                
                 if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-                    if(performance.now() % 60 < 2) {
-                        hive.hp -= 2;
-                        syncEvent = 'hive_hit';
-                    }
+                    if(performance.now() % 60 < 2) { hive.hp -= 2; syncEvent = 'hive_hit'; }
                 }
+                
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
+                
                 if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30) {
                     if(performance.now() % 60 < 2) conn.send({type: 'hit', target: 'me'});
                 }
             });
 
-            if (hive.hp <= 0 && !hive.destroyed) { 
-                hive.hp = 0; hive.destroyed = true; 
-                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
-            }
+            if (hive.hp <= 0 && !hive.destroyed) { hive.hp = 0; hive.destroyed = true; setTimeout(() => gameOverModal.style.display = 'flex', 1500); }
 
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
-                conn.send({ 
-                    type: 'sync_world', 
-                    enemies: enemies, 
-                    isWaveActive: isWaveActive, 
-                    hiveHp: hive.hp,
-                    event: syncEvent
-                });
+                conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, event: syncEvent });
                 lastNetUpdate = performance.now();
             }
         }
@@ -489,11 +485,11 @@
         }
 
         function startGame() {
-            document.getElementById('menu').style.display = 'none';
+            document.getElementById('menu-inicial').style.display = 'none';
             document.getElementById('lvl-hud').style.display = 'block';
+            document.getElementById('btn-open-menu').style.display = 'block';
             chatWrapper.style.display = 'flex';
             sessionPanel.style.display = 'block';
-            btnOpenMenu.style.display = 'flex'; // Mostra botão de menu
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 moveBase.style.display = 'block'; aimBase.style.display = 'block';
@@ -562,9 +558,8 @@
 
             runWaveLogic(); updateMechanics();
 
-            if(performance.now() - lastNetUpdate > 30 && conn && conn.open) { 
-                conn.send({ ...players.me, type: 'pos' }); 
-                lastNetUpdate = performance.now();
+            if(performance.now() - lastNetUpdate > 30) { 
+                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
             }
 
             let playerListHtml = "";
@@ -580,10 +575,7 @@
             }
             playerItemsContainer.innerHTML = playerListHtml;
 
-            projectiles.forEach((p, i) => { 
-                p.x += p.vx; p.y += p.vy; p.life--; 
-                if(p.life <= 0) projectiles.splice(i, 1); 
-            });
+            projectiles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1); });
 
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
             pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
@@ -646,7 +638,7 @@
             ctx.restore();
         }
 
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        gameLoop();
     </script>
 </body>
 </html>
