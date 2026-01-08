@@ -80,6 +80,28 @@
         #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 3000; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
         .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; color: #111; }
 
+        /* NOVO: MENU IN-GAME (HABILIDADES) */
+        #btn-open-ingame-menu {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            width: 60px; height: 60px; background: var(--primary); border-radius: 50%;
+            border: 4px solid #000; cursor: pointer; z-index: 200; font-size: 30px;
+            display: none; align-items: center; justify-content: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        #ingame-menu-panel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: var(--bg-dark); backdrop-filter: blur(15px);
+            padding: 30px; border-radius: 20px; border: 2px solid var(--primary);
+            z-index: 2000; display: none; text-align: center; min-width: 250px;
+        }
+        .square-skill-btn {
+            width: 80px; height: 80px; background: #333; border: 2px solid var(--primary);
+            border-radius: 12px; cursor: pointer; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; gap: 5px; transition: transform 0.2s;
+        }
+        .square-skill-btn:hover { transform: scale(1.05); background: #444; }
+        .square-skill-btn span { font-size: 10px; font-weight: bold; color: var(--primary); text-transform: uppercase; }
+
         /* JOYSTICKS */
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
         #move-base { left: 40px; }
@@ -115,6 +137,19 @@
         <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Falar..." autocomplete="off"></div>
     </div>
 
+    <button id="btn-open-ingame-menu">🐝</button>
+
+    <div id="ingame-menu-panel">
+        <h3 style="margin-top:0; color:var(--primary)">MENU</h3>
+        <div style="display:flex; justify-content:center; gap:15px;">
+            <div class="square-skill-btn" onclick="alert('Árvore de Habilidades em breve!')">
+                <div style="font-size:30px;">🐝</div>
+                <span>Habilidades</span>
+            </div>
+        </div>
+        <button class="main-btn" onclick="toggleInGameMenu()" style="background:#e74c3c; color:white; margin-top:20px;">FECHAR</button>
+    </div>
+
     <div id="menu">
         <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
         <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
@@ -134,6 +169,8 @@
         const chatInput = document.getElementById('chat-input');
         const chatWrapper = document.getElementById('chat-wrapper');
         const sessionPanel = document.getElementById('session-panel');
+        const ingameMenu = document.getElementById('ingame-menu-panel');
+        const btnOpenMenu = document.getElementById('btn-open-ingame-menu');
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
         const pollenHud = document.getElementById('pollen-hud');
@@ -163,14 +200,20 @@
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        // Toggle Chat
+        // --- INTERFACE LOGIC ---
+        btnOpenMenu.onclick = toggleInGameMenu;
+
+        function toggleInGameMenu() {
+            const isVisible = ingameMenu.style.display === "block";
+            ingameMenu.style.display = isVisible ? "none" : "block";
+        }
+
         document.getElementById('btn-minimize-chat').onclick = () => {
             let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
             document.getElementById('btn-minimize-chat').innerHTML = isHidden ? "«" : "💬";
         };
 
-        // Toggle Session
         document.getElementById('btn-session-toggle').onclick = () => {
             sessionPanel.classList.toggle('active');
             document.getElementById('btn-session-toggle').innerHTML = sessionPanel.classList.contains('active') ? "«" : "👥";
@@ -337,19 +380,13 @@
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
-                
-                // Dano na Hive (Lógica do Host)
                 if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
                     if(performance.now() % 60 < 2) {
                         hive.hp -= 2;
                         syncEvent = 'hive_hit';
                     }
                 }
-                
-                // Dano no Player Me (Host)
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-                
-                // Dano no Peer (Host detecta e avisa)
                 if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30) {
                     if(performance.now() % 60 < 2) conn.send({type: 'hit', target: 'me'});
                 }
@@ -388,23 +425,19 @@
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; 
-                    if(isHost) {
-                        hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-                    } else {
-                        conn.send({ type: 'repair' });
-                    }
+                    if(isHost) hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                    else conn.send({ type: 'repair' });
                     addXp(25);
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
             }
 
-            // Colisão Projétil -> Inimigo (Calculado por quem atirou ou pelo host)
             projectiles.forEach((p, pIdx) => {
                 enemies.forEach((en) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
                         if(isHost) {
                             en.hp -= 25;
-                            if(en.hp <= 0) { if(p.owner === 'me') addXp(15); }
+                            if(en.hp <= 0 && p.owner === 'me') addXp(15);
                         } else if(p.owner === 'me') {
                             conn.send({ type: 'hit', target: 'enemy', enId: en.id });
                             addXp(15);
@@ -460,6 +493,7 @@
             document.getElementById('lvl-hud').style.display = 'block';
             chatWrapper.style.display = 'flex';
             sessionPanel.style.display = 'block';
+            btnOpenMenu.style.display = 'flex'; // Mostra botão de menu
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 moveBase.style.display = 'block'; aimBase.style.display = 'block';
@@ -528,11 +562,11 @@
 
             runWaveLogic(); updateMechanics();
 
-            if(performance.now() - lastNetUpdate > 30) { 
-                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
+            if(performance.now() - lastNetUpdate > 30 && conn && conn.open) { 
+                conn.send({ ...players.me, type: 'pos' }); 
+                lastNetUpdate = performance.now();
             }
 
-            // HUD SESSÃO
             let playerListHtml = "";
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
