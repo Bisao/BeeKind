@@ -3,58 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Battle Royale Compass</title>
+    <title>Bee World - High Performance</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Arial', sans-serif; color: white; touch-action: none; }
-        canvas { background: #222; display: none; }
-        
-        /* HUD Superior */
-        #hud-container {
-            position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center;
-            pointer-events: none; z-index: 50; width: 400px;
-        }
-
-        /* Bússola Estilo Warzone/PUBG */
-        #compass-viewport {
-            width: 300px; height: 40px; background: rgba(0,0,0,0.4);
-            border-bottom: 2px solid rgba(255,215,0,0.8);
-            position: relative; overflow: hidden;
-            mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
-            -webkit-mask-image: linear-gradient(to right, transparent, black 20%, black 80%, transparent);
-        }
-        #compass-tape {
-            position: absolute; height: 100%; display: flex; align-items: flex-end;
-            transition: transform 0.05s linear; will-change: transform;
-        }
-        .compass-mark {
-            position: absolute; width: 60px; text-align: center; font-size: 12px;
-            font-weight: bold; padding-bottom: 5px; color: #ddd;
-        }
-        .compass-mark.cardinal { color: #f1c40f; font-size: 16px; }
-        
-        #compass-center-mark {
-            position: absolute; top: 0; left: 50%; transform: translateX(-50%);
-            width: 2px; height: 100%; background: #f1c40f; z-index: 5;
-        }
-
-        /* Marcador do Amigo na Bússola */
-        #friend-marker-compass {
-            position: absolute; top: 5px; width: 12px; height: 12px;
-            background: #3498db; border-radius: 2px; transform: rotate(45deg);
-            border: 1px solid white; z-index: 4; display: none;
-        }
-
-        #coordinates {
-            margin-top: 5px; font-size: 12px; color: #aaa; font-family: monospace;
-            background: rgba(0,0,0,0.3); padding: 2px 8px; border-radius: 4px;
-        }
-
-        /* Menu e Joystick (mantidos) */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.9); padding: 30px; border-radius: 15px; width: 280px; z-index: 100; border: 2px solid #f1c40f; }
-        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; }
-        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
+        canvas { display: none; image-rendering: pixelated; } /* Otimiza renderização de pixels */
+        #hud-container { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); pointer-events: none; z-index: 50; width: 300px; text-align: center; }
+        #compass-viewport { width: 300px; height: 35px; background: rgba(0,0,0,0.5); border-bottom: 2px solid #f1c40f; position: relative; overflow: hidden; }
+        #compass-tape { position: absolute; height: 100%; display: flex; align-items: flex-end; will-change: transform; }
+        .compass-mark { position: absolute; width: 60px; text-align: center; font-size: 12px; font-weight: bold; color: #ddd; }
+        #coordinates { margin-top: 5px; font-size: 11px; color: #f1c40f; font-family: monospace; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; z-index: 100; }
+        input { padding: 10px; width: 80%; border-radius: 5px; border: none; margin-bottom: 10px; }
+        button { padding: 10px; width: 85%; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; background: #f1c40f; }
         #joy-base { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); }
         #joy-stick { position: absolute; width: 40px; height: 40px; background: rgba(241, 196, 15, 0.5); border-radius: 50%; top: 30px; left: 30px; }
     </style>
@@ -63,19 +24,17 @@
 
     <div id="hud-container">
         <div id="compass-viewport">
-            <div id="compass-center-mark"></div>
-            <div id="friend-marker-compass"></div>
-            <div id="compass-tape" style="left: 150px;">
-                </div>
+            <div style="position:absolute; top:0; left:50%; width:2px; height:100%; background:#f1c40f; z-index:5;"></div>
+            <div id="compass-tape"></div>
         </div>
         <div id="coordinates">X: 0 | Y: 0</div>
     </div>
 
     <div id="menu">
-        <h1 style="color: #f1c40f; margin: 0 0 20px 0;">BEE P2P</h1>
-        <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
-        <button onclick="startSession(true)" style="background: #f1c40f;">CRIAR SALA</button>
-        <button onclick="startSession(false)" style="background: #3498db; color: white;">ENTRAR NA SALA</button>
+        <h1 style="color:#f1c40f">BEE P2P</h1>
+        <input type="text" id="room-code" placeholder="Código 6 dígitos">
+        <button onclick="startSession(true)">CRIAR SALA</button>
+        <button onclick="startSession(false)" style="background:#3498db; color:white; margin-top:10px">ENTRAR</button>
     </div>
 
     <div id="joy-base"><div id="joy-stick"></div></div>
@@ -83,20 +42,15 @@
 
     <script>
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const menu = document.getElementById('menu');
-        const joyBase = document.getElementById('joy-base');
-        const joyStick = document.getElementById('joy-stick');
-        const coordDisplay = document.getElementById('coordinates');
+        const ctx = canvas.getContext('2d', { alpha: false }); // Otimização: Desativa transparência do canvas principal
         const compassTape = document.getElementById('compass-tape');
-        const friendMarker = document.getElementById('friend-marker-compass');
-
+        
+        // Cache de Sprites
         const assets = {
             bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() },
             ground: new Image(),
             flowers: [new Image(), new Image(), new Image()]
         };
-
         assets.bee.Down.src = 'BeeDown.png';
         assets.bee.Left.src = 'BeeLeft.png';
         assets.bee.Up.src = 'BeeUp.png';
@@ -106,56 +60,52 @@
         assets.flowers[1].src = 'GrassFlower2.png';
         assets.flowers[2].src = 'GrassFlower3.png';
 
-        let peer, conn, isHost = false;
+        let peer, conn;
         let players = {
-            me: { x: 500, y: 500, dir: 'Down', angle: 180 },
+            me: { x: 500, y: 500, dir: 'Down', angle: 0 },
             peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false }
         };
-        
         let camera = { x: 0, y: 0 };
+        const keys = {};
         const TILE_SIZE = 64;
-        let lastSendTime = 0;
+        let lastNetUpdate = 0;
 
-        // --- GERAR MARCAÇÕES DA BÚSSOLA ---
-        function createCompass() {
-            const points = { 0: 'N', 45: 'NE', 90: 'E', 135: 'SE', 180: 'S', 225: 'SW', 270: 'W', 315: 'NW' };
-            for(let i = -180; i <= 540; i += 15) {
-                const mark = document.createElement('div');
-                mark.className = 'compass-mark';
-                const angle = (i + 360) % 360;
-                if(points[angle]) {
-                    mark.classList.add('cardinal');
-                    mark.innerText = points[angle];
-                } else {
-                    mark.innerText = angle;
-                }
-                mark.style.left = (i * 2) + 'px'; // 2px por grau
-                compassTape.appendChild(mark);
+        // Bússola Otimizada
+        function setupCompass() {
+            const pts = { 0:'N', 90:'E', 180:'S', 270:'W' };
+            for(let i = -180; i <= 540; i += 45) {
+                const d = document.createElement('div');
+                d.className = 'compass-mark';
+                d.innerText = pts[(i+360)%360] || (i+360)%360;
+                d.style.left = (i * 2) + 'px';
+                compassTape.appendChild(d);
             }
         }
-        createCompass();
+        setupCompass();
+
+        window.addEventListener('keydown', e => keys[e.code] = true);
+        window.addEventListener('keyup', e => keys[e.code] = false);
 
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
+            ctx.imageSmoothingEnabled = false; // Ganho de performance em pixel art
         }
         window.addEventListener('resize', resize);
         resize();
 
-        function startSession(hostMode) {
+        function startSession(host) {
             const code = document.getElementById('room-code').value;
-            if (code.length < 4) return alert("Código curto!");
-            isHost = hostMode;
-            peer = hostMode ? new Peer('bee-' + code) : new Peer();
+            peer = host ? new Peer('bee-'+code) : new Peer();
             peer.on('open', () => {
-                if (hostMode) startGame();
-                else { conn = peer.connect('bee-' + code); setupConnection(); }
+                if(host) startGame();
+                else { conn = peer.connect('bee-'+code); setupConn(); }
             });
-            peer.on('connection', c => { conn = c; setupConnection(); });
+            peer.on('connection', c => { conn = c; setupConn(); });
         }
 
-        function setupConnection() {
-            conn.on('open', () => { if (!isHost) startGame(); });
+        function setupConn() {
+            conn.on('open', () => { players.peer.active = true; startGame(); });
             conn.on('data', data => {
                 players.peer.targetX = data.x;
                 players.peer.targetY = data.y;
@@ -165,138 +115,95 @@
         }
 
         function startGame() {
-            menu.style.display = 'none';
+            document.getElementById('menu').style.display = 'none';
             canvas.style.display = 'block';
-            if ('ontouchstart' in window) { joyBase.style.display = 'block'; initJoystick(); }
-            gameLoop();
+            if('ontouchstart' in window) document.getElementById('joy-base').style.display = 'block';
+            requestAnimationFrame(gameLoop);
         }
 
-        function movePlayer(dx, dy, speed) {
-            players.me.x += dx * speed;
-            players.me.y += dy * speed;
+        function update() {
+            let dx = 0, dy = 0;
+            if (keys['KeyW'] || keys['ArrowUp']) dy -= 1;
+            if (keys['KeyS'] || keys['ArrowDown']) dy += 1;
+            if (keys['KeyA'] || keys['ArrowLeft']) dx -= 1;
+            if (keys['KeyD'] || keys['ArrowRight']) dx += 1;
 
-            // Calcula o ângulo do movimento (0-360)
-            let angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-            if(angle < 0) angle += 360;
-            players.me.angle = angle;
-
-            if (Math.abs(dx) > Math.abs(dy)) {
-                players.me.dir = dx > 0 ? 'Right' : 'Left';
-            } else {
-                players.me.dir = dy > 0 ? 'Down' : 'Up';
+            if (dx !== 0 || dy !== 0) {
+                const mag = Math.sqrt(dx*dx + dy*dy);
+                players.me.x += (dx/mag) * 5;
+                players.me.y += (dy/mag) * 5;
+                players.me.angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
+                players.me.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'Right' : 'Left') : (dy > 0 ? 'Down' : 'Up');
+                
+                const now = performance.now();
+                if(now - lastNetUpdate > 30) {
+                    if(conn && conn.open) conn.send(players.me);
+                    lastNetUpdate = now;
+                }
             }
 
-            const now = Date.now();
-            if (now - lastSendTime > 33) {
-                if (conn && conn.open) conn.send(players.me);
-                lastSendTime = now;
-            }
-        }
-
-        window.addEventListener('mousemove', (e) => {
-            if (canvas.style.display === 'block' && joyBase.style.display !== 'block') {
-                const dx = e.clientX - canvas.width/2;
-                const dy = e.clientY - canvas.height/2;
-                if (Math.abs(dx) > 10 || Math.abs(dy) > 10) movePlayer(dx, dy, 0.05);
-            }
-        });
-
-        function updateHUD() {
-            coordDisplay.innerText = `X: ${Math.floor(players.me.x)} | Y: ${Math.floor(players.me.y)}`;
-
-            // Desliza a fita da bússola (150px é o centro do viewport de 300px)
-            // Multiplicamos por -2 porque cada grau na fita tem 2px de largura
-            compassTape.style.transform = `translateX(${150 - (players.me.angle * 2)}px)`;
-
-            // Marcador do Amigo na Bússola
             if(players.peer.active) {
-                const dx = players.peer.x - players.me.x;
-                const dy = players.peer.y - players.me.y;
-                let angleToFriend = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
-                if(angleToFriend < 0) angleToFriend += 360;
-
-                // Diferença entre meu ângulo e o ângulo do amigo
-                let diff = angleToFriend - players.me.angle;
-                if (diff > 180) diff -= 360;
-                if (diff < -180) diff += 360;
-
-                // Posiciona o marcador (150px é o centro)
-                const markerX = 150 + (diff * 2);
-                friendMarker.style.display = (markerX > 0 && markerX < 300) ? 'block' : 'none';
-                friendMarker.style.left = markerX + 'px';
+                players.peer.x += (players.peer.targetX - players.peer.x) * 0.15;
+                players.peer.y += (players.peer.targetY - players.peer.y) * 0.15;
             }
+            
+            camera.x = players.me.x - canvas.width/2;
+            camera.y = players.me.y - canvas.height/2;
         }
 
-        function pseudoRandom(x, y) {
-            let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-            return n - Math.floor(n);
-        }
+        function draw() {
+            ctx.fillStyle = '#2c3e50';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        function drawInfiniteGround() {
-            const startX = Math.floor(camera.x / TILE_SIZE) - 1;
-            const startY = Math.floor(camera.y / TILE_SIZE) - 1;
-            const endX = startX + Math.ceil(canvas.width / TILE_SIZE) + 2;
-            const endY = startY + Math.ceil(canvas.height / TILE_SIZE) + 2;
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
 
-            for (let x = startX; x < endX; x++) {
-                for (let y = startY; y < endY; y++) {
-                    const posX = x * TILE_SIZE;
-                    const posY = y * TILE_SIZE;
-                    if (assets.ground.complete) ctx.drawImage(assets.ground, posX, posY, TILE_SIZE, TILE_SIZE);
-                    const chance = pseudoRandom(x, y);
-                    if (chance < 0.15) {
-                        const flowerIdx = Math.floor(pseudoRandom(y, x) * 3);
-                        const flowerImg = assets.flowers[flowerIdx];
-                        if (flowerImg.complete) ctx.drawImage(flowerImg, posX, posY, TILE_SIZE, TILE_SIZE);
+            // Renderização do Chão com Culling (Apenas o que é visível)
+            const x1 = Math.floor(camera.x / TILE_SIZE);
+            const y1 = Math.floor(camera.y / TILE_SIZE);
+            const x2 = x1 + Math.ceil(canvas.width / TILE_SIZE) + 1;
+            const y2 = y1 + Math.ceil(canvas.height / TILE_SIZE) + 1;
+
+            for(let x = x1; x < x2; x++) {
+                for(let y = y1; y < y2; y++) {
+                    const px = x * TILE_SIZE;
+                    const py = y * TILE_SIZE;
+                    if(assets.ground.complete) ctx.drawImage(assets.ground, px, py, TILE_SIZE, TILE_SIZE);
+                    
+                    // Flores (pseudo-aleatórias fixas)
+                    const seed = (x * 12.9898 + y * 78.233);
+                    const rng = Math.abs(Math.sin(seed) * 43758.5453) % 1;
+                    if(rng < 0.1) {
+                        const f = assets.flowers[Math.floor(rng * 30)];
+                        if(f && f.complete) ctx.drawImage(f, px, py, TILE_SIZE, TILE_SIZE);
                     }
                 }
+            }
+
+            // Desenhar Players
+            renderBee(players.me, 1);
+            if(players.peer.active) renderBee(players.peer, 0.6);
+
+            ctx.restore();
+
+            // UI
+            document.getElementById('coordinates').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+            compassTape.style.transform = `translateX(${150 - (players.me.angle * 2)}px)`;
+        }
+
+        function renderBee(p, alpha) {
+            const img = assets.bee[p.dir];
+            if(img.complete) {
+                ctx.globalAlpha = alpha;
+                ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
+                ctx.globalAlpha = 1;
             }
         }
 
         function gameLoop() {
-            if (players.peer.active) {
-                players.peer.x += (players.peer.targetX - players.peer.x) * 0.12;
-                players.peer.y += (players.peer.targetY - players.peer.y) * 0.12;
-            }
-
-            camera.x = players.me.x - canvas.width / 2;
-            camera.y = players.me.y - canvas.height / 2;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save();
-            ctx.translate(-camera.x, -camera.y);
-            drawInfiniteGround();
-
-            if (players.peer.active) drawBee(players.peer, true);
-            drawBee(players.me, false);
-            ctx.restore();
-            
-            updateHUD();
+            update();
+            draw();
             requestAnimationFrame(gameLoop);
-        }
-
-        function drawBee(p, isPeer) {
-            const img = assets.bee[p.dir];
-            if (isPeer) ctx.globalAlpha = 0.6;
-            if (img.complete) ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
-            ctx.globalAlpha = 1.0;
-        }
-
-        function initJoystick() {
-            let active = false;
-            joyBase.addEventListener('touchstart', (e) => { active = true; e.preventDefault(); });
-            window.addEventListener('touchend', () => { active = false; joyStick.style.transform = `translate(0px, 0px)`; });
-            window.addEventListener('touchmove', (e) => {
-                if (!active) return;
-                const touch = e.touches[0];
-                const rect = joyBase.getBoundingClientRect();
-                let dx = touch.clientX - (rect.left + 50);
-                let dy = touch.clientY - (rect.top + 50);
-                const dist = Math.sqrt(dx*dx + dy*dy);
-                if (dist > 40) { dx *= 40/dist; dy *= 40/dist; }
-                joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-                movePlayer(dx, dy, 0.35);
-            }, { passive: false });
         }
     </script>
 </body>
