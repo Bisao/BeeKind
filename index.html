@@ -3,29 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee Game P2P</title>
+    <title>Bee World - Grassland</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
-        canvas { background: #2c3e50; display: none; }
-        
-        #menu { 
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-            text-align: center; background: #333; padding: 30px; border-radius: 15px; 
-            width: 280px; z-index: 10; border: 2px solid #f1c40f;
-        }
-        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; }
+        canvas { background: #222; display: none; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.8); padding: 30px; border-radius: 15px; width: 280px; z-index: 10; border: 2px solid #f1c40f; }
+        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
         button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
-        
-        #joy-base { 
-            position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; 
-            background: rgba(255,255,255,0.1); border-radius: 50%; display: none; 
-            border: 2px solid rgba(255,255,255,0.2);
-        }
-        #joy-stick { 
-            position: absolute; width: 40px; height: 40px; background: rgba(241, 196, 15, 0.5); 
-            border-radius: 50%; top: 30px; left: 30px;
-        }
+        #joy-base { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); }
+        #joy-stick { position: absolute; width: 40px; height: 40px; background: rgba(241, 196, 15, 0.5); border-radius: 50%; top: 30px; left: 30px; }
     </style>
 </head>
 <body>
@@ -45,28 +32,32 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const menu = document.getElementById('menu');
-        const statusMsg = document.getElementById('status');
         const joyBase = document.getElementById('joy-base');
         const joyStick = document.getElementById('joy-stick');
 
-        // Configuração das imagens conforme solicitado
-        const sprites = {
-            Down: new Image(),
-            Left: new Image(),
-            Up: new Image(),
-            Right: new Image()
+        // 1. Carregamento de Sprites
+        const assets = {
+            bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() },
+            ground: new Image(),
+            flowers: [new Image(), new Image(), new Image()]
         };
-        sprites.Down.src = 'BeeDown.png';
-        sprites.Left.src = 'BeeLeft.png';
-        sprites.Up.src = 'BeeUp.png';
-        sprites.Right.src = 'BeeRight.png';
+
+        assets.bee.Down.src = 'BeeDown.png';
+        assets.bee.Left.src = 'BeeLeft.png';
+        assets.bee.Up.src = 'BeeUp.png';
+        assets.bee.Right.src = 'BeeRight.png';
+        assets.ground.src = 'Grass.png';
+        assets.flowers[0].src = 'GrassFlower1.png';
+        assets.flowers[1].src = 'GrassFlower2.png';
+        assets.flowers[2].src = 'GrassFlower3.png';
 
         let peer, conn, isHost = false;
         let players = {
-            me: { x: 1000, y: 1000, dir: 'Down' },
-            peer: { x: 1000, y: 1000, dir: 'Down', active: false }
+            me: { x: 500, y: 500, dir: 'Down' },
+            peer: { x: 500, y: 500, dir: 'Down', active: false }
         };
         let camera = { x: 0, y: 0 };
+        const TILE_SIZE = 64; // Tamanho de cada quadrado de grama
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -75,9 +66,10 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // 2. Conexão
         function startSession(hostMode) {
             const code = document.getElementById('room-code').value;
-            if (code.length < 4) return alert("Código muito curto!");
+            if (code.length < 4) return alert("Código curto!");
             isHost = hostMode;
             peer = hostMode ? new Peer('bee-' + code) : new Peer();
             peer.on('open', () => {
@@ -85,7 +77,6 @@
                 else { conn = peer.connect('bee-' + code); setupConnection(); }
             });
             peer.on('connection', c => { conn = c; setupConnection(); });
-            peer.on('error', () => { alert("Erro de conexão!"); location.reload(); });
         }
 
         function setupConnection() {
@@ -100,22 +91,18 @@
             gameLoop();
         }
 
-        // Lógica de direção solicitada
+        // 3. Movimentação
         function movePlayer(dx, dy, speed) {
             players.me.x += dx * speed;
             players.me.y += dy * speed;
-
-            // Define a imagem baseada na direção predominante
             if (Math.abs(dx) > Math.abs(dy)) {
                 players.me.dir = dx > 0 ? 'Right' : 'Left';
             } else {
                 players.me.dir = dy > 0 ? 'Down' : 'Up';
             }
-
             if (conn && conn.open) conn.send(players.me);
         }
 
-        // Mouse (PC)
         window.addEventListener('mousemove', (e) => {
             if (canvas.style.display === 'block' && joyBase.style.display !== 'block') {
                 const dx = e.clientX - canvas.width/2;
@@ -124,14 +111,72 @@
             }
         });
 
-        // Joystick (Mobile)
+        // 4. Renderização do Chão Infinito com Flores Aleatórias
+        function pseudoRandom(x, y) {
+            // Função matemática simples para gerar um número "aleatório" fixo para cada coordenada
+            let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
+            return n - Math.floor(n);
+        }
+
+        function drawInfiniteGround() {
+            const startX = Math.floor(camera.x / TILE_SIZE) - 1;
+            const startY = Math.floor(camera.y / TILE_SIZE) - 1;
+            const endX = startX + Math.ceil(canvas.width / TILE_SIZE) + 2;
+            const endY = startY + Math.ceil(canvas.height / TILE_SIZE) + 2;
+
+            for (let x = startX; x < endX; x++) {
+                for (let y = startY; y < endY; y++) {
+                    const posX = x * TILE_SIZE;
+                    const posY = y * TILE_SIZE;
+
+                    // Desenha a grama base
+                    if (assets.ground.complete) {
+                        ctx.drawImage(assets.ground, posX, posY, TILE_SIZE, TILE_SIZE);
+                    }
+
+                    // Chance de 15% de ter uma flor baseada na posição (para ser sempre a mesma flor naquele lugar)
+                    const chance = pseudoRandom(x, y);
+                    if (chance < 0.15) {
+                        const flowerIdx = Math.floor(pseudoRandom(y, x) * 3); // Escolhe flor 1, 2 ou 3
+                        const flowerImg = assets.flowers[flowerIdx];
+                        if (flowerImg.complete) {
+                            ctx.drawImage(flowerImg, posX, posY, TILE_SIZE, TILE_SIZE);
+                        }
+                    }
+                }
+            }
+        }
+
+        function gameLoop() {
+            camera.x = players.me.x - canvas.width / 2;
+            camera.y = players.me.y - canvas.height / 2;
+
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+
+            drawInfiniteGround();
+
+            if (players.peer.active) drawBee(players.peer, true);
+            drawBee(players.me, false);
+
+            ctx.restore();
+            requestAnimationFrame(gameLoop);
+        }
+
+        function drawBee(p, isPeer) {
+            const img = assets.bee[p.dir];
+            if (isPeer) ctx.globalAlpha = 0.6;
+            if (img.complete) {
+                ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
+            }
+            ctx.globalAlpha = 1.0;
+        }
+
         function initJoystick() {
             let active = false;
             joyBase.addEventListener('touchstart', () => active = true);
-            window.addEventListener('touchend', () => {
-                active = false;
-                joyStick.style.transform = `translate(0px, 0px)`;
-            });
+            window.addEventListener('touchend', () => { active = false; joyStick.style.transform = `translate(0px, 0px)`; });
             window.addEventListener('touchmove', (e) => {
                 if (!active) return;
                 const touch = e.touches[0];
@@ -143,41 +188,6 @@
                 joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
                 movePlayer(dx, dy, 0.3);
             });
-        }
-
-        function gameLoop() {
-            camera.x = players.me.x - canvas.width / 2;
-            camera.y = players.me.y - canvas.height / 2;
-
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.save();
-            ctx.translate(-camera.x, -camera.y);
-
-            // Grade de fundo
-            ctx.strokeStyle = "#34495e";
-            for(let x=0; x<2000; x+=100) { ctx.moveTo(x, 0); ctx.lineTo(x, 2000); }
-            for(let y=0; y<2000; y+=100) { ctx.moveTo(0, y); ctx.lineTo(2000, y); }
-            ctx.stroke();
-
-            if (players.peer.active) drawBee(players.peer, true);
-            drawBee(players.me, false);
-
-            ctx.restore();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function drawBee(p, isPeer) {
-            const img = sprites[p.dir];
-            if (isPeer) ctx.globalAlpha = 0.6;
-            
-            // Verifica se a imagem carregou para evitar erro no canvas
-            if (img.complete) {
-                ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
-            } else {
-                ctx.fillStyle = isPeer ? "red" : "yellow";
-                ctx.beginPath(); ctx.arc(p.x, p.y, 20, 0, Math.PI*2); ctx.fill();
-            }
-            ctx.globalAlpha = 1.0;
         }
     </script>
 </body>
