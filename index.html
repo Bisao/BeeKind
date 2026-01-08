@@ -6,29 +6,64 @@
     <title>Bee World - RPG Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.8); --text-main: #ffffff; --xp-color: #3498db; }
+        :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.85); --text-main: #ffffff; --xp-color: #3498db; --border: rgba(255, 255, 255, 0.1); }
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* HUDs */
-        #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 160px; pointer-events: none; display: none; backdrop-filter: blur(10px); }
-        #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
-        
-        #lvl-hud {
+        /* HUD CENTRAL (Level e Coordenadas) */
+        #central-hud {
             position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            background: var(--bg-dark); padding: 8px 20px; border-radius: 20px;
-            text-align: center; min-width: 200px; backdrop-filter: blur(10px); z-index: 100;
-            border: 1px solid rgba(255,255,255,0.1); display: none;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            z-index: 100; pointer-events: none;
         }
-        #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 5px; overflow: hidden; }
-        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; }
-        #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; }
 
+        #lvl-hud {
+            background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
+            text-align: center; min-width: 220px; backdrop-filter: blur(10px);
+            border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
+        #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+
+        #coords { 
+            font-family: monospace; color: var(--primary); background: var(--bg-dark); 
+            padding: 4px 15px; border-radius: 12px; font-size: 12px; 
+            border: 1px solid var(--border); backdrop-filter: blur(5px);
+            opacity: 0.8;
+        }
+
+        /* PAINEL DE SESSÃO (Esquerda - Retrátil) */
+        #session-panel {
+            position: absolute; top: 15px; left: -210px; /* Inicia oculto */
+            width: 200px; z-index: 101; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #session-panel.active { left: 15px; }
+
+        #player-list { 
+            background: var(--bg-dark); padding: 15px; border-radius: 12px; 
+            border-left: 4px solid var(--primary); font-size: 13px; 
+            backdrop-filter: blur(10px); border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.3);
+        }
+        #btn-session-toggle {
+            position: absolute; right: -40px; top: 0;
+            width: 35px; height: 35px; background: var(--primary);
+            border: none; border-radius: 0 8px 8px 0; cursor: pointer;
+            font-size: 18px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2);
+        }
+
+        .player-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* HUD PÓLEN */
         #pollen-hud { 
             position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
-            background: var(--bg-dark); padding: 15px; border-radius: 10px;
+            background: var(--bg-dark); padding: 15px; border-radius: 15px;
             border-right: 5px solid #fffa65; display: none; text-align: center;
             min-width: 80px; backdrop-filter: blur(10px); z-index: 100;
+            border: 1px solid var(--border);
         }
         #pollen-hud b { display: block; font-size: 10px; color: #aaa; margin-bottom: 5px; }
         #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
@@ -39,59 +74,21 @@
 
         /* Chat */
         #chat-wrapper { 
-            position: absolute; 
-            bottom: 160px; 
-            left: -240px; 
-            width: 240px; 
-            z-index: 500; 
-            display: none; 
-            flex-direction: column; 
+            position: absolute; bottom: 160px; left: -240px; 
+            width: 240px; z-index: 500; display: none; flex-direction: column; 
             transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
         #chat-display { 
-            height: 160px; 
-            background: var(--bg-dark); 
-            border-radius: 0 12px 0 0; 
-            padding: 12px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 6px; 
-            border: 1px solid rgba(255,255,255,0.1); 
-            backdrop-filter: blur(15px);
-            font-size: 13px;
+            height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; 
+            padding: 12px; overflow-y: auto; display: flex; flex-direction: column; 
+            gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px;
         }
-        #chat-input-area { 
-            display: flex; 
-            background: rgba(30, 30, 30, 0.95); 
-            padding: 8px; 
-            border-radius: 0 0 12px 0; 
-            border: 1px solid rgba(255,255,255,0.1); 
-        }
-        #chat-input { 
-            flex: 1; 
-            background: transparent; 
-            border: none; 
-            color: white; 
-            padding: 4px; 
-            font-size: 14px; 
-            outline: none; 
-        }
-        #btn-minimize { 
-            position: absolute; 
-            right: -45px; 
-            bottom: 0; 
-            background: var(--primary); 
-            color: #000; 
-            border: none;
-            border-radius: 0 8px 8px 0; 
-            cursor: pointer; 
-            width: 45px;
-            height: 45px;
-            font-size: 20px;
-            font-weight: bold; 
-            pointer-events: auto;
-            box-shadow: 4px 0 10px rgba(0,0,0,0.3);
+        #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
+        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
+        #btn-minimize-chat { 
+            position: absolute; right: -45px; bottom: 0; background: var(--primary); 
+            color: #000; border: none; border-radius: 0 8px 8px 0; cursor: pointer; 
+            width: 45px; height: 45px; font-size: 20px; font-weight: bold; box-shadow: 4px 0 10px rgba(0,0,0,0.3);
         }
 
         /* Menu */
@@ -108,18 +105,28 @@
 </head>
 <body>
 
-    <div id="lvl-hud">
-        <div id="lvl-text">Nível 1</div>
-        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+    <div id="central-hud">
+        <div id="lvl-hud">
+            <div id="lvl-text">Nível 1</div>
+            <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+        </div>
+        <div id="coords">X: 1100 Y: 1100</div>
+    </div>
+
+    <div id="session-panel">
+        <button id="btn-session-toggle">👥</button>
+        <div id="player-list">
+            <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); padding-bottom: 5px;">SESSÃO</div>
+            <div id="player-items-container"></div>
+        </div>
     </div>
 
     <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
     <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button></div>
     <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button></div>
-    <div id="player-list"></div><div id="coords">LOC: 1000, 1000</div>
     
     <div id="chat-wrapper">
-        <button id="btn-minimize">💬</button>
+        <button id="btn-minimize-chat">💬</button>
         <div id="chat-display"></div>
         <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Mensagem..." autocomplete="off"></div>
     </div>
@@ -141,6 +148,7 @@
         const ctx = canvas.getContext('2d', { alpha: false });
         const chatInput = document.getElementById('chat-input');
         const chatWrapper = document.getElementById('chat-wrapper');
+        const sessionPanel = document.getElementById('session-panel');
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
         const pollenHud = document.getElementById('pollen-hud');
@@ -149,7 +157,7 @@
         const aimBase = document.getElementById('aim-base');
         const moveStick = document.getElementById('move-stick');
         const aimStick = document.getElementById('aim-stick');
-        const playerListUI = document.getElementById('player-list');
+        const playerItemsContainer = document.getElementById('player-items-container');
         
         const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
@@ -170,10 +178,16 @@
 
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        document.getElementById('btn-minimize').onclick = () => {
+        // --- INTERFACE LOGIC ---
+        document.getElementById('btn-minimize-chat').onclick = () => {
             let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
-            document.getElementById('btn-minimize').innerHTML = isHidden ? "«" : "💬";
+            document.getElementById('btn-minimize-chat').innerHTML = isHidden ? "«" : "💬";
+        };
+
+        document.getElementById('btn-session-toggle').onclick = () => {
+            sessionPanel.classList.toggle('active');
+            document.getElementById('btn-session-toggle').innerHTML = sessionPanel.classList.contains('active') ? "«" : "👥";
         };
 
         function addXp(amount) {
@@ -299,15 +313,11 @@
 
         function fire(angle) {
             if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
-            
-            // --- LÓGICA DE DIREÇÃO PELO DISPARO ---
-            // Converte o ângulo do disparo para uma das 4 direções das sprites
             const deg = angle * (180 / Math.PI);
             if (deg >= -45 && deg <= 45) players.me.dir = 'Right';
             else if (deg > 45 && deg <= 135) players.me.dir = 'Down';
             else if (deg < -45 && deg >= -135) players.me.dir = 'Up';
             else players.me.dir = 'Left';
-
             spawnProjectile(players.me.x, players.me.y, angle, true);
             if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
             lastShootTime = Date.now();
@@ -353,11 +363,9 @@
                     }
                 }
             });
-
             if(players.me.pollen > 5 && Math.random() < players.me.pollen/250) {
                 createParticles(players.me.x + (Math.random()-0.5)*15, players.me.y + (Math.random()-0.5)*15, "#fffa65", 1, 'pollen');
             }
-
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; hive.hp = Math.min(hive.maxHp, hive.hp + 50);
@@ -366,7 +374,6 @@
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
             }
-
             enemies.forEach((en, index) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
@@ -383,7 +390,6 @@
                     }
                 });
             });
-
             particles.forEach((p, i) => {
                 p.x += p.vx; p.y += p.vy; p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
@@ -429,6 +435,7 @@
             document.getElementById('menu').style.display = 'none';
             document.getElementById('lvl-hud').style.display = 'block';
             chatWrapper.style.display = 'flex';
+            sessionPanel.style.display = 'block';
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 moveBase.style.display = 'block'; aimBase.style.display = 'block';
@@ -484,25 +491,16 @@
                 let dx = joyMove.dx, dy = joyMove.dy;
                 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
                 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
-                
                 if (dx !== 0 || dy !== 0) {
                     const m = Math.sqrt(dx*dx + dy*dy);
                     players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-                    
-                    // Se NÃO estiver atirando, vira para a direção do movimento
-                    // Se estiver atirando, o fire() sobrescreverá a direção no frame
                     if (!isMouseDown && !joyAim.active) {
                         if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
                         else players.me.dir = dy > 0 ? 'Down' : 'Up';
                     }
                 }
-
-                // Disparo
                 if(joyAim.active) fire(joyAim.angle);
-                else if(isMouseDown) {
-                    // Calcula o ângulo baseado na posição da câmera (centro da tela)
-                    fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
-                }
+                else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
             runWaveLogic(); updateMechanics();
@@ -512,6 +510,7 @@
                 lastNetUpdate = performance.now(); 
             }
 
+            // ATUALIZAÇÃO DO PAINEL DE SESSÃO
             let playerListHtml = "";
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
@@ -522,7 +521,7 @@
                 const hpP = Math.floor((hive.hp/hive.maxHp)*100);
                 playerListHtml += `<div class="player-item hive-status" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hpP}%</span></div>`;
             }
-            playerListUI.style.display = "block"; playerListUI.innerHTML = playerListHtml;
+            playerItemsContainer.innerHTML = playerListHtml;
 
             projectiles.forEach((p, i) => { 
                 p.x += p.vx; p.y += p.vy; p.life--; 
