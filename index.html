@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Visual Effects Edition</title>
+    <title>Bee World - Natural Effects Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
@@ -104,15 +104,26 @@
 
         function createParticles(x, y, color, count, type = 'pixel') {
             for(let i=0; i<count; i++) {
-                particles.push({
-                    x, y,
-                    vx: (Math.random() - 0.5) * 5,
-                    vy: (Math.random() - 0.5) * 5,
-                    life: 1.0,
-                    decay: Math.random() * 0.02 + 0.01,
-                    color,
-                    type // 'pixel', 'cross' (healing), 'smoke'
-                });
+                let vx = (Math.random() - 0.5) * 4;
+                let vy = (Math.random() - 0.5) * 4;
+                let life = 1.0;
+                let decay = Math.random() * 0.02 + 0.01;
+
+                if(type === 'pollen') {
+                    vx = (Math.random() - 0.5) * 0.5; // Bem lento horizontalmente
+                    vy = Math.random() * 0.3 + 0.1;   // Queda suave
+                    decay = 0.005;                   // Dura muito tempo
+                } else if (type === 'heart') {
+                    vx = (Math.random() - 0.5) * 1;
+                    vy = -Math.random() * 0.8 - 0.4; // Sobe suavemente
+                    decay = 0.008;                   // Dura bastante
+                } else if (type === 'smoke') {
+                    vx = (Math.random() - 0.5) * 3;
+                    vy = (Math.random() - 0.5) * 3;
+                    decay = 0.015;
+                }
+
+                particles.push({ x, y, vx, vy, life, decay, color, type });
             }
         }
 
@@ -167,11 +178,11 @@
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-                else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 5); } }
+                else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 8); } }
                 else if(data.type === 'sync_world') { enemies = data.enemies; isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; flowers = data.flowers || flowers; }
                 else if(data.type === 'repair') { 
                     hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
-                    createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross');
+                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
@@ -225,8 +236,8 @@
             }
             if (hive.hp <= 0 && !hive.destroyed) { 
                 hive.hp = 0; hive.destroyed = true; 
-                createParticles(hive.x, hive.y, "#f39c12", 100);
-                createParticles(hive.x, hive.y, "#7f8c8d", 50, 'smoke');
+                createParticles(hive.x, hive.y, "#f39c12", 120);
+                createParticles(hive.x, hive.y, "#7f8c8d", 80, 'smoke');
                 setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
             }
             if (conn && conn.open && performance.now() - lastNetUpdate > 100) {
@@ -235,13 +246,9 @@
         }
 
         function updateMechanics() {
-            // Partículas de Pólen (Amarelas Suaves)
-            if(players.me.pollen > 10 && Math.random() < players.me.pollen/200) {
-                particles.push({
-                    x: players.me.x, y: players.me.y,
-                    vx: (Math.random() - 0.5), vy: Math.random() * 2,
-                    life: 1.0, decay: 0.02, color: "#fffa65", type: 'pixel'
-                });
+            // Partículas de Pólen Suaves
+            if(players.me.pollen > 5 && Math.random() < players.me.pollen/250) {
+                createParticles(players.me.x + (Math.random()-0.5)*15, players.me.y + (Math.random()-0.5)*15, "#fffa65", 1, 'pollen');
             }
 
             // Cura passiva na Colmeia
@@ -250,7 +257,7 @@
                 if(hive.healTimer >= 25) {
                     if(players.me.hp < 100) {
                         players.me.hp = Math.min(100, players.me.hp + 1);
-                        createParticles(players.me.x, players.me.y, "#2ecc71", 3, 'cross');
+                        createParticles(players.me.x, players.me.y, "#ff4d4d", 2, 'heart');
                     }
                     hive.healTimer = 0;
                 }
@@ -268,7 +275,7 @@
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; hive.hp = Math.min(hive.maxHp, hive.hp + 50);
                     if(conn && conn.open) conn.send({ type: 'repair' });
-                    createParticles(hive.x, hive.y, "#2ecc71", 20, 'cross');
+                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
             }
 
@@ -286,7 +293,14 @@
             });
 
             particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+                if(p.type === 'pollen') {
+                    // Adiciona um balanço lateral senoidal para parecer mais natural
+                    p.x += p.vx + Math.sin(performance.now() * 0.005) * 0.2;
+                } else {
+                    p.x += p.vx;
+                }
+                p.y += p.vy;
+                p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
             });
         }
@@ -445,18 +459,19 @@
             }); ctx.globalAlpha = 1.0;
 
             if(!hive.destroyed) {
-                ctx.font = "60px Arial"; ctx.fillText("🏠", hive.x, hive.y + 20);
+                ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
                 drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
             }
 
             drawIndicators();
-            enemies.forEach(en => { ctx.font = "30px Arial"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
+            enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
             projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
-                if(p.type === 'cross') {
-                    ctx.fillStyle = p.color; ctx.font = "bold 16px Arial"; ctx.fillText("+", p.x, p.y);
+                if(p.type === 'heart') {
+                    ctx.font = "24px Arial"; // Corações maiores
+                    ctx.fillText("❤️", p.x, p.y);
                 } else if(p.type === 'smoke') {
                     ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill();
                 } else {
