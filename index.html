@@ -379,25 +379,44 @@
             document.getElementById('lvl-text').innerText = `Nível ${players.me.lvl}`;
         }
 
+        // --- VERIFICAÇÃO COMPLETA DE PARTÍCULAS ---
         function createParticles(x, y, color, count, type = 'pixel') {
             for(let i=0; i<count; i++) {
                 let vx = (Math.random() - 0.5) * 4;
                 let vy = (Math.random() - 0.5) * 4;
                 let life = 1.0;
                 let decay = Math.random() * 0.02 + 0.01;
-                if(type === 'pollen') { vx *= 0.2; vy *= 0.2; decay = 0.005; }
-                else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
-                particles.push({ x, y, vx, vy, life, decay, color, type });
+                let size = 3;
+
+                if(type === 'pollen') { 
+                    // Partículas de pólen flutuam levemente para cima
+                    vx = (Math.random() - 0.5) * 1.5; 
+                    vy = (Math.random() * -1.2) - 0.2; 
+                    decay = 0.004 + Math.random() * 0.006; 
+                    size = 2 + Math.random() * 2;
+                }
+                else if (type === 'heart') { 
+                    vx *= 0.5; 
+                    vy = -Math.random() - 0.5; 
+                    decay = 0.012; 
+                    size = 20; // Tamanho do emoji
+                }
+                
+                particles.push({ x, y, vx, vy, life, decay, color, type, size });
             }
         }
 
         function generateFlowers() {
             const types = ["🌸", "🌻", "🌷"];
-            for(let i=0; i<25; i++) {
+            for(let i=0; i<35; i++) { // Aumentado para 35 flores
                 flowers.push({
-                    x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
+                    x: Math.random() * 4000 - 1000, 
+                    y: Math.random() * 4000 - 1000,
                     emoji: types[Math.floor(Math.random() * types.length)],
-                    cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
+                    cooldown: 0, 
+                    maxCooldown: 300, 
+                    phase: Math.random() * Math.PI * 2,
+                    pollenParticlesTimer: 0
                 });
             }
         }
@@ -555,14 +574,34 @@
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
-                    if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
-                    if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-                        players.me.pollen += 0.4;
-                        addXp(0.1);
-                        if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
+                    // Verificação de emissão de partículas de pólen ambiente
+                    f.pollenParticlesTimer += 1;
+                    if (f.pollenParticlesTimer > 40) { // Cria uma partícula a cada 40 frames
+                        createParticles(f.x + (Math.random()-0.5)*20, f.y - 10, "#fffa65", 1, 'pollen');
+                        f.pollenParticlesTimer = 0;
+                    }
+
+                    // Coleta de pólen pelo jogador
+                    if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100 && !players.me.isDead) {
+                        players.me.pollen += 0.5;
+                        addXp(0.12);
+                        // Efeito visual de coleta
+                        if (Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+                        
+                        if(players.me.pollen >= 100) { 
+                            f.cooldown = f.maxCooldown; 
+                            players.me.pollen = 100; 
+                        }
                     }
                 }
             });
+
+            // Rastro de pólen quando carregado
+            if(players.me.pollen > 10 && !players.me.isDead) {
+                if(Math.random() < (players.me.pollen / 400)) {
+                     createParticles(players.me.x, players.me.y + 10, "#fffa65", 1, 'pollen');
+                }
+            }
 
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
@@ -589,8 +628,11 @@
                 });
             });
 
+            // Atualização de movimento das partículas
             particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+                p.x += p.vx; 
+                p.y += p.vy; 
+                p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
             });
         }
@@ -748,7 +790,7 @@
             flowers.forEach(f => {
                 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
                 ctx.font = "28px Arial"; ctx.textAlign = "center";
-                ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
+                ctx.globalAlpha = f.cooldown > 0 ? 0.35 : 1.0; // Mais transparente em cooldown
                 ctx.fillText(f.emoji, f.x + sway, f.y);
             });
             ctx.globalAlpha = 1.0;
@@ -765,11 +807,25 @@
             });
             projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
+            // Renderização de Partículas Otimizada
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
-                if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); }
-                else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); }
-            }); ctx.globalAlpha = 1.0;
+                if(p.type === 'heart') { 
+                    ctx.font = `${p.size}px Arial`; 
+                    ctx.fillText("❤️", p.x, p.y); 
+                }
+                else if(p.type === 'pollen') {
+                    ctx.fillStyle = p.color;
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.size, 0, Math.PI*2);
+                    ctx.fill();
+                }
+                else { 
+                    ctx.fillStyle = p.color; 
+                    ctx.fillRect(p.x, p.y, p.size, p.size); 
+                }
+            }); 
+            ctx.globalAlpha = 1.0;
 
             const drawB = (p, c, a) => {
                 if(!assets.bee[p.dir].complete || p.isDead) return;
@@ -777,6 +833,15 @@
                 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
                 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
                 drawHealthBar(p.x, p.y, p.hp);
+                
+                // Barra de pólen individual sobre a cabeça
+                if(p.pollen > 0) {
+                    const bw = 30;
+                    ctx.fillStyle = "rgba(0,0,0,0.4)";
+                    ctx.fillRect(p.x - bw/2, p.y + 35, bw, 4);
+                    ctx.fillStyle = "#fffa65";
+                    ctx.fillRect(p.x - bw/2, p.y + 35, bw * (p.pollen/100), 4);
+                }
             };
             drawB(players.me, players.me.color, 1);
             if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
