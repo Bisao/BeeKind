@@ -2,79 +2,104 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>P2P Circle Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P2P Circle Game - 6 Digits</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #222; font-family: sans-serif; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        canvas { background: #000; border: 2px solid #444; display: none; }
-        #menu { text-align: center; background: #333; padding: 20px; border-radius: 10px; }
-        input { padding: 10px; border-radius: 5px; border: none; margin: 10px; }
-        button { padding: 10px 20px; cursor: pointer; background: #28a745; color: white; border: none; border-radius: 5px; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        canvas { background: #000; border: 3px solid #333; border-radius: 8px; display: none; cursor: none; }
+        #menu { text-align: center; background: #2d2d2d; padding: 40px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); width: 320px; }
+        h1 { margin-bottom: 25px; color: #00d4ff; }
+        input { width: 80%; padding: 12px; border-radius: 8px; border: 2px solid #444; background: #1a1a1a; color: white; font-size: 18px; margin-bottom: 15px; text-align: center; }
+        button { width: 90%; padding: 12px; cursor: pointer; background: #00d4ff; color: #000; border: none; border-radius: 8px; font-weight: bold; font-size: 16px; margin: 5px 0; transition: 0.3s; }
+        button:hover { background: #0099bb; transform: scale(1.02); }
+        #status { margin-top: 15px; font-size: 14px; color: #aaa; }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1>Círculos P2P</h1>
-        <div id="setup">
-            <p>Seu ID: <strong id="my-id">...</strong></p>
-            <button onclick="createRoom()">Criar Sala</button>
-            <hr>
-            <input type="text" id="join-id" placeholder="ID do Amigo">
-            <button onclick="joinRoom()" style="background: #007bff;">Entrar na Sala</button>
-        </div>
-        <p id="status"></p>
+        <h1>Circle P2P</h1>
+        <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
+        <button onclick="startSession(true)">Criar Sessão (Host)</button>
+        <button onclick="startSession(false)" style="background: #a200ff; color: white;">Entrar na Sessão</button>
+        <p id="status">Digite um código para começar</p>
     </div>
 
-    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
 
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const menu = document.getElementById('menu');
-        const status = document.getElementById('status');
+        const statusMsg = document.getElementById('status');
+        const codeInput = document.getElementById('room-code');
         
-        let peer = new Peer(); // Cria um ID aleatório para você
+        let peer;
         let conn;
+        let isHost = false;
+        
+        // Estado dos jogadores
         let players = {
-            me: { x: 100, y: 100, color: 'lime' },
-            peer: { x: 500, y: 100, color: 'red' }
+            me: { x: 400, y: 300, color: '#00d4ff' },
+            peer: { x: -100, y: -100, color: '#ff0077' } // Fora da tela até conectar
         };
 
-        // Exibe seu ID na tela
-        peer.on('open', id => document.getElementById('my-id').innerText = id);
+        function startSession(hostMode) {
+            const code = codeInput.value;
+            if (code.length < 4) {
+                alert("Use um código de pelo menos 4 a 6 dígitos.");
+                return;
+            }
 
-        // --- Lógica de Conexão ---
+            isHost = hostMode;
+            statusMsg.innerText = "Conectando ao sinal...";
 
-        // Quando alguém se conecta a você (Host)
-        peer.on('connection', c => {
-            conn = c;
-            setupConnection();
-            startGame();
-        });
+            // Criamos o Peer usando o código digitado como ID
+            // Se for Host, o ID será o código. Se for convidado, o ID será aleatório.
+            peer = hostMode ? new Peer('game-' + code) : new Peer();
 
-        function joinRoom() {
-            const id = document.getElementById('join-id').value;
-            if (!id) return alert("Digite um ID!");
-            conn = peer.connect(id);
-            setupConnection();
-            startGame();
-        }
+            peer.on('open', (id) => {
+                if (hostMode) {
+                    statusMsg.innerText = "Aguardando amigo... Código: " + code;
+                    // O Host já pode entrar no jogo sozinho
+                    startGame();
+                } else {
+                    statusMsg.innerText = "Conectando ao Host...";
+                    conn = peer.connect('game-' + code);
+                    setupConnection();
+                }
+            });
 
-        function createRoom() {
-            status.innerText = "Aguardando amigo se conectar...";
+            peer.on('error', (err) => {
+                console.error(err);
+                if (err.type === 'unavailable-id') {
+                    alert("Este código já está em uso! Tente outro.");
+                } else {
+                    alert("Erro na conexão: " + err.type);
+                }
+                location.reload();
+            });
+
+            // O Host escuta quando o Peer (amigo) se conecta
+            peer.on('connection', (c) => {
+                conn = c;
+                setupConnection();
+            });
         }
 
         function setupConnection() {
-            conn.on('data', data => {
-                // Atualiza a posição do outro jogador
+            conn.on('open', () => {
+                statusMsg.innerText = "Conectado!";
+                if (!isHost) startGame();
+            });
+
+            conn.on('data', (data) => {
+                // Recebe posição do outro player
                 players.peer.x = data.x;
                 players.peer.y = data.y;
             });
-            conn.on('open', () => status.innerText = "Conectado!");
         }
-
-        // --- Lógica do Jogo ---
 
         function startGame() {
             menu.style.display = 'none';
@@ -82,13 +107,13 @@
             gameLoop();
         }
 
-        // Movimentação
+        // Captura movimento do mouse
         window.addEventListener('mousemove', (e) => {
             const rect = canvas.getBoundingClientRect();
             players.me.x = e.clientX - rect.left;
             players.me.y = e.clientY - rect.top;
 
-            // Envia sua posição para o outro jogador
+            // Envia posição via P2P
             if (conn && conn.open) {
                 conn.send({ x: players.me.x, y: players.me.y });
             }
@@ -97,20 +122,39 @@
         function gameLoop() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Desenha você
-            drawCircle(players.me.x, players.me.y, players.me.color);
-            // Desenha o outro
-            drawCircle(players.peer.x, players.peer.y, players.peer.color);
+            // Desenha Grade de fundo (opcional, para dar noção de movimento)
+            drawGrid();
+
+            // Desenha o outro jogador (se estiver conectado)
+            drawCircle(players.peer.x, players.peer.y, players.peer.color, true);
+            
+            // Desenha você por cima
+            drawCircle(players.me.x, players.me.y, players.me.color, false);
 
             requestAnimationFrame(gameLoop);
         }
 
-        function drawCircle(x, y, color) {
+        function drawCircle(x, y, color, isPeer) {
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = color;
             ctx.beginPath();
-            ctx.arc(x, y, 20, 0, Math.PI * 2);
+            ctx.arc(x, y, 25, 0, Math.PI * 2);
             ctx.fillStyle = color;
             ctx.fill();
             ctx.closePath();
+            ctx.shadowBlur = 0;
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = "#222";
+            ctx.lineWidth = 1;
+            for(let i=0; i<canvas.width; i+=40) {
+                ctx.moveTo(i, 0); ctx.lineTo(i, canvas.height);
+            }
+            for(let i=0; i<canvas.height; i+=40) {
+                ctx.moveTo(0, i); ctx.lineTo(canvas.width, i);
+            }
+            ctx.stroke();
         }
     </script>
 </body>
