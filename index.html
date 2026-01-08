@@ -6,8 +6,18 @@
     <title>Bee World - RPG Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.85); --text-main: #ffffff; --xp-color: #3498db; --border: rgba(255, 255, 255, 0.1); }
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+        :root { 
+            --primary: #f1c40f; 
+            --primary-dark: #d4ac0d;
+            --secondary: #3498db;
+            --bg-dark: rgba(20, 20, 20, 0.85); 
+            --text-main: #ffffff; 
+            --xp-color: #3498db; 
+            --border: rgba(255, 255, 255, 0.1); 
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+        
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
         /* HUD CENTRAL */
@@ -103,9 +113,115 @@
         #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
         #btn-minimize-chat { position: absolute; right: -45px; bottom: 0; background: var(--primary); color: #111; border: none; border-radius: 0 8px 8px 0; cursor: pointer; width: 45px; height: 45px; font-size: 20px; font-weight: bold; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 
-        /* MENU INICIAL */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 3000; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; color: #111; }
+        /* --- MENU INICIAL REDESENHADO --- */
+        #menu { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+            z-index: 3000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .menu-card {
+            background: rgba(40, 40, 40, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .menu-card h1 {
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(to bottom, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+            font-weight: 800;
+        }
+
+        .menu-card p {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: bold;
+            padding-left: 5px;
+        }
+
+        .menu-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .menu-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1);
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .main-btn {
+            padding: 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-create { background: var(--primary); color: #111; }
+        .btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+        .btn-join { background: var(--secondary); color: white; }
+        .btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        .main-btn:active { transform: scale(0.95); }
+
+        /* MOBILE OPTIMIZATION */
+        @media (max-width: 480px) {
+            .menu-card { padding: 30px 20px; }
+            .menu-card h1 { font-size: 2.2rem; }
+            .button-row { grid-template-columns: 1fr; }
+            .main-btn { padding: 18px; }
+        }
 
         /* JOYSTICKS */
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
@@ -142,8 +258,14 @@
     </div>
 
     <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
-    <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()">RESPAWN</button></div>
-    <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()">RECOMEÇAR</button></div>
+    <div id="death-modal">
+        <h2 class="modal-title">Derrotado</h2>
+        <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
+    </div>
+    <div id="game-over-modal">
+        <h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
+        <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
+    </div>
     
     <div id="chat-wrapper">
         <button id="btn-minimize-chat">💬</button>
@@ -152,11 +274,29 @@
     </div>
 
     <div id="menu">
-        <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
-        <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
-        <br><input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
-        <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
-        <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR EM SALA</button>
+        <div class="menu-card">
+            <h1>BEE WORLD</h1>
+            <p>RPG Multiplayer Edition • v1.2</p>
+            
+            <div class="input-group">
+                <label>Identidade</label>
+                <input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido no jogo..." maxlength="12">
+            </div>
+
+            <div class="input-group">
+                <label>Portal (Código da Sala)</label>
+                <input type="text" id="room-code" class="menu-input" placeholder="Ex: ABC123" maxlength="6">
+            </div>
+
+            <div class="button-row">
+                <button class="main-btn btn-create" onclick="startSession(true)">
+                    <span>🏠</span> Criar Sala
+                </button>
+                <button class="main-btn btn-join" onclick="startSession(false)">
+                    <span>🚀</span> Entrar
+                </button>
+            </div>
+        </div>
     </div>
 
     <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
@@ -180,7 +320,6 @@
         const aimStick = document.getElementById('aim-stick');
         const playerItemsContainer = document.getElementById('player-items-container');
         
-        // Novos elementos
         const btnOpenMenu = document.getElementById('btn-open-menu');
         const mainActionMenu = document.getElementById('main-action-menu');
 
@@ -277,7 +416,7 @@
         function startSession(host) {
             const code = document.getElementById('room-code').value.trim();
             const nick = document.getElementById('player-nick').value.trim();
-            if(!nick || !code) return alert("Preencha tudo!");
+            if(!nick || !code) return alert("Preencha o Nickname e o Código!");
             isHost = host;
             players.me.nick = nick;
             players.me.color = host ? "#f1c40f" : "#3498db";
