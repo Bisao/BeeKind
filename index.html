@@ -3,26 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Lag Fixed</title>
+    <title>Bee World - Compass & HUD</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: white; touch-action: none; }
         canvas { background: #222; display: none; }
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.85); padding: 30px; border-radius: 15px; width: 280px; z-index: 10; border: 2px solid #f1c40f; }
+        
+        /* Menu */
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.85); padding: 30px; border-radius: 15px; width: 280px; z-index: 100; border: 2px solid #f1c40f; }
         input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
         button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
+        
+        /* HUD - Interface de Cima */
+        #hud-container {
+            position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center;
+            pointer-events: none; z-index: 50; width: 200px;
+        }
+        #compass-bar {
+            width: 100%; height: 30px; background: rgba(0,0,0,0.6);
+            border: 2px solid #f1c40f; border-radius: 5px; position: relative; overflow: hidden;
+        }
+        #compass-line {
+            position: absolute; width: 2px; height: 100%; background: #ff4757;
+            left: 50%; transform: translateX(-50%); z-index: 2;
+        }
+        #compass-letters {
+            position: absolute; white-space: nowrap; transition: 0.1s linear;
+            font-weight: bold; font-size: 14px; line-height: 26px; width: 1000px; text-align: center;
+        }
+        #coordinates {
+            margin-top: 8px; background: rgba(0,0,0,0.5); padding: 4px 12px;
+            border-radius: 20px; font-size: 14px; color: #f1c40f; font-family: monospace;
+        }
+
+        /* Joystick */
         #joy-base { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); }
         #joy-stick { position: absolute; width: 40px; height: 40px; background: rgba(241, 196, 15, 0.5); border-radius: 50%; top: 30px; left: 30px; }
     </style>
 </head>
 <body>
 
+    <div id="hud-container">
+        <div id="compass-bar">
+            <div id="compass-line"></div>
+            <div id="compass-letters">N · · · E · · · S · · · W · · · N</div>
+        </div>
+        <div id="coordinates">X: 0 | Y: 0</div>
+    </div>
+
     <div id="menu">
-        <h1 style="color: #f1c40f;">BEE P2P</h1>
+        <h1 style="color: #f1c40f; margin: 0 0 20px 0;">BEE P2P</h1>
         <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
         <button onclick="startSession(true)" style="background: #f1c40f;">CRIAR SALA</button>
         <button onclick="startSession(false)" style="background: #3498db; color: white;">ENTRAR NA SALA</button>
-        <p id="status">Aguardando código...</p>
+        <p id="status" style="font-size: 12px;">Pronto para voar?</p>
     </div>
 
     <div id="joy-base"><div id="joy-stick"></div></div>
@@ -34,6 +69,8 @@
         const menu = document.getElementById('menu');
         const joyBase = document.getElementById('joy-base');
         const joyStick = document.getElementById('joy-stick');
+        const coordDisplay = document.getElementById('coordinates');
+        const compassLetters = document.getElementById('compass-letters');
 
         const assets = {
             bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() },
@@ -41,6 +78,7 @@
             flowers: [new Image(), new Image(), new Image()]
         };
 
+        // Carregamento de Sprites
         assets.bee.Down.src = 'BeeDown.png';
         assets.bee.Left.src = 'BeeLeft.png';
         assets.bee.Up.src = 'BeeUp.png';
@@ -51,8 +89,6 @@
         assets.flowers[2].src = 'GrassFlower3.png';
 
         let peer, conn, isHost = false;
-        
-        // Posições REAIS vs Posições VISUAIS (Interpolação)
         let players = {
             me: { x: 500, y: 500, dir: 'Down' },
             peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false }
@@ -84,7 +120,6 @@
         function setupConnection() {
             conn.on('open', () => { if (!isHost) startGame(); });
             conn.on('data', data => {
-                // Em vez de mudar a posição direto, salvamos como o "alvo"
                 players.peer.targetX = data.x;
                 players.peer.targetY = data.y;
                 players.peer.dir = data.dir;
@@ -109,7 +144,6 @@
                 players.me.dir = dy > 0 ? 'Down' : 'Up';
             }
 
-            // OTMIZAÇÃO: Só envia dados se passou 33ms (30fps de rede)
             const now = Date.now();
             if (now - lastSendTime > 33) {
                 if (conn && conn.open) conn.send(players.me);
@@ -128,6 +162,17 @@
         function pseudoRandom(x, y) {
             let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
             return n - Math.floor(n);
+        }
+
+        function updateHUD() {
+            // Atualiza Coordenadas
+            coordDisplay.innerText = `X: ${Math.floor(players.me.x)} | Y: ${Math.floor(players.me.y)}`;
+
+            // Atualiza Bússola
+            // Calcula o ângulo em relação ao ponto (0,0) do mundo
+            const angle = Math.atan2(0 - players.me.y, 0 - players.me.x) * (180 / Math.PI);
+            // Move o texto das letras da bússola
+            compassLetters.style.left = `${-angle - 400}px`;
         }
 
         function drawInfiniteGround() {
@@ -169,8 +214,6 @@
         }
 
         function gameLoop() {
-            // INTERPOLAÇÃO: Faz a abelha do amigo deslizar suavemente até o alvo
-            // O valor 0.1 cria um deslize suave. Se aumentar para 0.2, fica mais rápido.
             if (players.peer.active) {
                 players.peer.x += (players.peer.targetX - players.peer.x) * 0.12;
                 players.peer.y += (players.peer.targetY - players.peer.y) * 0.12;
@@ -190,6 +233,8 @@
             drawBee(players.me, false);
 
             ctx.restore();
+            
+            updateHUD(); // Atualiza a bússola e coordenadas a cada frame
             requestAnimationFrame(gameLoop);
         }
 
