@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Grassland</title>
+    <title>Bee World - Friend Pointer</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
         canvas { background: #222; display: none; }
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.8); padding: 30px; border-radius: 15px; width: 280px; z-index: 10; border: 2px solid #f1c40f; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: rgba(0,0,0,0.85); padding: 30px; border-radius: 15px; width: 280px; z-index: 10; border: 2px solid #f1c40f; }
         input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
         button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
         #joy-base { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); }
@@ -35,7 +35,6 @@
         const joyBase = document.getElementById('joy-base');
         const joyStick = document.getElementById('joy-stick');
 
-        // 1. Carregamento de Sprites
         const assets = {
             bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() },
             ground: new Image(),
@@ -57,7 +56,7 @@
             peer: { x: 500, y: 500, dir: 'Down', active: false }
         };
         let camera = { x: 0, y: 0 };
-        const TILE_SIZE = 64; // Tamanho de cada quadrado de grama
+        const TILE_SIZE = 64;
 
         function resize() {
             canvas.width = window.innerWidth;
@@ -66,7 +65,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // 2. Conexão
         function startSession(hostMode) {
             const code = document.getElementById('room-code').value;
             if (code.length < 4) return alert("Código curto!");
@@ -91,7 +89,6 @@
             gameLoop();
         }
 
-        // 3. Movimentação
         function movePlayer(dx, dy, speed) {
             players.me.x += dx * speed;
             players.me.y += dy * speed;
@@ -111,9 +108,7 @@
             }
         });
 
-        // 4. Renderização do Chão Infinito com Flores Aleatórias
         function pseudoRandom(x, y) {
-            // Função matemática simples para gerar um número "aleatório" fixo para cada coordenada
             let n = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
             return n - Math.floor(n);
         }
@@ -128,23 +123,45 @@
                 for (let y = startY; y < endY; y++) {
                     const posX = x * TILE_SIZE;
                     const posY = y * TILE_SIZE;
-
-                    // Desenha a grama base
-                    if (assets.ground.complete) {
-                        ctx.drawImage(assets.ground, posX, posY, TILE_SIZE, TILE_SIZE);
-                    }
-
-                    // Chance de 15% de ter uma flor baseada na posição (para ser sempre a mesma flor naquele lugar)
+                    if (assets.ground.complete) ctx.drawImage(assets.ground, posX, posY, TILE_SIZE, TILE_SIZE);
                     const chance = pseudoRandom(x, y);
                     if (chance < 0.15) {
-                        const flowerIdx = Math.floor(pseudoRandom(y, x) * 3); // Escolhe flor 1, 2 ou 3
+                        const flowerIdx = Math.floor(pseudoRandom(y, x) * 3);
                         const flowerImg = assets.flowers[flowerIdx];
-                        if (flowerImg.complete) {
-                            ctx.drawImage(flowerImg, posX, posY, TILE_SIZE, TILE_SIZE);
-                        }
+                        if (flowerImg.complete) ctx.drawImage(flowerImg, posX, posY, TILE_SIZE, TILE_SIZE);
                     }
                 }
             }
+        }
+
+        // --- NOVA FUNÇÃO: SETA DE DIREÇÃO ---
+        function drawFriendPointer() {
+            if (!players.peer.active) return;
+
+            // Calcula o ângulo entre eu e o amigo
+            const dx = players.peer.x - players.me.x;
+            const dy = players.peer.y - players.me.y;
+            const angle = Math.atan2(dy, dx);
+            
+            // Distância da seta em relação ao centro da minha abelha
+            const radius = 55; 
+
+            ctx.save();
+            ctx.translate(players.me.x, players.me.y);
+            ctx.rotate(angle);
+            
+            // Desenha o triângulo da seta
+            ctx.beginPath();
+            ctx.moveTo(radius, 0);          // Ponta da seta
+            ctx.lineTo(radius - 15, -8);    // Lado esquerdo
+            ctx.lineTo(radius - 15, 8);     // Lado direito
+            ctx.closePath();
+            
+            ctx.fillStyle = "#3498db";      // Cor azul para o amigo
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = "white";
+            ctx.fill();
+            ctx.restore();
         }
 
         function gameLoop() {
@@ -156,6 +173,9 @@
             ctx.translate(-camera.x, -camera.y);
 
             drawInfiniteGround();
+            
+            // Seta de direção (desenhada antes para não ficar por cima das abelhas se quiser)
+            drawFriendPointer();
 
             if (players.peer.active) drawBee(players.peer, true);
             drawBee(players.me, false);
@@ -167,9 +187,7 @@
         function drawBee(p, isPeer) {
             const img = assets.bee[p.dir];
             if (isPeer) ctx.globalAlpha = 0.6;
-            if (img.complete) {
-                ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
-            }
+            if (img.complete) ctx.drawImage(img, p.x - 32, p.y - 32, 64, 64);
             ctx.globalAlpha = 1.0;
         }
 
