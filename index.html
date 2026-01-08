@@ -3,26 +3,26 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee P2P Game</title>
+    <title>Bee P2P - Camera Follow</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
-        canvas { background: #2c3e50; display: none; }
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #333; padding: 30px; border-radius: 15px; width: 280px; z-index: 10; }
-        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; }
-        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; }
-        #joystick-container { position: absolute; bottom: 50px; left: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; touch-action: none; border: 2px solid rgba(255,255,255,0.2); }
-        #joystick-knob { position: absolute; width: 50px; height: 50px; background: rgba(255,255,255,0.5); border-radius: 50%; top: 35px; left: 35px; }
+        canvas { background: #222; display: none; }
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #333; padding: 30px; border-radius: 15px; width: 280px; z-index: 10; border: 2px solid #f1c40f; }
+        input { width: 80%; padding: 12px; margin-bottom: 10px; border-radius: 5px; border: none; text-align: center; font-size: 16px; }
+        button { width: 90%; padding: 12px; margin: 5px; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; font-size: 14px; }
+        #joystick-container { position: absolute; bottom: 40px; right: 40px; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; touch-action: none; border: 2px solid rgba(255,255,255,0.2); }
+        #joystick-knob { position: absolute; width: 40px; height: 40px; background: rgba(255,255,255,0.4); border-radius: 50%; top: 30px; left: 30px; }
     </style>
 </head>
 <body>
 
     <div id="menu">
-        <h1 style="color: #f1c40f;">Bee P2P</h1>
-        <input type="text" id="room-code" placeholder="Código de 6 dígitos" maxlength="6">
-        <button onclick="startSession(true)" style="background: #f1c40f;">Criar Sessão</button>
-        <button onclick="startSession(false)" style="background: #3498db; color: white;">Entrar na Sessão</button>
-        <p id="status">Aguardando código...</p>
+        <h1 style="color: #f1c40f; margin-top: 0;">Bee P2P</h1>
+        <input type="text" id="room-code" placeholder="Código (Ex: 123456)" maxlength="6">
+        <button onclick="startSession(true)" style="background: #f1c40f; color: #000;">CRIAR SALA</button>
+        <button onclick="startSession(false)" style="background: #3498db; color: white;">ENTRAR NA SALA</button>
+        <p id="status" style="font-size: 12px; color: #aaa;">Insira um código para jogar</p>
     </div>
 
     <div id="joystick-container"><div id="joystick-knob"></div></div>
@@ -37,15 +37,16 @@
         const joyKnob = document.getElementById('joystick-knob');
 
         const beeImg = new Image();
-        beeImg.src = 'Bee.png'; // Procura no mesmo diretório
+        beeImg.src = 'Bee.png';
 
         let peer, conn, isHost = false;
         let players = {
-            me: { x: 100, y: 100, targetX: 100, targetY: 100 },
-            peer: { x: -100, y: -100 }
+            me: { x: 0, y: 0, facingLeft: false },
+            peer: { x: 0, y: 0, facingLeft: false }
         };
 
-        // Ajustar canvas para o tamanho da tela
+        let camera = { x: 0, y: 0 };
+
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -56,102 +57,110 @@
         function startSession(hostMode) {
             const code = document.getElementById('room-code').value;
             if (code.length < 4) return alert("Código muito curto!");
-
             isHost = hostMode;
+            statusMsg.innerText = "Conectando...";
             peer = hostMode ? new Peer('bee-' + code) : new Peer();
-
             peer.on('open', () => {
-                if (hostMode) {
-                    statusMsg.innerText = "Esperando amigo no código: " + code;
-                    startGame();
-                } else {
-                    conn = peer.connect('bee-' + code);
-                    setupConnection();
-                }
+                if (hostMode) { startGame(); } 
+                else { conn = peer.connect('bee-' + code); setupConnection(); }
             });
-
             peer.on('connection', c => { conn = c; setupConnection(); });
-            peer.on('error', () => { alert("Erro de conexão!"); location.reload(); });
+            peer.on('error', (err) => { alert("Erro: " + err.type); location.reload(); });
         }
 
         function setupConnection() {
             conn.on('open', () => { if (!isHost) startGame(); });
-            conn.on('data', data => { players.peer.x = data.x; players.peer.y = data.y; });
+            conn.on('data', data => { players.peer = data; });
         }
 
         function startGame() {
             menu.style.display = 'none';
             canvas.style.display = 'block';
-            if ('ontouchstart' in window) {
-                joyContainer.style.display = 'block';
-                initJoystick();
-            }
+            if ('ontouchstart' in window) { joyContainer.style.display = 'block'; initJoystick(); }
             gameLoop();
         }
 
-        // --- Movimento Mouse (PC) ---
+        // Lógica de Mouse (PC) - Agora move em relação ao centro da tela
         window.addEventListener('mousemove', (e) => {
             if (joyContainer.style.display === 'block') return;
-            players.me.x = e.clientX;
-            players.me.y = e.clientY;
+            // No PC, o mouse define a direção para onde a abelha "flutua"
+            const dx = e.clientX - canvas.width/2;
+            const dy = e.clientY - canvas.height/2;
+            players.me.x += dx * 0.05;
+            players.me.y += dy * 0.05;
+            players.me.facingLeft = dx < 0;
             sendPos();
         });
 
-        // --- Joystick Virtual (Mobile) ---
         function initJoystick() {
             let active = false;
             const limit = 40;
-            const startPos = { x: 0, y: 0 };
-
             const handleMove = (e) => {
                 if (!active) return;
                 const touch = e.touches[0];
-                let dx = touch.clientX - (joyContainer.offsetLeft + 60);
-                let dy = touch.clientY - (joyContainer.offsetTop + 60);
+                let dx = touch.clientX - (joyContainer.offsetLeft + 50);
+                let dy = touch.clientY - (joyContainer.offsetTop + 50);
                 const dist = Math.sqrt(dx*dx + dy*dy);
-                
-                if (dist > limit) {
-                    dx *= limit / dist;
-                    dy *= limit / dist;
-                }
-
+                if (dist > limit) { dx *= limit/dist; dy *= limit/dist; }
                 joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-                
-                // Mover a abelha baseado na inclinação do joystick
-                players.me.x += dx * 0.2; 
-                players.me.y += dy * 0.2;
+                players.me.x += dx * 0.3;
+                players.me.y += dy * 0.3;
+                players.me.facingLeft = dx < 0;
                 sendPos();
             };
-
             joyContainer.addEventListener('touchstart', () => active = true);
-            window.addEventListener('touchend', () => {
-                active = false;
-                joyKnob.style.transform = `translate(0px, 0px)`;
-            });
+            window.addEventListener('touchend', () => { active = false; joyKnob.style.transform = `translate(0px, 0px)`; });
             window.addEventListener('touchmove', handleMove);
         }
 
         function sendPos() {
-            if (conn && conn.open) conn.send({ x: players.me.x, y: players.me.y });
+            if (conn && conn.open) conn.send(players.me);
+        }
+
+        function drawGrid() {
+            const size = 100;
+            ctx.strokeStyle = "#333";
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Desenha linhas verticais e horizontais baseadas na posição da câmera
+            const startX = Math.floor(camera.x / size) * size;
+            const startY = Math.floor(camera.y / size) * size;
+            for (let x = startX; x < startX + canvas.width + size; x += size) {
+                ctx.moveTo(x, startY); ctx.lineTo(x, startY + canvas.height + size);
+            }
+            for (let y = startY; y < startY + canvas.height + size; y += size) {
+                ctx.moveTo(startX, y); ctx.lineTo(startX + canvas.width + size, y);
+            }
+            ctx.stroke();
         }
 
         function gameLoop() {
+            // A câmera segue o jogador suavemente (Lerp)
+            camera.x = players.me.x - canvas.width / 2;
+            camera.y = players.me.y - canvas.height / 2;
+
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
-            // Desenha o outro player
-            drawBee(players.peer.x, players.peer.y, 0.7); // Um pouco transparente
-            
-            // Desenha você
-            drawBee(players.me.x, players.me.y, 1);
+            ctx.save();
+            // Move o "mundo" para a posição da câmera
+            ctx.translate(-camera.x, -camera.y);
 
+            drawGrid();
+            
+            // Desenha os jogadores
+            drawBee(players.peer);
+            drawBee(players.me);
+
+            ctx.restore();
             requestAnimationFrame(gameLoop);
         }
 
-        function drawBee(x, y, alpha) {
-            ctx.globalAlpha = alpha;
-            // Centraliza a imagem no ponto X, Y (tamanho 60x60)
-            ctx.drawImage(beeImg, x - 30, y - 30, 60, 60);
-            ctx.globalAlpha = 1.0;
+        function drawBee(p) {
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            if (p.facingLeft) ctx.scale(-1, 1); // Inverte a imagem se estiver indo para esquerda
+            ctx.drawImage(beeImg, -30, -30, 60, 60);
+            ctx.restore();
         }
     </script>
 </body>
