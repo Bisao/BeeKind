@@ -19,7 +19,7 @@
             border-right: 3px solid var(--primary); pointer-events: none; 
         }
 
-        /* Sistema de Chat Profissional */
+        /* Chat */
         #chat-wrapper { position: absolute; bottom: 25px; left: 20px; width: 280px; z-index: 200; display: none; flex-direction: column; }
         #chat-display { 
             height: 160px; background: var(--bg-dark); border-radius: 8px 8px 0 0; 
@@ -66,6 +66,8 @@
 
     <div id="menu">
         <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
+        <input type="text" id="player-nick" placeholder="SEU NICKNAME" maxlength="12">
+        <br>
         <input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
         <br>
         <button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
@@ -81,8 +83,8 @@
         const ctx = canvas.getContext('2d', { alpha: false });
         const chatInput = document.getElementById('chat-input');
         const chatDisplay = document.getElementById('chat-display');
+        const nickInput = document.getElementById('player-nick');
         
-        // Carregamento de Recursos
         const assets = { 
             bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, 
             ground: new Image() 
@@ -93,16 +95,14 @@
         assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        // Estado do Jogo
         let players = { 
-            me: { x: 1000, y: 1000, dir: 'Down' }, 
-            peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', active: false } 
+            me: { x: 1000, y: 1000, dir: 'Down', nick: "Bee" }, 
+            peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', nick: "Peer", active: false } 
         };
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
         let lastNetUpdate = 0;
 
-        // Input Teclado
         window.addEventListener('keydown', e => {
             if(document.activeElement === chatInput) {
                 if(e.key === 'Enter') sendMsg();
@@ -114,11 +114,14 @@
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
-        // Inicialização P2P
         function startSession(host) {
             const code = document.getElementById('room-code').value.trim();
-            if(!code) return alert("Digite um código!");
+            const nick = nickInput.value.trim();
             
+            if(!nick) return alert("Digite um Nickname!");
+            if(!code) return alert("Digite o código da sala!");
+            
+            players.me.nick = nick;
             peer = host ? new Peer('bee-' + code) : new Peer();
             
             peer.on('open', (id) => {
@@ -135,7 +138,7 @@
             });
 
             peer.on('error', (err) => {
-                alert("Erro de conexão. Verifique se o código está correto ou já em uso.");
+                alert("Erro de conexão.");
                 location.reload();
             });
         }
@@ -148,11 +151,12 @@
             });
             conn.on('data', data => {
                 if(data.type === 'chat') {
-                    addMsg("AMIGO", data.msg, "msg-peer");
+                    addMsg(players.peer.nick, data.msg, "msg-peer");
                 } else {
                     players.peer.tX = data.x;
                     players.peer.tY = data.y;
                     players.peer.dir = data.dir;
+                    players.peer.nick = data.nick; // Atualiza o nick do outro player
                     players.peer.active = true;
                 }
             });
@@ -166,7 +170,7 @@
             const text = chatInput.value.trim();
             if(text && conn && conn.open) {
                 conn.send({ type: 'chat', msg: text });
-                addMsg("VOCÊ", text, "msg-me");
+                addMsg(players.me.nick, text, "msg-me");
                 chatInput.value = "";
                 chatInput.blur();
             }
@@ -181,7 +185,6 @@
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
         }
 
-        // Loop Principal e Lógica
         function startGame() {
             document.getElementById('menu').style.display = 'none';
             document.getElementById('chat-wrapper').style.display = 'flex';
@@ -221,16 +224,13 @@
             if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
             if (dx !== 0 || dy !== 0) {
-                // Normalização para velocidade constante
                 const mag = Math.sqrt(dx*dx + dy*dy);
                 players.me.x += (dx/mag) * 5; 
                 players.me.y += (dy/mag) * 5;
 
-                // Definir Sprite
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left';
                 else players.me.dir = dy > 0 ? 'Down' : 'Up';
 
-                // Envio Otimizado (Network Throttling)
                 const now = performance.now();
                 if(now - lastNetUpdate > 30) {
                     if(conn && conn.open) conn.send(players.me);
@@ -238,7 +238,6 @@
                 }
             }
 
-            // Interpolação do Amigo
             if(players.peer.active) {
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15;
                 players.peer.y += (players.peer.tY - players.peer.y) * 0.15;
@@ -268,6 +267,16 @@
             ctx.restore();
         }
 
+        // FUNÇÃO PARA DESENHAR O NOME SOBRE A BEE
+        function drawNick(x, y, nick, color) {
+            ctx.font = "bold 14px Segoe UI";
+            ctx.textAlign = "center";
+            ctx.fillStyle = "black";
+            ctx.fillText(nick, x + 1, y - 40 + 1); // Sombra simples
+            ctx.fillStyle = color;
+            ctx.fillText(nick, x, y - 40);
+        }
+
         function draw() {
             ctx.fillStyle = '#1a1a1a';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -275,7 +284,6 @@
             ctx.save();
             ctx.translate(-camera.x, -camera.y);
 
-            // Render Chão Infinito (Culling)
             const sX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
             const sY = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE;
             for(let x = sX; x < sX + canvas.width + TILE_SIZE; x += TILE_SIZE) {
@@ -286,16 +294,18 @@
 
             drawFriendArrow();
 
-            // Render Me
+            // Render Me + Nick
             if(assets.bee[players.me.dir].complete) {
                 ctx.drawImage(assets.bee[players.me.dir], players.me.x-32, players.me.y-32, 64, 64);
+                drawNick(players.me.x, players.me.y, players.me.nick, "#f1c40f");
             }
             
-            // Render Peer
+            // Render Peer + Nick
             if(players.peer.active && assets.bee[players.peer.dir].complete) {
                 ctx.globalAlpha = 0.6;
                 ctx.drawImage(assets.bee[players.peer.dir], players.peer.x-32, players.peer.y-32, 64, 64);
                 ctx.globalAlpha = 1.0;
+                drawNick(players.peer.x, players.peer.y, players.peer.nick, "#3498db");
             }
             ctx.restore();
         }
