@@ -37,7 +37,7 @@
         #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-        /* Chat Redesenhado */
+        /* Chat */
         #chat-wrapper { 
             position: absolute; 
             bottom: 160px; 
@@ -170,7 +170,6 @@
 
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        // Toggle Chat Logic
         document.getElementById('btn-minimize').onclick = () => {
             let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
@@ -202,7 +201,6 @@
                 let vy = (Math.random() - 0.5) * 4;
                 let life = 1.0;
                 let decay = Math.random() * 0.02 + 0.01;
-
                 if(type === 'pollen') {
                     vx = (Math.random() - 0.5) * 0.8;
                     vy = (Math.random() - 0.5) * 0.8;
@@ -229,7 +227,7 @@
                     emoji: types[Math.floor(Math.random() * types.length)],
                     cooldown: 0,
                     maxCooldown: 300,
-                    phase: Math.random() * Math.PI * 2 // Para balanço individual
+                    phase: Math.random() * Math.PI * 2
                 });
             }
         }
@@ -294,13 +292,22 @@
         }
 
         function respawnPlayer() {
-            players.me.x = 1000 + 100; players.me.y = 1000 + 100;
+            players.me.x = 1100; players.me.y = 1100;
             players.me.hp = 100; players.me.isDead = false;
             deathModal.style.display = 'none';
         }
 
         function fire(angle) {
             if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
+            
+            // --- LÓGICA DE DIREÇÃO PELO DISPARO ---
+            // Converte o ângulo do disparo para uma das 4 direções das sprites
+            const deg = angle * (180 / Math.PI);
+            if (deg >= -45 && deg <= 45) players.me.dir = 'Right';
+            else if (deg > 45 && deg <= 135) players.me.dir = 'Down';
+            else if (deg < -45 && deg >= -135) players.me.dir = 'Up';
+            else players.me.dir = 'Left';
+
             spawnProjectile(players.me.x, players.me.y, angle, true);
             if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
             lastShootTime = Date.now();
@@ -335,17 +342,10 @@
         }
 
         function updateMechanics() {
-            const time = performance.now() * 0.002;
-
             flowers.forEach(f => {
-                if(f.cooldown > 0) {
-                    f.cooldown -= 1/60;
-                } else {
-                    // Exala partículas apenas se tiver pólen disponível (cooldown == 0)
-                    if (Math.random() < 0.04) {
-                        createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
-                    }
-                    
+                if(f.cooldown > 0) f.cooldown -= 1/60;
+                else {
+                    if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                         players.me.pollen += 0.4;
                         addXp(0.1);
@@ -385,9 +385,7 @@
             });
 
             particles.forEach((p, i) => {
-                p.x += p.vx;
-                p.y += p.vy;
-                p.life -= p.decay;
+                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
             });
         }
@@ -486,13 +484,25 @@
                 let dx = joyMove.dx, dy = joyMove.dy;
                 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
                 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+                
                 if (dx !== 0 || dy !== 0) {
                     const m = Math.sqrt(dx*dx + dy*dy);
                     players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-                    if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up';
+                    
+                    // Se NÃO estiver atirando, vira para a direção do movimento
+                    // Se estiver atirando, o fire() sobrescreverá a direção no frame
+                    if (!isMouseDown && !joyAim.active) {
+                        if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+                        else players.me.dir = dy > 0 ? 'Down' : 'Up';
+                    }
                 }
+
+                // Disparo
                 if(joyAim.active) fire(joyAim.angle);
-                else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
+                else if(isMouseDown) {
+                    // Calcula o ângulo baseado na posição da câmera (centro da tela)
+                    fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
+                }
             }
 
             runWaveLogic(); updateMechanics();
@@ -541,14 +551,10 @@
                 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
-            // Desenho das Flores com Balanço
             const windTime = performance.now() * 0.003;
             flowers.forEach(f => {
                 const sway = Math.sin(windTime + f.phase) * 5;
-                ctx.font = "28px Arial";
-                ctx.textAlign = "center";
-                
-                // Se estiver em cooldown (sem pólen), fica levemente transparente
+                ctx.font = "28px Arial"; ctx.textAlign = "center";
                 ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
                 ctx.fillText(f.emoji, f.x + sway, f.y);
             });
