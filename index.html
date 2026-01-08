@@ -3,49 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Respawn & Combat</title>
+    <title>Bee World - Ant Invasion</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.7); --text-main: #ffffff; }
         body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
         canvas { display: none; image-rendering: pixelated; }
 
-        /* PAINEL DE SESSÃO */
-        #player-list { 
-            position: absolute; top: 15px; left: 15px; 
-            background: var(--bg-dark); padding: 10px; 
-            border-radius: 8px; border-left: 4px solid var(--primary); 
-            font-family: monospace; font-size: 14px; z-index: 100; 
-            min-width: 150px; pointer-events: none; display: none; 
-            backdrop-filter: blur(5px); 
-        }
-        .player-item { display: flex; justify-content: space-between; gap: 15px; text-shadow: 1px 1px 2px black; }
-        .dist-val { color: var(--primary); font-weight: bold; }
-
-        /* HUD Coordenadas */
+        #player-list { position: absolute; top: 15px; left: 15px; background: var(--bg-dark); padding: 10px; border-radius: 8px; border-left: 4px solid var(--primary); font-family: monospace; font-size: 14px; z-index: 100; min-width: 150px; pointer-events: none; display: none; backdrop-filter: blur(5px); }
         #coords { position: absolute; top: 15px; right: 15px; font-family: monospace; color: var(--primary); background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; font-size: 13px; z-index: 100; pointer-events: none; }
 
-        /* MODAL DE DERROTA */
-        #death-modal {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); display: none; flex-direction: column;
-            align-items: center; justify-content: center; z-index: 1000;
-        }
+        #death-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         #death-modal h2 { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; }
 
-        /* Chat Mobile */
         #chat-wrapper { position: absolute; top: 50%; left: 10px; transform: translateY(-50%); width: 220px; z-index: 200; display: none; flex-direction: column; transition: 0.3s; }
         #chat-display { height: 140px; background: var(--bg-dark); border-radius: 8px 8px 0 0; padding: 10px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input-area { display: flex; background: rgba(0,0,0,0.8); padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1); }
         #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 5px; font-size: 13px; outline: none; }
         #btn-minimize { position: absolute; right: -30px; top: 0; background: var(--bg-dark); color: var(--primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 0 5px 5px 0; cursor: pointer; padding: 5px; font-weight: bold; pointer-events: auto; }
 
-        /* Menu Inicial */
         #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 300; }
         input[type="text"] { padding: 12px; width: 220px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 10px; text-align: center; }
         .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; }
 
-        /* Joysticks */
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
         #move-base { left: 40px; }
         #aim-base { right: 40px; border-color: rgba(255, 0, 0, 0.3); }
@@ -106,6 +86,7 @@
             peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false } 
         };
         let projectiles = []; 
+        let enemies = []; // Sistema de Inimigos
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
         const TILE_SIZE = 64;
         let lastNetUpdate = 0, lastShootTime = 0;
@@ -150,6 +131,7 @@
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
                 else if(data.type === 'hit') { if(data.target === 'me') takeDamage(10); }
+                else if(data.type === 'enemies') { enemies = data.enemies; } // Host sincroniza inimigos
                 else { 
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.nick = data.nick; 
@@ -163,26 +145,16 @@
             if(players.me.isDead) return;
             players.me.hp -= amount;
             if(players.me.hp <= 0) {
-                players.me.hp = 0;
-                players.me.isDead = true;
+                players.me.hp = 0; players.me.isDead = true;
                 deathModal.style.display = 'flex';
-                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' });
             }
         }
 
         function respawnPlayer() {
-            let safe = false;
-            let rx, ry;
-            // Tenta encontrar um ponto seguro a pelo menos 3000 pixels (300 metros)
-            while(!safe) {
-                rx = Math.floor(Math.random() * 4000) - 2000 + 1000;
-                ry = Math.floor(Math.random() * 4000) - 2000 + 1000;
-                let dist = Math.sqrt(Math.pow(rx - players.peer.x, 2) + Math.pow(ry - players.peer.y, 2));
-                if(!players.peer.active || dist > 3000) safe = true;
-            }
+            let rx = 1000 + (Math.random() - 0.5) * 500;
+            let ry = 1000 + (Math.random() - 0.5) * 500;
             players.me.x = rx; players.me.y = ry;
-            players.me.hp = 100;
-            players.me.isDead = false;
+            players.me.hp = 100; players.me.isDead = false;
             deathModal.style.display = 'none';
         }
 
@@ -195,6 +167,54 @@
 
         function spawnProjectile(x, y, angle, isMe) {
             projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
+        }
+
+        // --- SISTEMA DE INIMIGOS ---
+        function spawnEnemy() {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 1000; // 100 metros
+            const spawnX = players.me.x + Math.cos(angle) * dist;
+            const spawnY = players.me.y + Math.sin(angle) * dist;
+            enemies.push({ x: spawnX, y: spawnY, hp: 100, id: Math.random() });
+        }
+
+        function updateEnemies() {
+            if (peer.id.startsWith('bee-') && enemies.length < 20) spawnEnemy(); // Apenas Host gera
+
+            enemies.forEach((en, index) => {
+                // Perseguir o player mais próximo
+                let target = players.me;
+                if(players.peer.active && !players.peer.isDead) {
+                    const distMe = Math.sqrt(Math.pow(en.x - players.me.x, 2) + Math.pow(en.y - players.me.y, 2));
+                    const distPeer = Math.sqrt(Math.pow(en.x - players.peer.x, 2) + Math.pow(en.y - players.peer.y, 2));
+                    if (distPeer < distMe) target = players.peer;
+                }
+
+                if (!target.isDead) {
+                    const angle = Math.atan2(target.y - en.y, target.x - en.x);
+                    en.x += Math.cos(angle) * 2.5;
+                    en.y += Math.sin(angle) * 2.5;
+                }
+
+                // Dano no Player Local
+                const distToMe = Math.sqrt(Math.pow(en.x - players.me.x, 2) + Math.pow(en.y - players.me.y, 2));
+                if (distToMe < 30 && performance.now() % 60 < 2) takeDamage(1);
+
+                // Colisão com Projéteis
+                projectiles.forEach((p, pIdx) => {
+                    const distProj = Math.sqrt(Math.pow(p.x - en.x, 2) + Math.pow(p.y - en.y, 2));
+                    if (distProj < 30) {
+                        en.hp -= 25;
+                        projectiles.splice(pIdx, 1);
+                        if (en.hp <= 0) enemies.splice(index, 1);
+                    }
+                });
+            });
+
+            // Sincronizar Inimigos (Host envia para o Peer)
+            if (peer.id.startsWith('bee-') && conn && conn.open && performance.now() - lastNetUpdate > 50) {
+                conn.send({ type: 'enemies', enemies: enemies });
+            }
         }
 
         function sendMsg() {
@@ -278,7 +298,12 @@
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
-            if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); lastNetUpdate = performance.now(); }
+            updateEnemies(); // IA e Combate
+
+            if(performance.now() - lastNetUpdate > 30) { 
+                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
+                lastNetUpdate = performance.now(); 
+            }
 
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
@@ -293,9 +318,6 @@
                     if(Math.sqrt(Math.pow(p.x - players.peer.x, 2) + Math.pow(p.y - players.peer.y, 2)) < 25) {
                         projectiles.splice(i, 1); if(conn && conn.open) conn.send({ type: 'hit', target: 'me' });
                     }
-                }
-                if(p.owner === 'peer' && !players.me.isDead) {
-                    if(Math.sqrt(Math.pow(p.x - players.me.x, 2) + Math.pow(p.y - players.me.y, 2)) < 25) { projectiles.splice(i, 1); takeDamage(10); }
                 }
                 if(p.life <= 0) projectiles.splice(i, 1); 
             });
@@ -313,9 +335,9 @@
             ctx.fillStyle = players.peer.color; ctx.shadowBlur = 10; ctx.shadowColor = "white"; ctx.fill(); ctx.restore();
         }
 
-        function drawHealthBar(x, y, hp) {
-            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - 25, y - 55, 50, 6);
-            ctx.fillStyle = hp > 30 ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - 25, y - 55, 50 * (hp/100), 6);
+        function drawHealthBar(x, y, hp, w = 50, h = 6, offset = 55) {
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
+            ctx.fillStyle = hp > 30 ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/100), h);
         }
 
         function draw() {
@@ -327,6 +349,14 @@
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
             drawFriendArrow();
+
+            // Desenhar Inimigos
+            enemies.forEach(en => {
+                ctx.font = "30px Arial"; ctx.textAlign = "center";
+                ctx.fillText("🐜", en.x, en.y);
+                drawHealthBar(en.x, en.y, en.hp, 30, 4, 30);
+            });
+
             projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
             const drawB = (p, c, a) => {
