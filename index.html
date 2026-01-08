@@ -246,10 +246,17 @@
         }
 
         function updateMechanics() {
-            // Partículas de Pólen Suaves
+            // Partículas de Pólen Suaves na Abelha
             if(players.me.pollen > 5 && Math.random() < players.me.pollen/250) {
                 createParticles(players.me.x + (Math.random()-0.5)*15, players.me.y + (Math.random()-0.5)*15, "#fffa65", 1, 'pollen');
             }
+
+            // Partículas de Pólen Ambientais nas Flores
+            flowers.forEach(f => {
+                if(f.cooldown <= 0 && Math.random() < 0.05) {
+                    createParticles(f.x + (Math.random()-0.5)*30, f.y + (Math.random()-0.5)*30, "#fffa65", 1, 'pollen');
+                }
+            });
 
             // Cura passiva na Colmeia
             if(!players.me.isDead && !hive.destroyed && Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 100) {
@@ -294,7 +301,6 @@
 
             particles.forEach((p, i) => {
                 if(p.type === 'pollen') {
-                    // Adiciona um balanço lateral senoidal para parecer mais natural
                     p.x += p.vx + Math.sin(performance.now() * 0.005) * 0.2;
                 } else {
                     p.x += p.vx;
@@ -449,14 +455,10 @@
                     if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
             flowers.forEach(f => {
-                ctx.globalAlpha = f.cooldown > 0 ? 0.3 : 1.0;
-                ctx.font = f.cooldown > 0 ? "24px Arial" : "28px Arial";
-                ctx.textAlign = "center"; ctx.fillText(f.emoji, f.x, f.y);
-                if(f.cooldown > 0) {
-                    ctx.strokeStyle = "rgba(255,255,255,0.5)"; ctx.lineWidth = 2;
-                    ctx.beginPath(); ctx.arc(f.x, f.y, 15, -Math.PI/2, (-Math.PI/2) + (Math.PI*2 * (f.cooldown/f.maxCooldown))); ctx.stroke();
-                }
-            }); ctx.globalAlpha = 1.0;
+                ctx.font = "28px Arial";
+                ctx.textAlign = "center"; 
+                ctx.fillText(f.emoji, f.x, f.y);
+            }); 
 
             if(!hive.destroyed) {
                 ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
@@ -470,7 +472,7 @@
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
                 if(p.type === 'heart') {
-                    ctx.font = "24px Arial"; // Corações maiores
+                    ctx.font = "24px Arial"; 
                     ctx.fillText("❤️", p.x, p.y);
                 } else if(p.type === 'smoke') {
                     ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 8, 0, Math.PI*2); ctx.fill();
