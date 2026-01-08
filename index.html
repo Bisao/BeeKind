@@ -3,71 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - Chat Edition</title>
+    <title>Bee World - Pro Chat</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: sans-serif; color: white; touch-action: none; }
-        canvas { display: none; }
+        :root {
+            --primary: #f1c40f;
+            --bg-dark: rgba(20, 20, 20, 0.7);
+            --text-main: #ffffff;
+        }
 
-        /* HUD Superior (Bússola) */
-        #hud { position: absolute; top: 10px; left: 50%; transform: translateX(-50%); z-index: 100; pointer-events: none; text-align: center; }
-        #compass-window { width: 260px; height: 40px; background: rgba(0,0,0,0.6); border-bottom: 2px solid #f1c40f; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-        #compass-tape { position: absolute; display: flex; white-space: nowrap; font-family: monospace; font-weight: bold; transition: transform 0.1s ease-out; }
-        .marker { width: 60px; text-align: center; display: inline-block; color: #fff; }
-        .norte { color: #f1c40f; font-size: 1.2em; }
-        #pointer { position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 2px; height: 100%; background: #f1c40f; z-index: 10; }
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, sans-serif; color: var(--text-main); touch-action: none; }
+        canvas { display: none; image-rendering: pixelated; }
 
-        /* Sistema de Chat */
-        #chat-container {
-            position: absolute; bottom: 20px; left: 20px; width: 250px; 
+        /* HUD Coordenadas */
+        #coords { 
+            position: absolute; top: 15px; right: 15px; 
+            font-family: 'Courier New', monospace; color: var(--primary); 
+            background: var(--bg-dark); padding: 5px 12px; border-radius: 5px; 
+            font-size: 13px; z-index: 100; border-right: 3px solid var(--primary);
+        }
+
+        /* --- CHAT PROFISSIONAL --- */
+        #chat-wrapper {
+            position: absolute; bottom: 25px; left: 20px; width: 280px; 
             z-index: 200; display: none; flex-direction: column;
+            transition: all 0.3s ease;
         }
-        #chat-box {
-            height: 120px; background: rgba(0,0,0,0.5); border-radius: 10px;
-            padding: 10px; overflow-y: auto; margin-bottom: 5px;
-            font-size: 14px; display: flex; flex-direction: column;
-            pointer-events: auto;
+
+        #chat-display {
+            height: 160px; background: var(--bg-dark); 
+            border-radius: 8px 8px 0 0; padding: 12px; overflow-y: auto; 
+            display: flex; flex-direction: column; gap: 6px;
+            backdrop-filter: blur(5px); border: 1px solid rgba(255,255,255,0.1);
+            scrollbar-width: thin; scrollbar-color: var(--primary) transparent;
         }
-        .chat-msg { margin-bottom: 4px; line-height: 1.2; }
-        .chat-me { color: #f1c40f; font-weight: bold; }
-        .chat-peer { color: #3498db; font-weight: bold; }
-        #chat-input-row { display: flex; gap: 5px; }
+
+        /* Estilização da Scrollbar para Chrome/Edge */
+        #chat-display::-webkit-scrollbar { width: 4px; }
+        #chat-display::-webkit-scrollbar-thumb { background: var(--primary); border-radius: 10px; }
+
+        .message { font-size: 14px; word-wrap: break-word; animation: fadeIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        .msg-author { font-weight: bold; margin-right: 5px; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px; }
+        .msg-me .msg-author { color: var(--primary); }
+        .msg-peer .msg-author { color: #3498db; }
+        .msg-sys { color: #888; font-style: italic; font-size: 12px; text-align: center; margin: 5px 0; }
+
+        #chat-input-area { 
+            display: flex; background: rgba(0,0,0,0.8); 
+            padding: 5px; border-radius: 0 0 8px 8px; border: 1px solid rgba(255,255,255,0.1);
+            border-top: none;
+        }
+
         #chat-input {
-            flex: 1; padding: 8px; border-radius: 5px; border: none;
-            background: rgba(255,255,255,0.9); color: #000; outline: none;
+            flex: 1; background: transparent; border: none; color: white;
+            padding: 8px; font-size: 14px; outline: none;
         }
-        #chat-send { background: #f1c40f; border: none; border-radius: 5px; padding: 0 10px; cursor: pointer; font-weight: bold; }
 
-        /* Menu e Outros */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 30px; border-radius: 15px; border: 2px solid #f1c40f; z-index: 300; }
-        input[type="text"] { padding: 12px; width: 80%; margin-bottom: 10px; border-radius: 5px; border: none; }
-        button.main-btn { padding: 12px; width: 85%; cursor: pointer; border-radius: 5px; border: none; font-weight: bold; background: #f1c40f; }
+        #chat-btn {
+            background: var(--primary); border: none; border-radius: 4px;
+            color: #000; font-weight: bold; padding: 0 15px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        #chat-btn:active { transform: scale(0.95); }
 
-        /* Joystick */
-        #joy-base { position: absolute; bottom: 50px; right: 50px; width: 120px; height: 120px; background: rgba(255,255,255,0.15); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.3); z-index: 150; touch-action: none; }
-        #joy-stick { position: absolute; width: 50px; height: 50px; background: #f1c40f; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.7; }
+        /* Menu */
+        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 300; box-shadow: 0 0 50px rgba(0,0,0,0.8); }
+        input[type="text"] { padding: 12px; width: 200px; border-radius: 8px; border: 1px solid #444; background: #111; color: white; font-size: 16px; margin-bottom: 15px; text-align: center; }
+        .main-btn { padding: 12px 30px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; transition: 0.3s; }
+        .main-btn:hover { filter: brightness(1.2); }
+
+        /* Joystick Mobile */
+        #joy-base { position: absolute; bottom: 40px; right: 40px; width: 110px; height: 110px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 1px solid rgba(255,255,255,0.2); z-index: 150; backdrop-filter: blur(2px); }
+        #joy-stick { position: absolute; width: 45px; height: 45px; background: var(--primary); border-radius: 50%; top: 32.5px; left: 32.5px; opacity: 0.5; }
     </style>
 </head>
 <body>
 
-    <div id="hud">
-        <div id="compass-window"><div id="pointer"></div><div id="compass-tape"></div></div>
-        <div id="coords" style="font-family: monospace; color: #f1c40f; margin-top: 5px;">X:0 Y:0</div>
-    </div>
+    <div id="coords">X: 0 | Y: 0</div>
 
-    <div id="chat-container">
-        <div id="chat-box"></div>
-        <div id="chat-input-row">
-            <input type="text" id="chat-input" placeholder="Mensagem..." maxlength="50">
-            <button id="chat-send">></button>
+    <div id="chat-wrapper">
+        <div id="chat-display">
+            <div class="msg-sys">Bem-vindo ao Bee World Chat</div>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Pressione ENTER para falar..." autocomplete="off">
+            <button id="chat-btn">ENVIAR</button>
         </div>
     </div>
 
     <div id="menu">
-        <h1 style="color:#f1c40f">BEE P2P</h1>
-        <input type="text" id="room-code" placeholder="Código 6 dígitos">
+        <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 5px;">BEE WORLD</h1>
+        <input type="text" id="room-code" placeholder="CÓDIGO DA SALA" maxlength="6">
+        <br>
         <button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
-        <button class="main-btn" style="background:#3498db; color:white; margin-top: 10px;" onclick="startSession(false)">ENTRAR</button>
+        <br>
+        <button class="main-btn" style="background:#3498db; color:white; margin-top: 10px;" onclick="startSession(false)">ENTRAR NA SALA</button>
     </div>
 
     <div id="joy-base"><div id="joy-stick"></div></div>
@@ -75,110 +107,110 @@
 
     <script>
         const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const compassTape = document.getElementById('compass-tape');
-        const chatContainer = document.getElementById('chat-container');
-        const chatBox = document.getElementById('chat-box');
+        const ctx = canvas.getContext('2d', { alpha: false });
         const chatInput = document.getElementById('chat-input');
-        const chatSend = document.getElementById('chat-send');
+        const chatDisplay = document.getElementById('chat-display');
         
-        const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
-        assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
+        const assets = { 
+            bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, 
+            ground: new Image() 
+        };
+        assets.bee.Down.src = 'BeeDown.png'; 
+        assets.bee.Left.src = 'BeeLeft.png'; 
+        assets.bee.Up.src = 'BeeUp.png'; 
+        assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
-        let players = { me: { x: 500, y: 500, dir: 'Down', angle: 0 }, peer: { x: 500, y: 500, targetX: 500, targetY: 500, dir: 'Down', active: false } };
-        let camera = { x: 0, y: 0 };
-        let peer, conn, keys = {};
+        let players = { 
+            me: { x: 1000, y: 1000, dir: 'Down' }, 
+            peer: { x: 1000, y: 1000, tX: 1000, tY: 1000, dir: 'Down', active: false } 
+        };
+        let camera = { x: 0, y: 0 }, peer, conn, keys = {};
+        const TILE_SIZE = 64;
 
-        // Inicializar Bússola
-        function initCompass() {
-            const dirs = { 0: 'N', 90: 'E', 180: 'S', 270: 'W' };
-            for(let i = -180; i <= 540; i += 45) {
-                const div = document.createElement('div');
-                div.className = 'marker' + (dirs[(i+360)%360] === 'N' ? ' norte' : '');
-                div.innerText = dirs[(i+360)%360] || (i+360)%360;
-                div.style.minWidth = '60px';
-                compassTape.appendChild(div);
-            }
-        }
-        initCompass();
-
+        // --- CONTROLES DE TECLADO ---
         window.addEventListener('keydown', e => {
             if(document.activeElement === chatInput) {
-                if(e.key === 'Enter') sendMessage();
+                if(e.key === 'Enter') sendMsg();
+                if(e.key === 'Escape') chatInput.blur();
                 return;
             }
-            if(e.key === 'Enter') chatInput.focus();
+            if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
             keys[e.code] = true;
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
 
         function startSession(host) {
-            const code = document.getElementById('room-code').value;
+            const code = document.getElementById('room-code').value.trim();
+            if(!code) return alert("Insira um código!");
             peer = host ? new Peer('bee-'+code) : new Peer();
             peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-'+code); setupConn(); } });
             peer.on('connection', c => { conn = c; setupConn(); });
+            peer.on('error', () => alert("Erro: Sala ocupada ou conexão falhou."));
         }
 
         function setupConn() {
-            conn.on('open', () => { players.peer.active = true; startGame(); addChatMessage("Sistema", "Amigo conectado!", "chat-peer"); });
-            conn.on('data', data => {
-                if(data.type === 'chat') {
-                    addChatMessage("Amigo", data.msg, "chat-peer");
-                } else {
-                    players.peer.targetX = data.x; players.peer.targetY = data.y; players.peer.dir = data.dir; players.peer.active = true;
-                }
+            conn.on('open', () => { 
+                players.peer.active = true; startGame(); 
+                addMsg("SISTEMA", "Amigo conectado", "msg-sys"); 
             });
+            conn.on('data', data => {
+                if(data.type === 'chat') addMsg("AMIGO", data.msg, "msg-peer");
+                else { players.peer.tX = data.x; players.peer.tY = data.y; players.peer.dir = data.dir; players.peer.active = true; }
+            });
+            conn.on('close', () => { addMsg("SISTEMA", "Amigo desconectado", "msg-sys"); players.peer.active = false; });
         }
 
-        function sendMessage() {
-            const msg = chatInput.value.trim();
-            if(msg && conn && conn.open) {
-                conn.send({ type: 'chat', msg: msg });
-                addChatMessage("Você", msg, "chat-me");
+        function sendMsg() {
+            const text = chatInput.value.trim();
+            if(text && conn && conn.open) {
+                conn.send({ type: 'chat', msg: text });
+                addMsg("VOCÊ", text, "msg-me");
                 chatInput.value = "";
                 chatInput.blur();
             }
         }
-        chatSend.onclick = sendMessage;
+        document.getElementById('chat-btn').onclick = sendMsg;
 
-        function addChatMessage(sender, msg, colorClass) {
+        function addMsg(author, text, typeClass) {
             const div = document.createElement('div');
-            div.className = 'chat-msg';
-            div.innerHTML = `<span class="${colorClass}">${sender}:</span> ${msg}`;
-            chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            div.className = `message ${typeClass}`;
+            if(typeClass !== 'msg-sys') {
+                div.innerHTML = `<span class="msg-author">${author}:</span><span class="msg-text">${text}</span>`;
+            } else {
+                div.innerText = text;
+            }
+            chatDisplay.appendChild(div);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
         }
 
         function startGame() {
             document.getElementById('menu').style.display = 'none';
-            chatContainer.style.display = 'flex';
+            document.getElementById('chat-wrapper').style.display = 'flex';
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 document.getElementById('joy-base').style.display = 'block';
-                setupMobileControls();
+                setupMobile();
             }
-            resize(); requestAnimationFrame(gameLoop);
+            resize();
+            requestAnimationFrame(gameLoop);
         }
 
-        // Joystick e Loop (mesma lógica otimizada anterior)
+        // --- MOBILE ---
         let joyDX = 0, joyDY = 0;
-        function setupMobileControls() {
-            const joyBase = document.getElementById('joy-base');
-            const joyStick = document.getElementById('joy-stick');
-            joyBase.addEventListener('touchstart', e => e.preventDefault(), {passive: false});
-            joyBase.addEventListener('touchmove', e => {
-                const touch = e.touches[0];
-                const rect = joyBase.getBoundingClientRect();
-                const centerX = rect.left + rect.width / 2;
-                const centerY = rect.top + rect.height / 2;
-                let dx = touch.clientX - centerX, dy = touch.clientY - centerY;
+        function setupMobile() {
+            const jBase = document.getElementById('joy-base'), jStick = document.getElementById('joy-stick');
+            jBase.addEventListener('touchstart', e => e.preventDefault(), {passive: false});
+            jBase.addEventListener('touchmove', e => {
+                const t = e.touches[0], r = jBase.getBoundingClientRect();
+                const cX = r.left + r.width/2, cY = r.top + r.height/2;
+                let dx = t.clientX - cX, dy = t.clientY - cY;
                 const dist = Math.sqrt(dx*dx + dy*dy), max = 40;
                 if(dist > max) { dx *= max/dist; dy *= max/dist; }
-                joyStick.style.transform = `translate(${dx}px, ${dy}px)`;
-                joyDX = dx / max; joyDY = dy / max;
+                jStick.style.transform = `translate(${dx}px, ${dy}px)`;
+                joyDX = dx/max; joyDY = dy/max;
             }, {passive: false});
-            window.addEventListener('touchend', () => { joyStick.style.transform = `translate(0px, 0px)`; joyDX = 0; joyDY = 0; });
+            window.addEventListener('touchend', () => { jStick.style.transform = `translate(0px, 0px)`; joyDX = 0; joyDY = 0; });
         }
 
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
@@ -193,33 +225,41 @@
 
             if (dx !== 0 || dy !== 0) {
                 players.me.x += dx * 5; players.me.y += dy * 5;
-                players.me.angle = (Math.atan2(dy, dx) * 180 / Math.PI + 90 + 360) % 360;
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left';
                 else players.me.dir = dy > 0 ? 'Down' : 'Up';
                 if(conn && conn.open) conn.send(players.me);
             }
-            if(players.peer.active) { players.peer.x += (players.peer.targetX - players.peer.x) * 0.1; players.peer.y += (players.peer.targetY - players.peer.y) * 0.1; }
-            camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+            if(players.peer.active) { 
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+            }
+            camera.x = players.me.x - canvas.width/2;
+            camera.y = players.me.y - canvas.height/2;
+            document.getElementById('coords').innerText = `LOC: ${Math.floor(players.me.x)}, ${Math.floor(players.me.y)}`;
         }
 
         function draw() {
-            ctx.clearRect(0,0,canvas.width, canvas.height);
-            ctx.save(); ctx.translate(-camera.x, -camera.y);
-            const sX = Math.floor(camera.x / 64) * 64, sY = Math.floor(camera.y / 64) * 64;
-            for(let x = sX; x < sX + canvas.width + 64; x += 64) {
-                for(let y = sY; y < sY + canvas.height + 64; y += 64) {
-                    if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, 64, 64);
+            ctx.fillStyle = '#1a1a1a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.save();
+            ctx.translate(-camera.x, -camera.y);
+
+            const startX = Math.floor(camera.x / TILE_SIZE) * TILE_SIZE;
+            const startY = Math.floor(camera.y / TILE_SIZE) * TILE_SIZE;
+            
+            for(let x = startX; x < startX + canvas.width + TILE_SIZE; x += TILE_SIZE) {
+                for(let y = startY; y < startY + canvas.height + TILE_SIZE; y += TILE_SIZE) {
+                    if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
                 }
             }
-            drawBee(players.me, 1); if(players.peer.active) drawBee(players.peer, 0.6);
-            ctx.restore();
-            document.getElementById('coords').innerText = `X:${Math.floor(players.me.x)} Y:${Math.floor(players.me.y)}`;
-            compassTape.style.transform = `translateX(${-players.me.angle * 1.33}px)`;
-        }
 
-        function drawBee(p, a) {
-            const img = assets.bee[p.dir];
-            if(img.complete) { ctx.globalAlpha = a; ctx.drawImage(img, p.x-32, p.y-32, 64, 64); ctx.globalAlpha = 1; }
+            if(assets.bee[players.me.dir].complete) ctx.drawImage(assets.bee[players.me.dir], players.me.x-32, players.me.y-32, 64, 64);
+            if(players.peer.active && assets.bee[players.peer.dir].complete) {
+                ctx.globalAlpha = 0.6;
+                ctx.drawImage(assets.bee[players.peer.dir], players.peer.x-32, players.peer.y-32, 64, 64);
+                ctx.globalAlpha = 1.0;
+            }
+            ctx.restore();
         }
 
         function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
