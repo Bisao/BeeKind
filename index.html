@@ -41,6 +41,28 @@
             opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
+        /* NOTIFICAÇÃO DE ONDA */
+        #wave-notification {
+            background: rgba(192, 57, 43, 0.9);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+            animation: wavePulse 1.5s infinite;
+            box-shadow: 0 0 15px rgba(192, 57, 43, 0.5);
+        }
+
+        @keyframes wavePulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 20px rgba(192, 57, 43, 0.8); }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
+
         /* PAINÉIS LATERAIS */
         #sidebar-container {
             position: absolute; left: 0; top: 100px; z-index: 101;
@@ -217,6 +239,7 @@
             <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
         </div>
         <div id="coords">X: 1100 Y: 1100</div>
+        <div id="wave-notification"></div>
     </div>
 
     <div id="sidebar-container">
@@ -314,6 +337,7 @@
         const aimStick = document.getElementById('aim-stick');
         const playerItemsContainer = document.getElementById('player-items-container');
         const hiveItemsContainer = document.getElementById('hive-items-container');
+        const waveNotification = document.getElementById('wave-notification');
         
         const btnOpenMenu = document.getElementById('btn-open-menu');
         const mainActionMenu = document.getElementById('main-action-menu');
@@ -407,9 +431,8 @@
                 let decay = Math.random() * 0.02 + 0.01;
                 
                 if(type === 'pollen') { 
-                    // Partícula cai da abelha de forma realista
                     vx = (Math.random() - 0.5) * 1.5; 
-                    vy = 0.5 + Math.random() * 1.5; // Gravidade: sempre cai
+                    vy = 0.5 + Math.random() * 1.5; 
                     decay = 0.01 + Math.random() * 0.015; 
                 }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
@@ -484,6 +507,7 @@
                     enemies = data.enemies; 
                     isWaveActive = data.isWaveActive; 
                     hive.hp = data.hiveHp; 
+                    waveTimer = data.waveTimer; // Sincroniza o timer para o peer
                     if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
                 }
                 else if(data.type === 'repair') { 
@@ -537,7 +561,12 @@
         function runWaveLogic() {
             if (!isHost) return; 
             waveTimer -= 1/60;
-            if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
+            
+            if (waveTimer <= 0 && !isWaveActive) { 
+                isWaveActive = true; 
+                enemiesSpawnedInWave = 0; 
+                waveTimer = 180; 
+            }
             
             if (isWaveActive) {
                 let now = Date.now();
@@ -571,18 +600,34 @@
             }
 
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
-                conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, event: syncEvent });
+                conn.send({ 
+                    type: 'sync_world', 
+                    enemies: enemies, 
+                    isWaveActive: isWaveActive, 
+                    hiveHp: hive.hp, 
+                    waveTimer: waveTimer,
+                    event: syncEvent 
+                });
                 lastNetUpdate = performance.now();
             }
         }
 
         function updateMechanics() {
+            // Lógica de Notificação de Onda
+            if(isWaveActive) {
+                waveNotification.style.display = 'block';
+                waveNotification.innerText = `FORMIGAS VIVAS: ${enemies.length}`;
+            } else if (waveTimer <= 60) {
+                waveNotification.style.display = 'block';
+                waveNotification.innerText = `ATAQUE EM: ${Math.floor(waveTimer)}s`;
+            } else {
+                waveNotification.style.display = 'none';
+            }
+
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
-                    // Partículas flutuando nas flores (opcional, mantido para ambiência)
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
-                    
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                         players.me.pollen += 0.4; addXp(0.1);
                         if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
@@ -590,15 +635,11 @@
                 }
             });
 
-            // --- EFEITO VISUAL DE CARGA DE PÓLEN ---
-            // Abelha principal
             if (!players.me.isDead && players.me.pollen > 0) {
-                // Aumenta a frequência conforme carrega mais pólen
                 if (Math.random() < (players.me.pollen / 100) * 0.4) {
                     createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
                 }
             }
-            // Abelha Peer
             if (players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
                 if (Math.random() < (players.peer.pollen / 100) * 0.4) {
                     createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
