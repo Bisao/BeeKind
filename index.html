@@ -151,6 +151,30 @@
             font-size: 0.9rem;
         }
 
+        /* ASSINATURA DO ESTÚDIO */
+        #studio-footer {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .studio-name {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 4px;
+            color: rgba(255, 255, 255, 0.4);
+            font-weight: 300;
+        }
+
+        .studio-name b {
+            color: var(--primary);
+            font-weight: 800;
+            opacity: 0.8;
+        }
+
         .input-group {
             margin-bottom: 20px;
             text-align: left;
@@ -220,6 +244,7 @@
             .menu-card h1 { font-size: 2.2rem; }
             .button-row { grid-template-columns: 1fr; }
             .main-btn { padding: 18px; }
+            #studio-footer { bottom: 20px; }
         }
 
         /* JOYSTICKS */
@@ -297,6 +322,10 @@
                     <span>🚀</span> Entrar
                 </button>
             </div>
+        </div>
+
+        <div id="studio-footer">
+            <div class="studio-name">Developed by <b>AURA STUDIO</b></div>
         </div>
     </div>
 
@@ -628,17 +657,12 @@
         function sendMsg() {
             const text = chatInput.value.trim();
             if(!text) return;
-            
-            // Adiciona a mensagem localmente primeiro
             addMsg(players.me.nick, text, "me");
-            
-            // Envia para o Peer se estiver conectado
             if(conn && conn.open) {
                 conn.send({ type: 'chat', msg: text });
             }
-            
             chatInput.value = ""; 
-            chatInput.blur(); // Fecha o teclado no mobile
+            chatInput.blur();
         }
 
         function addMsg(author, text, senderType) {
