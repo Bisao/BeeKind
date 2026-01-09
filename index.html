@@ -507,11 +507,13 @@
                     enemies = data.enemies; 
                     isWaveActive = data.isWaveActive; 
                     hive.hp = data.hiveHp; 
-                    waveTimer = data.waveTimer; // Sincroniza o timer para o peer
+                    hive.destroyed = data.hiveDestroyed;
+                    waveTimer = data.waveTimer; 
                     if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
                 }
                 else if(data.type === 'repair') { 
                     hive.hp = data.hp; 
+                    hive.destroyed = (hive.hp <= 0);
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
                 else if(data.type === 'pos') { 
@@ -585,19 +587,45 @@
 
             let syncEvent = null;
             enemies.forEach((en) => {
-                const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
-                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
-                if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-                    if(performance.now() % 60 < 2) { hive.hp -= 2; syncEvent = 'hive_hit'; }
+                let targetX, targetY;
+                
+                // --- NOVA LÓGICA DE AGGRO ---
+                if (hive.hp > 0) {
+                    // Atacar colmeia se ela estiver viva
+                    targetX = hive.x;
+                    targetY = hive.y;
+                    
+                    if (Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
+                        if(performance.now() % 60 < 2) { 
+                            hive.hp -= 2; 
+                            syncEvent = 'hive_hit'; 
+                            if(hive.hp <= 0) {
+                                hive.hp = 0;
+                                hive.destroyed = true;
+                                addMsg("SISTEMA", "A colmeia caiu! Defendam-se!", "msg-sys");
+                            }
+                        }
+                    }
+                } else {
+                    // Atacar abelhas se a colmeia estiver morta
+                    let distMe = Math.hypot(en.x - players.me.x, en.y - players.me.y);
+                    let distPeer = players.peer.active ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
+                    
+                    if (distMe < distPeer) {
+                        targetX = players.me.x; targetY = players.me.y;
+                    } else {
+                        targetX = players.peer.x; targetY = players.peer.y;
+                    }
                 }
-                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
+
+                const angle = Math.atan2(targetY - en.y, targetX - en.x);
+                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
+
+                // Dano no player
+                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(5);
             });
 
             enemies = enemies.filter(en => en.hp > 0);
-            if (hive.hp <= 0 && !hive.destroyed) { 
-                hive.hp = 0; hive.destroyed = true; 
-                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
-            }
 
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
                 conn.send({ 
@@ -605,6 +633,7 @@
                     enemies: enemies, 
                     isWaveActive: isWaveActive, 
                     hiveHp: hive.hp, 
+                    hiveDestroyed: hive.destroyed,
                     waveTimer: waveTimer,
                     event: syncEvent 
                 });
@@ -613,7 +642,6 @@
         }
 
         function updateMechanics() {
-            // Lógica de Notificação de Onda
             if(isWaveActive) {
                 waveNotification.style.display = 'block';
                 waveNotification.innerText = `FORMIGAS VIVAS: ${enemies.length}`;
@@ -646,12 +674,20 @@
                 }
             }
 
-            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
+            // --- LÓGICA DE CONSERTO DA COLMEIA ---
+            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; 
-                    if(isHost) hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-                    else conn.send({ type: 'repair', hp: Math.min(hive.maxHp, hive.hp + 50) });
-                    addXp(25); createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                    let heal = 50;
+                    if(isHost) {
+                        hive.hp = Math.min(hive.maxHp, hive.hp + heal);
+                        if(hive.hp > 0) hive.destroyed = false;
+                    } else {
+                        conn.send({ type: 'repair', hp: Math.min(hive.maxHp, hive.hp + heal) });
+                    }
+                    addXp(25); 
+                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                    if(hive.hp > 0 && hive.hp <= heal) addMsg("SISTEMA", "A colmeia foi reconstruída!", "msg-sys");
                 }
             }
 
@@ -681,10 +717,8 @@
                 const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
                 if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
             }
-            if(!hive.destroyed) {
-                const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
-                if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
-            }
+            const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
+            if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
         }
 
         function drawArrow(dx, dy, color, radius = 70) {
@@ -802,11 +836,13 @@
             playerItemsContainer.innerHTML = playerListHtml;
 
             let hiveListHtml = "";
-            if(!hive.destroyed) {
-                const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-                const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+            const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+            const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+            if(hive.hp > 0) {
                 hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-            } else hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`;
+            } else {
+                hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>⚠️ COLMEIA CAÍDA! (${dist}m)</span></div>`;
+            }
             hiveItemsContainer.innerHTML = hiveListHtml;
 
             projectiles.forEach((p, i) => { 
@@ -839,10 +875,12 @@
             });
             ctx.globalAlpha = 1.0;
 
-            if(!hive.destroyed) {
-                ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
-                drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
-            }
+            // Desenhar Colmeia
+            ctx.font = "60px Arial"; ctx.textAlign = "center"; 
+            ctx.globalAlpha = hive.hp > 0 ? 1.0 : 0.4;
+            ctx.fillText("🏠", hive.x, hive.y + 20);
+            ctx.globalAlpha = 1.0;
+            if(hive.hp > 0) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 
             drawIndicators();
             enemies.forEach(en => { 
