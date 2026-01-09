@@ -103,9 +103,9 @@
         #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-        /* CHAT */
+        /* CHAT - POSIÇÃO ELEVADA PARA MOBILE */
         #chat-wrapper { 
-            position: absolute; bottom: 160px; left: -240px; width: 240px; z-index: 500; 
+            position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
             display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
         }
         #chat-display { height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px; }
@@ -113,7 +113,7 @@
         #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
         #btn-minimize-chat { position: absolute; right: -45px; bottom: 0; background: var(--primary); color: #111; border: none; border-radius: 0 8px 8px 0; cursor: pointer; width: 45px; height: 45px; font-size: 20px; font-weight: bold; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 
-        /* --- MENU INICIAL REDESENHADO --- */
+        /* --- MENU INICIAL --- */
         #menu { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -215,7 +215,6 @@
 
         .main-btn:active { transform: scale(0.95); }
 
-        /* MOBILE OPTIMIZATION */
         @media (max-width: 480px) {
             .menu-card { padding: 30px 20px; }
             .menu-card h1 { font-size: 2.2rem; }
@@ -270,7 +269,9 @@
     <div id="chat-wrapper">
         <button id="btn-minimize-chat">💬</button>
         <div id="chat-display"></div>
-        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Falar..." autocomplete="off"></div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-input" placeholder="Falar..." autocomplete="off">
+        </div>
     </div>
 
     <div id="menu">
@@ -407,7 +408,13 @@
         window.addEventListener('mousedown', () => isMouseDown = true);
         window.addEventListener('mouseup', () => isMouseDown = false);
         window.addEventListener('keydown', e => {
-            if(document.activeElement === chatInput) { if(e.key === 'Enter') sendMsg(); return; }
+            if(document.activeElement === chatInput) { 
+                if(e.key === 'Enter') {
+                    e.preventDefault();
+                    sendMsg(); 
+                }
+                return; 
+            }
             if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
             keys[e.code] = true;
         });
@@ -534,7 +541,6 @@
                 }
             });
 
-            // LIMPEZA DE INIMIGOS MORTOS (ESSENCIAL PARA MORREREM)
             enemies = enemies.filter(en => en.hp > 0);
 
             if (hive.hp <= 0 && !hive.destroyed) { 
@@ -621,11 +627,18 @@
 
         function sendMsg() {
             const text = chatInput.value.trim();
-            if(text && conn && conn.open) {
+            if(!text) return;
+            
+            // Adiciona a mensagem localmente primeiro
+            addMsg(players.me.nick, text, "me");
+            
+            // Envia para o Peer se estiver conectado
+            if(conn && conn.open) {
                 conn.send({ type: 'chat', msg: text });
-                addMsg(players.me.nick, text, "me");
-                chatInput.value = ""; chatInput.blur();
             }
+            
+            chatInput.value = ""; 
+            chatInput.blur(); // Fecha o teclado no mobile
         }
 
         function addMsg(author, text, senderType) {
@@ -633,7 +646,8 @@
             const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
             d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
             const display = document.getElementById('chat-display');
-            display.appendChild(d); display.scrollTop = display.scrollHeight;
+            display.appendChild(d); 
+            display.scrollTop = display.scrollHeight;
         }
 
         function startGame() {
@@ -713,7 +727,6 @@
                 if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
             }
 
-            // HUD SESSÃO
             let playerListHtml = "";
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
