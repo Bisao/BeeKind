@@ -148,7 +148,7 @@
         }
 
         .unread-pulse {
-            animation: pulse 1.5s infinite ease-in-out;
+            animation: pulse 1.5s infinite ease-in-out !important;
             z-index: 502;
         }
 
@@ -436,15 +436,23 @@
             btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
         };
 
-        chatMinimizeBtn.onclick = () => {
-            let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
+        // Função unificada para abrir chat e limpar pulso
+        function toggleChat() {
+            let currentLeft = window.getComputedStyle(chatWrapper).getPropertyValue('left');
+            let isHidden = currentLeft.includes('-') || currentLeft === 'auto';
+            
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
             chatMinimizeBtn.innerHTML = isHidden ? "«" : "💬";
             
-            // Se estiver abrindo o chat, remove o pulso de notificação
             if (isHidden) {
                 chatMinimizeBtn.classList.remove('unread-pulse');
             }
+        }
+
+        chatMinimizeBtn.onclick = toggleChat;
+        chatMinimizeBtn.ontouchstart = (e) => {
+            e.preventDefault();
+            toggleChat();
         };
 
         document.getElementById('btn-session-toggle').onclick = () => {
@@ -757,9 +765,13 @@
             display.appendChild(d); 
             display.scrollTop = display.scrollHeight;
 
-            // LÓGICA DE PULSAR: Se o chat estiver fechado e não for uma mensagem do sistema
-            const isChatHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
-            if (isChatHidden && senderType !== "msg-sys") {
+            // LÓGICA DE PULSAR REVISADA PARA MOBILE
+            const style = window.getComputedStyle(chatWrapper);
+            const currentLeft = style.getPropertyValue('left');
+            // No mobile, verificamos se o valor é negativo ou se o elemento está fora da viewport
+            const isHidden = currentLeft.includes('-') || currentLeft === 'auto';
+
+            if (isHidden && senderType !== "msg-sys") {
                 chatMinimizeBtn.classList.add('unread-pulse');
             }
         }
