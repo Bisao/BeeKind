@@ -47,7 +47,7 @@
             transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         #session-panel { top: 100px; }
-        #hive-panel { top: 260px; } /* Posicionado abaixo do de sessão */
+        #hive-panel { top: 260px; }
 
         .side-panel.active { left: 0px; }
         
@@ -449,8 +449,8 @@
                 
                 if(type === 'pollen') { 
                     vx = (Math.random() - 0.5) * 1.5; 
-                    vy = Math.random() * 2;
-                    decay = 0.02 + Math.random() * 0.02; 
+                    vy = Math.random() * 1.5; // Partículas caem suavemente
+                    decay = 0.015 + Math.random() * 0.015; 
                 }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
                 
@@ -630,15 +630,31 @@
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
+                    // Partícula ambiental da flor
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
+                    
+                    // Lógica de coleta
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                         players.me.pollen += 0.4;
                         addXp(0.1);
-                        if(Math.random() < 0.2) { createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen'); }
                         if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                     }
                 }
             });
+
+            // LÓGICA DE PARTÍCULAS DE TRANSPORTE (Solicitado)
+            // Se o jogador ou o parceiro tiverem pólen, eles soltam partículas enquanto se movem/estão no mundo
+            if(!players.me.isDead && players.me.pollen > 0) {
+                // Frequência baseada na quantidade de pólen (mais pólen = mais partículas, mas ainda sutil)
+                if(Math.random() < 0.1) {
+                    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+                }
+            }
+            if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+                if(Math.random() < 0.1) {
+                    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+                }
+            }
 
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
