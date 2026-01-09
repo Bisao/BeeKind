@@ -1,618 +1,789 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - RPG Edition</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <style>
-        :root { --primary: #f1c40f; --bg-dark: rgba(20, 20, 20, 0.85); --text-main: #ffffff; --xp-color: #3498db; --border: rgba(255, 255, 255, 0.1); }
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
-        canvas { display: none; image-rendering: pixelated; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Bee World - RPG Edition</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { 
+            --primary: #f1c40f; 
+            --primary-dark: #d4ac0d;
+            --secondary: #3498db;
+            --bg-dark: rgba(20, 20, 20, 0.85); 
+            --text-main: #ffffff; 
+            --xp-color: #3498db; 
+            --border: rgba(255, 255, 255, 0.1); 
+            --glass: rgba(255, 255, 255, 0.05);
+        }
+        
+        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+        canvas { display: none; image-rendering: pixelated; }
 
-        /* HUD CENTRAL */
-        #central-hud {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            z-index: 100; pointer-events: none;
-        }
-        #lvl-hud {
-            background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
-            text-align: center; min-width: 220px; backdrop-filter: blur(10px);
-            border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
-        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
-        #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        #coords { 
-            font-family: monospace; color: var(--primary); background: var(--bg-dark); 
-            padding: 4px 15px; border-radius: 12px; font-size: 12px; 
-            border: 1px solid var(--border); backdrop-filter: blur(5px);
-            opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
+        /* HUD CENTRAL */
+        #central-hud {
+            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            z-index: 100; pointer-events: none;
+        }
+        #lvl-hud {
+            background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
+            text-align: center; min-width: 220px; backdrop-filter: blur(10px);
+            border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
+        #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+        #coords { 
+            font-family: monospace; color: var(--primary); background: var(--bg-dark); 
+            padding: 4px 15px; border-radius: 12px; font-size: 12px; 
+            border: 1px solid var(--border); backdrop-filter: blur(5px);
+            opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
 
-        /* PAINEL DE SESSÃO */
-        #session-panel {
-            position: absolute; top: 100px; left: -210px; width: 200px; z-index: 101; 
-            transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        #session-panel.active { left: 15px; }
-        #player-list { 
-            background: var(--bg-dark); padding: 15px; border-radius: 12px; 
-            border-left: 4px solid var(--primary); font-size: 13px; 
-            backdrop-filter: blur(10px); border: 1px solid var(--border);
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
-        }
-        #btn-session-toggle {
-            position: absolute; right: -40px; top: 0;
-            width: 35px; height: 35px; background: var(--primary);
-            border: none; border-radius: 0 8px 8px 0; cursor: pointer;
-            font-size: 18px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
-        }
+        /* PAINEL DE SESSÃO */
+        #session-panel {
+            position: absolute; top: 100px; left: -210px; width: 200px; z-index: 101; 
+            transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        #session-panel.active { left: 15px; }
+        #player-list { 
+            background: var(--bg-dark); padding: 15px; border-radius: 12px; 
+            border-left: 4px solid var(--primary); font-size: 13px; 
+            backdrop-filter: blur(10px); border: 1px solid var(--border);
+            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
+        }
+        #btn-session-toggle {
+            position: absolute; right: -40px; top: 0;
+            width: 35px; height: 35px; background: var(--primary);
+            border: none; border-radius: 0 8px 8px 0; cursor: pointer;
+            font-size: 18px; display: flex; align-items: center; justify-content: center;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
+        }
 
-        .player-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .player-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        /* HUD PÓLEN */
-        #pollen-hud { 
-            position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
-            background: var(--bg-dark); padding: 15px; border-radius: 15px;
-            border-right: 5px solid #fffa65; display: none; text-align: center;
-            min-width: 80px; backdrop-filter: blur(10px); z-index: 100; border: 1px solid var(--border);
-        }
-        #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
+        /* HUD PÓLEN */
+        #pollen-hud { 
+            position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
+            background: var(--bg-dark); padding: 15px; border-radius: 15px;
+            border-right: 5px solid #fffa65; display: none; text-align: center;
+            min-width: 80px; backdrop-filter: blur(10px); z-index: 100; border: 1px solid var(--border);
+        }
+        #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
-        /* MODAIS */
-        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
+        /* MENU DE BOTÕES (CENTRO INFERIOR) */
+        #bottom-menu-container {
+            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+            display: flex; flex-direction: column; align-items: center; gap: 15px;
+            z-index: 500;
+        }
+        #main-action-menu {
+            background: var(--bg-dark); border: 1px solid var(--primary);
+            padding: 15px; border-radius: 15px; display: none;
+            backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+            grid-template-columns: repeat(3, 1fr); gap: 10px;
+        }
+        .square-btn {
+            width: 50px; height: 50px; background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
+            cursor: pointer; display: flex; align-items: center; justify-content: center;
+            font-size: 24px; transition: all 0.2s;
+        }
+        .square-btn:hover { background: var(--primary); transform: scale(1.05); }
+        #btn-open-menu {
+            width: 60px; height: 60px; background: var(--primary);
+            border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
+            cursor: pointer; font-size: 28px; display: flex; align-items: center;
+            justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            z-index: 501;
+        }
 
-        /* CHAT */
-        #chat-wrapper { 
-            position: absolute; bottom: 160px; left: -240px; width: 240px; z-index: 500; 
-            display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-        #chat-display { height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px; }
-        #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
-        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
-        #btn-minimize-chat { position: absolute; right: -45px; bottom: 0; background: var(--primary); color: #111; border: none; border-radius: 0 8px 8px 0; cursor: pointer; width: 45px; height: 45px; font-size: 20px; font-weight: bold; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+        /* MODAIS */
+        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-        /* MENU INICIAL */
-        #menu { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; background: #222; padding: 40px; border-radius: 20px; border: 2px solid var(--primary); z-index: 3000; box-shadow: 0 0 50px rgba(0,0,0,0.5); }
-        .main-btn { padding: 12px; cursor: pointer; border-radius: 8px; border: none; font-weight: bold; background: var(--primary); font-size: 16px; width: 100%; margin-top: 10px; color: #111; }
+        /* CHAT */
+        #chat-wrapper { 
+            position: absolute; bottom: 160px; left: -240px; width: 240px; z-index: 500; 
+            display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
+        #chat-display { height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px; }
+        #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
+        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
+        #btn-minimize-chat { position: absolute; right: -45px; bottom: 0; background: var(--primary); color: #111; border: none; border-radius: 0 8px 8px 0; cursor: pointer; width: 45px; height: 45px; font-size: 20px; font-weight: bold; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 
-        /* JOYSTICKS */
-        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
-        #move-base { left: 40px; }
-        #aim-base { right: 40px; border-color: rgba(255, 71, 87, 0.3); }
-        .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.8; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    </style>
+        /* --- MENU INICIAL REDESENHADO --- */
+        #menu { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+            z-index: 3000;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .menu-card {
+            background: rgba(40, 40, 40, 0.6);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            text-align: center;
+        }
+
+        .menu-card h1 {
+            font-size: 3rem;
+            margin: 0 0 10px 0;
+            background: linear-gradient(to bottom, #fff, var(--primary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+            font-weight: 800;
+        }
+
+        .menu-card p {
+            color: #888;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--primary);
+            margin-bottom: 8px;
+            font-weight: bold;
+            padding-left: 5px;
+        }
+
+        .menu-input {
+            width: 100%;
+            padding: 14px 18px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            color: white;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .menu-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1);
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .main-btn {
+            padding: 16px;
+            cursor: pointer;
+            border-radius: 12px;
+            border: none;
+            font-weight: 800;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-create { background: var(--primary); color: #111; }
+        .btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
+
+        .btn-join { background: var(--secondary); color: white; }
+        .btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
+
+        .main-btn:active { transform: scale(0.95); }
+
+        /* MOBILE OPTIMIZATION */
+        @media (max-width: 480px) {
+            .menu-card { padding: 30px 20px; }
+            .menu-card h1 { font-size: 2.2rem; }
+            .button-row { grid-template-columns: 1fr; }
+            .main-btn { padding: 18px; }
+        }
+
+        /* JOYSTICKS */
+        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
+        #move-base { left: 40px; }
+        #aim-base { right: 40px; border-color: rgba(255, 71, 87, 0.3); }
+        .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.8; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+    </style>
 </head>
 <body>
 
-    <div id="central-hud">
-        <div id="lvl-hud">
-            <div id="lvl-text">Nível 1</div>
-            <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
-        </div>
-        <div id="coords">X: 1100 Y: 1100</div>
-    </div>
+    <div id="central-hud">
+        <div id="lvl-hud">
+            <div id="lvl-text">Nível 1</div>
+            <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+        </div>
+        <div id="coords">X: 1100 Y: 1100</div>
+    </div>
 
-    <div id="session-panel">
-        <button id="btn-session-toggle">👥</button>
-        <div id="player-list">
-            <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;">SESSÃO ATIVA</div>
-            <div id="player-items-container"></div>
-        </div>
-    </div>
+    <div id="session-panel">
+        <button id="btn-session-toggle">👥</button>
+        <div id="player-list">
+            <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;">SESSÃO ATIVA</div>
+            <div id="player-items-container"></div>
+        </div>
+    </div>
 
-    <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
-    <div id="death-modal"><h2 class="modal-title">Derrotado</h2><button class="main-btn" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button></div>
-    <div id="game-over-modal"><h2 class="modal-title">COLMEIA DESTRUÍDA</h2><button class="main-btn" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button></div>
-    
-    <div id="chat-wrapper">
-        <button id="btn-minimize-chat">💬</button>
-        <div id="chat-display"></div>
-        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Falar..." autocomplete="off"></div>
-    </div>
+    <div id="bottom-menu-container">
+        <div id="main-action-menu">
+            <button class="square-btn" title="Abelhas">🐝</button>
+            <button class="square-btn" style="opacity: 0.3;">⚙️</button>
+            <button class="square-btn" style="opacity: 0.3;">🎒</button>
+        </div>
+        <button id="btn-open-menu">☰</button>
+    </div>
 
-    <div id="menu">
-        <h1 style="color:var(--primary); margin:0 0 20px 0; letter-spacing: 3px;">BEE WORLD</h1>
-        <input type="text" id="player-nick" placeholder="NICKNAME" maxlength="12">
-        <br><input type="text" id="room-code" placeholder="CÓDIGO SALA" maxlength="6">
-        <br><button class="main-btn" onclick="startSession(true)">CRIAR SALA</button>
-        <button class="main-btn" style="background:#3498db; color:white;" onclick="startSession(false)">ENTRAR EM SALA</button>
-    </div>
+    <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
+    <div id="death-modal">
+        <h2 class="modal-title">Derrotado</h2>
+        <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
+    </div>
+    <div id="game-over-modal">
+        <h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
+        <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
+    </div>
+    
+    <div id="chat-wrapper">
+        <button id="btn-minimize-chat">💬</button>
+        <div id="chat-display"></div>
+        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Falar..." autocomplete="off"></div>
+    </div>
 
-    <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
-    <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
-    
-    <canvas id="gameCanvas"></canvas>
+    <div id="menu">
+        <div class="menu-card">
+            <h1>BEE WORLD</h1>
+            <p>RPG Multiplayer Edition • v1.2</p>
+            
+            <div class="input-group">
+                <label>Identidade</label>
+                <input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido no jogo..." maxlength="12">
+            </div>
 
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        const chatInput = document.getElementById('chat-input');
-        const chatWrapper = document.getElementById('chat-wrapper');
-        const sessionPanel = document.getElementById('session-panel');
-        const deathModal = document.getElementById('death-modal');
-        const gameOverModal = document.getElementById('game-over-modal');
-        const pollenHud = document.getElementById('pollen-hud');
-        const pollenVal = document.getElementById('pollen-val');
-        const moveBase = document.getElementById('move-base');
-        const aimBase = document.getElementById('aim-base');
-        const moveStick = document.getElementById('move-stick');
-        const aimStick = document.getElementById('aim-stick');
-        const playerItemsContainer = document.getElementById('player-items-container');
-        
-        const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
-        assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
-        assets.ground.src = 'Grass.png';
+            <div class="input-group">
+                <label>Portal (Código da Sala)</label>
+                <input type="text" id="room-code" class="menu-input" placeholder="Ex: ABC123" maxlength="6">
+            </div>
 
-        let isHost = false;
-        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
-        let players = { 
-            me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100 }, 
-            peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1 } 
-        };
-        
-        let projectiles = [], enemies = [], flowers = [], particles = []; 
-        let camera = { x: 0, y: 0 }, peer, conn, keys = {};
-        const TILE_SIZE = 64;
-        let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
-        let mousePos = { x: 0, y: 0 }, isMouseDown = false;
-        let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
-        let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
+            <div class="button-row">
+                <button class="main-btn btn-create" onclick="startSession(true)">
+                    <span>🏠</span> Criar Sala
+                </button>
+                <button class="main-btn btn-join" onclick="startSession(false)">
+                    <span>🚀</span> Entrar
+                </button>
+            </div>
+        </div>
+    </div>
 
-        // Toggle Chat
-        document.getElementById('btn-minimize-chat').onclick = () => {
-            let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
-            chatWrapper.style.left = isHidden ? "0px" : "-240px";
-            document.getElementById('btn-minimize-chat').innerHTML = isHidden ? "«" : "💬";
-        };
+    <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
+    <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
+    
+    <canvas id="gameCanvas"></canvas>
 
-        // Toggle Session
-        document.getElementById('btn-session-toggle').onclick = () => {
-            sessionPanel.classList.toggle('active');
-            document.getElementById('btn-session-toggle').innerHTML = sessionPanel.classList.contains('active') ? "«" : "👥";
-        };
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d', { alpha: false });
+        const chatInput = document.getElementById('chat-input');
+        const chatWrapper = document.getElementById('chat-wrapper');
+        const sessionPanel = document.getElementById('session-panel');
+        const deathModal = document.getElementById('death-modal');
+        const gameOverModal = document.getElementById('game-over-modal');
+        const pollenHud = document.getElementById('pollen-hud');
+        const pollenVal = document.getElementById('pollen-val');
+        const moveBase = document.getElementById('move-base');
+        const aimBase = document.getElementById('aim-base');
+        const moveStick = document.getElementById('move-stick');
+        const aimStick = document.getElementById('aim-stick');
+        const playerItemsContainer = document.getElementById('player-items-container');
+        
+        const btnOpenMenu = document.getElementById('btn-open-menu');
+        const mainActionMenu = document.getElementById('main-action-menu');
 
-        function addXp(amount) {
-            if(players.me.isDead) return;
-            players.me.xp += amount;
-            if(players.me.xp >= players.me.nextXp) {
-                players.me.xp -= players.me.nextXp;
-                players.me.lvl++;
-                players.me.nextXp = players.me.lvl * 100;
-                addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}!`, "msg-sys");
-                createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
-            }
-            updateXpHud();
-        }
+        const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
+        assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
+        assets.ground.src = 'Grass.png';
 
-        function updateXpHud() {
-            const perc = (players.me.xp / players.me.nextXp) * 100;
-            document.getElementById('xp-bar-fill').style.width = perc + "%";
-            document.getElementById('lvl-text').innerText = `Nível ${players.me.lvl}`;
-        }
+        let isHost = false;
+        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
+        let players = { 
+            me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100 }, 
+            peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1 } 
+        };
+        
+        let projectiles = [], enemies = [], flowers = [], particles = []; 
+        let camera = { x: 0, y: 0 }, peer, conn, keys = {};
+        const TILE_SIZE = 64;
+        let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
+        let mousePos = { x: 0, y: 0 }, isMouseDown = false;
+        let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
+        let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        function createParticles(x, y, color, count, type = 'pixel') {
-            for(let i=0; i<count; i++) {
-                let vx = (Math.random() - 0.5) * 4;
-                let vy = (Math.random() - 0.5) * 4;
-                let life = 1.0;
-                let decay = Math.random() * 0.02 + 0.01;
-                if(type === 'pollen') { vx *= 0.2; vy *= 0.2; decay = 0.005; }
-                else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
-                particles.push({ x, y, vx, vy, life, decay, color, type });
-            }
-        }
+        // --- INTERFACE LOGIC ---
+        btnOpenMenu.onclick = () => {
+            const isVisible = mainActionMenu.style.display === 'grid';
+            mainActionMenu.style.display = isVisible ? 'none' : 'grid';
+            btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
+        };
 
-        function generateFlowers() {
-            const types = ["🌸", "🌻", "🌷"];
-            for(let i=0; i<25; i++) {
-                flowers.push({
-                    x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
-                    emoji: types[Math.floor(Math.random() * types.length)],
-                    cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
-                });
-            }
-        }
-        generateFlowers();
+        document.getElementById('btn-minimize-chat').onclick = () => {
+            let isHidden = chatWrapper.style.left === "-240px" || chatWrapper.style.left === "";
+            chatWrapper.style.left = isHidden ? "0px" : "-240px";
+            document.getElementById('btn-minimize-chat').innerHTML = isHidden ? "«" : "💬";
+        };
 
-        window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
-        window.addEventListener('mousedown', () => isMouseDown = true);
-        window.addEventListener('mouseup', () => isMouseDown = false);
-        window.addEventListener('keydown', e => {
-            if(document.activeElement === chatInput) { if(e.key === 'Enter') sendMsg(); return; }
-            if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
-            keys[e.code] = true;
-        });
-        window.addEventListener('keyup', e => keys[e.code] = false);
+        document.getElementById('btn-session-toggle').onclick = () => {
+            sessionPanel.classList.toggle('active');
+            document.getElementById('btn-session-toggle').innerHTML = sessionPanel.classList.contains('active') ? "«" : "👥";
+        };
 
-        function startSession(host) {
-            const code = document.getElementById('room-code').value.trim();
-            const nick = document.getElementById('player-nick').value.trim();
-            if(!nick || !code) return alert("Preencha tudo!");
-            isHost = host;
-            players.me.nick = nick;
-            players.me.color = host ? "#f1c40f" : "#3498db";
-            players.peer.color = host ? "#3498db" : "#f1c40f";
-            peer = host ? new Peer('bee-' + code) : new Peer();
-            peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-' + code); setupConn(); } });
-            peer.on('connection', c => { conn = c; setupConn(); });
-        }
+        function addXp(amount) {
+            if(players.me.isDead) return;
+            players.me.xp += amount;
+            if(players.me.xp >= players.me.nextXp) {
+                players.me.xp -= players.me.nextXp;
+                players.me.lvl++;
+                players.me.nextXp = players.me.lvl * 100;
+                addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}!`, "msg-sys");
+                createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
+            }
+            updateXpHud();
+        }
 
-        function setupConn() {
-            conn.on('open', () => { 
-                players.peer.active = true; startGame(); 
-                conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
-            });
-            conn.on('data', data => {
-                if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
-                else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
-                else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-                else if(data.type === 'hit') { 
-                    if(data.target === 'me') takeDamage(10); 
-                    if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 8); }
-                    if(data.target === 'enemy') { 
-                        let en = enemies.find(e => e.id === data.enId);
-                        if(en) { en.hp -= 25; if(en.hp <= 0) createParticles(en.x, en.y, "#000", 10); }
-                    }
-                }
-                else if(data.type === 'sync_world') { 
-                    enemies = data.enemies; 
-                    isWaveActive = data.isWaveActive; 
-                    hive.hp = data.hiveHp; 
-                    if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
-                }
-                else if(data.type === 'repair') { 
-                    hive.hp = data.hp; 
-                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-                }
-                else if(data.type === 'pos') { 
-                    players.peer.tX = data.x; players.peer.tY = data.y; 
-                    players.peer.dir = data.dir; players.peer.nick = data.nick; 
-                    players.peer.hp = data.hp; players.peer.isDead = data.isDead;
-                    players.peer.pollen = data.pollen; players.peer.lvl = data.lvl;
-                    players.peer.active = true;
-                }
-            });
-        }
+        function updateXpHud() {
+            const perc = (players.me.xp / players.me.nextXp) * 100;
+            document.getElementById('xp-bar-fill').style.width = perc + "%";
+            document.getElementById('lvl-text').innerText = `Nível ${players.me.lvl}`;
+        }
 
-        function takeDamage(amount) {
-            if(players.me.isDead) return;
-            players.me.hp -= amount;
-            createParticles(players.me.x, players.me.y, "#ff0000", 5);
-            if(players.me.hp <= 0) {
-                players.me.hp = 0; players.me.isDead = true;
-                deathModal.style.display = 'flex';
-                players.me.pollen = 0;
-            }
-        }
+        function createParticles(x, y, color, count, type = 'pixel') {
+            for(let i=0; i<count; i++) {
+                let vx = (Math.random() - 0.5) * 4;
+                let vy = (Math.random() - 0.5) * 4;
+                let life = 1.0;
+                let decay = Math.random() * 0.02 + 0.01;
+                if(type === 'pollen') { vx *= 0.2; vy *= 0.2; decay = 0.005; }
+                else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
+                particles.push({ x, y, vx, vy, life, decay, color, type });
+            }
+        }
 
-        function respawnPlayer() {
-            players.me.x = 1100; players.me.y = 1100;
-            players.me.hp = 100; players.me.isDead = false;
-            deathModal.style.display = 'none';
-        }
+        function generateFlowers() {
+            const types = ["🌸", "🌻", "🌷"];
+            for(let i=0; i<25; i++) {
+                flowers.push({
+                    x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
+                    emoji: types[Math.floor(Math.random() * types.length)],
+                    cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
+                });
+            }
+        }
+        generateFlowers();
 
-        function fire(angle) {
-            if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
-            const deg = angle * (180 / Math.PI);
-            if (deg >= -45 && deg <= 45) players.me.dir = 'Right';
-            else if (deg > 45 && deg <= 135) players.me.dir = 'Down';
-            else if (deg < -45 && deg >= -135) players.me.dir = 'Up';
-            else players.me.dir = 'Left';
+        window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
+        window.addEventListener('mousedown', () => isMouseDown = true);
+        window.addEventListener('mouseup', () => isMouseDown = false);
+        window.addEventListener('keydown', e => {
+            if(document.activeElement === chatInput) { if(e.key === 'Enter') sendMsg(); return; }
+            if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
+            keys[e.code] = true;
+        });
+        window.addEventListener('keyup', e => keys[e.code] = false);
 
-            spawnProjectile(players.me.x, players.me.y, angle, true);
-            if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
-            lastShootTime = Date.now();
-        }
+        function startSession(host) {
+            const code = document.getElementById('room-code').value.trim();
+            const nick = document.getElementById('player-nick').value.trim();
+            if(!nick || !code) return alert("Preencha o Nickname e o Código!");
+            isHost = host;
+            players.me.nick = nick;
+            players.me.color = host ? "#f1c40f" : "#3498db";
+            players.peer.color = host ? "#3498db" : "#f1c40f";
+            peer = host ? new Peer('bee-' + code) : new Peer();
+            peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-' + code); setupConn(); } });
+            peer.on('connection', c => { conn = c; setupConn(); });
+        }
 
-        function spawnProjectile(x, y, angle, isMe) {
-            projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
-        }
+        function setupConn() {
+            conn.on('open', () => { 
+                players.peer.active = true; startGame(); 
+                conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
+            });
+            conn.on('data', data => {
+                if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
+                else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
+                else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
+                else if(data.type === 'hit') { 
+                    if(data.target === 'me') takeDamage(10); 
+                    if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 8); }
+                    if(data.target === 'enemy') { 
+                        let en = enemies.find(e => e.id === data.enId);
+                        if(en) { en.hp -= 25; if(en.hp <= 0) createParticles(en.x, en.y, "#000", 10); }
+                    }
+                }
+                else if(data.type === 'sync_world') { 
+                    enemies = data.enemies; 
+                    isWaveActive = data.isWaveActive; 
+                    hive.hp = data.hiveHp; 
+                    if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
+                }
+                else if(data.type === 'repair') { 
+                    hive.hp = data.hp; 
+                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                }
+                else if(data.type === 'pos') { 
+                    players.peer.tX = data.x; players.peer.tY = data.y; 
+                    players.peer.dir = data.dir; players.peer.nick = data.nick; 
+                    players.peer.hp = data.hp; players.peer.isDead = data.isDead;
+                    players.peer.pollen = data.pollen; players.peer.lvl = data.lvl;
+                    players.peer.active = true;
+                }
+            });
+        }
 
-        function runWaveLogic() {
-            if (!isHost) return; 
-            waveTimer -= 1/60;
-            if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
-            
-            if (isWaveActive) {
-                let now = Date.now();
-                if (enemiesSpawnedInWave < 20 && now - lastEnemySpawnTime > 2000) {
-                    const angle = Math.random() * Math.PI * 2;
-                    enemies.push({ 
-                        id: Math.random().toString(36).substr(2, 9),
-                        x: hive.x + Math.cos(angle) * 1000, 
-                        y: hive.y + Math.sin(angle) * 1000, 
-                        hp: 100 
-                    });
-                    enemiesSpawnedInWave++; lastEnemySpawnTime = now;
-                }
-                if (enemies.length === 0 && enemiesSpawnedInWave >= 20) isWaveActive = false;
-            }
+        function takeDamage(amount) {
+            if(players.me.isDead) return;
+            players.me.hp -= amount;
+            createParticles(players.me.x, players.me.y, "#ff0000", 5);
+            if(players.me.hp <= 0) {
+                players.me.hp = 0; players.me.isDead = true;
+                deathModal.style.display = 'flex';
+                players.me.pollen = 0;
+            }
+        }
 
-            let syncEvent = null;
-            enemies.forEach((en, index) => {
-                const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
-                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
-                
-                // Dano na Hive (Lógica do Host)
-                if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-                    if(performance.now() % 60 < 2) {
-                        hive.hp -= 2;
-                        syncEvent = 'hive_hit';
-                    }
-                }
-                
-                // Dano no Player Me (Host)
-                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-                
-                // Dano no Peer (Host detecta e avisa)
-                if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30) {
-                    if(performance.now() % 60 < 2) conn.send({type: 'hit', target: 'me'});
-                }
-            });
+        function respawnPlayer() {
+            players.me.x = 1100; players.me.y = 1100;
+            players.me.hp = 100; players.me.isDead = false;
+            deathModal.style.display = 'none';
+        }
 
-            if (hive.hp <= 0 && !hive.destroyed) { 
-                hive.hp = 0; hive.destroyed = true; 
-                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
-            }
+        function fire(angle) {
+            if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
+            const deg = angle * (180 / Math.PI);
+            if (deg >= -45 && deg <= 45) players.me.dir = 'Right';
+            else if (deg > 45 && deg <= 135) players.me.dir = 'Down';
+            else if (deg < -45 && deg >= -135) players.me.dir = 'Up';
+            else players.me.dir = 'Left';
 
-            if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
-                conn.send({ 
-                    type: 'sync_world', 
-                    enemies: enemies, 
-                    isWaveActive: isWaveActive, 
-                    hiveHp: hive.hp,
-                    event: syncEvent
-                });
-                lastNetUpdate = performance.now();
-            }
-        }
+            spawnProjectile(players.me.x, players.me.y, angle, true);
+            if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
+            lastShootTime = Date.now();
+        }
 
-        function updateMechanics() {
-            flowers.forEach(f => {
-                if(f.cooldown > 0) f.cooldown -= 1/60;
-                else {
-                    if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
-                    if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-                        players.me.pollen += 0.4;
-                        addXp(0.1);
-                        if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
-                    }
-                }
-            });
+        function spawnProjectile(x, y, angle, isMe) {
+            projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
+        }
 
-            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
-                if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
-                    players.me.pollen = 0; 
-                    if(isHost) {
-                        hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-                    } else {
-                        conn.send({ type: 'repair' });
-                    }
-                    addXp(25);
-                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-                }
-            }
+        function runWaveLogic() {
+            if (!isHost) return; 
+            waveTimer -= 1/60;
+            if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
+            
+            if (isWaveActive) {
+                let now = Date.now();
+                if (enemiesSpawnedInWave < 20 && now - lastEnemySpawnTime > 2000) {
+                    const angle = Math.random() * Math.PI * 2;
+                    enemies.push({ 
+                        id: Math.random().toString(36).substr(2, 9),
+                        x: hive.x + Math.cos(angle) * 1000, 
+                        y: hive.y + Math.sin(angle) * 1000, 
+                        hp: 100 
+                    });
+                    enemiesSpawnedInWave++; lastEnemySpawnTime = now;
+                }
+                if (enemies.length === 0 && enemiesSpawnedInWave >= 20) isWaveActive = false;
+            }
 
-            // Colisão Projétil -> Inimigo (Calculado por quem atirou ou pelo host)
-            projectiles.forEach((p, pIdx) => {
-                enemies.forEach((en) => {
-                    if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
-                        if(isHost) {
-                            en.hp -= 25;
-                            if(en.hp <= 0) { if(p.owner === 'me') addXp(15); }
-                        } else if(p.owner === 'me') {
-                            conn.send({ type: 'hit', target: 'enemy', enId: en.id });
-                            addXp(15);
-                        }
-                        projectiles.splice(pIdx, 1);
-                    }
-                });
-            });
+            let syncEvent = null;
+            enemies.forEach((en) => {
+                const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
+                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
+                
+                if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
+                    if(performance.now() % 60 < 2) {
+                        hive.hp -= 2;
+                        syncEvent = 'hive_hit';
+                    }
+                }
+                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
+                if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30) {
+                    if(performance.now() % 60 < 2) conn.send({type: 'hit', target: 'me'});
+                }
+            });
 
-            particles.forEach((p, i) => {
-                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-                if(p.life <= 0) particles.splice(i, 1);
-            });
-        }
+            if (hive.hp <= 0 && !hive.destroyed) { 
+                hive.hp = 0; hive.destroyed = true; 
+                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
+            }
 
-        function drawIndicators() {
-            if (players.peer.active && !players.peer.isDead) {
-                const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
-                if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
-            }
-            if(!hive.destroyed) {
-                const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
-                if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
-            }
-        }
+            if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
+                conn.send({ 
+                    type: 'sync_world', 
+                    enemies: enemies, 
+                    isWaveActive: isWaveActive, 
+                    hiveHp: hive.hp,
+                    event: syncEvent
+                });
+                lastNetUpdate = performance.now();
+            }
+        }
 
-        function drawArrow(dx, dy, color, radius = 70) {
-            const angle = Math.atan2(dy, dx);
-            ctx.save(); ctx.translate(players.me.x, players.me.y); ctx.rotate(angle);
-            ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8); ctx.closePath();
-            ctx.fillStyle = color; ctx.fill(); ctx.restore();
-        }
+        function updateMechanics() {
+            flowers.forEach(f => {
+                if(f.cooldown > 0) f.cooldown -= 1/60;
+                else {
+                    if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
+                    if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+                        players.me.pollen += 0.4;
+                        addXp(0.1);
+                        if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
+                    }
+                }
+            });
 
-        function sendMsg() {
-            const text = chatInput.value.trim();
-            if(text && conn && conn.open) {
-                conn.send({ type: 'chat', msg: text });
-                addMsg(players.me.nick, text, "me");
-                chatInput.value = ""; chatInput.blur();
-            }
-        }
+            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
+                if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
+                    players.me.pollen = 0; 
+                    if(isHost) { hive.hp = Math.min(hive.maxHp, hive.hp + 50); }
+                    else { conn.send({ type: 'repair' }); }
+                    addXp(25);
+                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                }
+            }
 
-        function addMsg(author, text, senderType) {
-            const d = document.createElement('div');
-            const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
-            d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
-            const display = document.getElementById('chat-display');
-            display.appendChild(d); display.scrollTop = display.scrollHeight;
-        }
+            projectiles.forEach((p, pIdx) => {
+                enemies.forEach((en) => {
+                    if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
+                        if(isHost) {
+                            en.hp -= 25;
+                            if(en.hp <= 0) { if(p.owner === 'me') addXp(15); }
+                        } else if(p.owner === 'me') {
+                            conn.send({ type: 'hit', target: 'enemy', enId: en.id });
+                            addXp(15);
+                        }
+                        projectiles.splice(pIdx, 1);
+                    }
+                });
+            });
 
-        function startGame() {
-            document.getElementById('menu').style.display = 'none';
-            document.getElementById('lvl-hud').style.display = 'block';
-            chatWrapper.style.display = 'flex';
-            sessionPanel.style.display = 'block';
-            canvas.style.display = 'block';
-            if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
-                moveBase.style.display = 'block'; aimBase.style.display = 'block';
-                setupMultitouch();
-            }
-            resize(); requestAnimationFrame(gameLoop);
-        }
+            particles.forEach((p, i) => {
+                p.x += p.vx; p.y += p.vy; p.life -= p.decay;
+                if(p.life <= 0) particles.splice(i, 1);
+            });
+        }
 
-        function setupMultitouch() {
-            const handleStart = (e) => {
-                for(let t of e.changedTouches) {
-                    const rM = moveBase.getBoundingClientRect(), rA = aimBase.getBoundingClientRect();
-                    if(t.clientX > rM.left && t.clientX < rM.right && t.clientY > rM.top && t.clientY < rM.bottom) touchIds.move = t.identifier;
-                    if(t.clientX > rA.left && t.clientX < rA.right && t.clientY > rA.top && t.clientY < rA.bottom) touchIds.aim = t.identifier;
-                }
-            };
-            const handleMove = (e) => {
-                e.preventDefault();
-                for(let t of e.touches) {
-                    if(t.identifier === touchIds.move) {
-                        const r = moveBase.getBoundingClientRect();
-                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40), a = Math.atan2(dy, dx);
-                        moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
-                        joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
-                    }
-                    if(t.identifier === touchIds.aim) {
-                        const r = aimBase.getBoundingClientRect();
-                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
-                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
-                        joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
-                        aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
-                    }
-                }
-            };
-            const handleEnd = (e) => {
-                for(let t of e.changedTouches) {
-                    if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; moveStick.style.transform = 'none'; }
-                    if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; aimStick.style.transform = 'none'; }
-                }
-            };
-            window.addEventListener('touchstart', handleStart, {passive: false});
-            window.addEventListener('touchmove', handleMove, {passive: false});
-            window.addEventListener('touchend', handleEnd);
-        }
+        function drawIndicators() {
+            if (players.peer.active && !players.peer.isDead) {
+                const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
+                if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
+            }
+            if(!hive.destroyed) {
+                const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
+                if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
+            }
+        }
 
-        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
-        window.addEventListener('resize', resize);
+        function drawArrow(dx, dy, color, radius = 70) {
+            const angle = Math.atan2(dy, dx);
+            ctx.save(); ctx.translate(players.me.x, players.me.y); ctx.rotate(angle);
+            ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8); ctx.closePath();
+            ctx.fillStyle = color; ctx.fill(); ctx.restore();
+        }
 
-        function update() {
-            if(!players.me.isDead) {
-                let dx = joyMove.dx, dy = joyMove.dy;
-                if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
-                if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
-                if (dx !== 0 || dy !== 0) {
-                    const m = Math.sqrt(dx*dx + dy*dy);
-                    players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-                    if (!isMouseDown && !joyAim.active) {
-                        if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
-                        else players.me.dir = dy > 0 ? 'Down' : 'Up';
-                    }
-                }
-                if(joyAim.active) fire(joyAim.angle);
-                else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
-            }
+        function sendMsg() {
+            const text = chatInput.value.trim();
+            if(text && conn && conn.open) {
+                conn.send({ type: 'chat', msg: text });
+                addMsg(players.me.nick, text, "me");
+                chatInput.value = ""; chatInput.blur();
+            }
+        }
 
-            runWaveLogic(); updateMechanics();
+        function addMsg(author, text, senderType) {
+            const d = document.createElement('div');
+            const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
+            d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
+            const display = document.getElementById('chat-display');
+            display.appendChild(d); display.scrollTop = display.scrollHeight;
+        }
 
-            if(performance.now() - lastNetUpdate > 30) { 
-                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
-            }
+        function startGame() {
+            document.getElementById('menu').style.display = 'none';
+            document.getElementById('lvl-hud').style.display = 'block';
+            chatWrapper.style.display = 'flex';
+            sessionPanel.style.display = 'block';
+            canvas.style.display = 'block';
+            if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+                moveBase.style.display = 'block'; aimBase.style.display = 'block';
+                setupMultitouch();
+            }
+            resize(); requestAnimationFrame(gameLoop);
+        }
 
-            // HUD SESSÃO
-            let playerListHtml = "";
-            if(players.peer.active) { 
-                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
-                const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick} (Lvl ${players.peer.lvl})</span><span>${d}m</span></div>`;
-            }
-            if(!hive.destroyed) {
-                const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-                playerListHtml += `<div class="player-item" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hpP}%</span></div>`;
-            }
-            playerItemsContainer.innerHTML = playerListHtml;
+        function setupMultitouch() {
+            const handleStart = (e) => {
+                for(let t of e.changedTouches) {
+                    const rM = moveBase.getBoundingClientRect(), rA = aimBase.getBoundingClientRect();
+                    if(t.clientX > rM.left && t.clientX < rM.right && t.clientY > rM.top && t.clientY < rM.bottom) touchIds.move = t.identifier;
+                    if(t.clientX > rA.left && t.clientX < rA.right && t.clientY > rA.top && t.clientY < rA.bottom) touchIds.aim = t.identifier;
+                }
+            };
+            const handleMove = (e) => {
+                e.preventDefault();
+                for(let t of e.touches) {
+                    if(t.identifier === touchIds.move) {
+                        const r = moveBase.getBoundingClientRect();
+                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40), a = Math.atan2(dy, dx);
+                        moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+                        joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
+                    }
+                    if(t.identifier === touchIds.aim) {
+                        const r = aimBase.getBoundingClientRect();
+                        const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+                        const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+                        joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
+                        aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
+                    }
+                }
+            };
+            const handleEnd = (e) => {
+                for(let t of e.changedTouches) {
+                    if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; moveStick.style.transform = 'none'; }
+                    if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; aimStick.style.transform = 'none'; }
+                }
+            };
+            window.addEventListener('touchstart', handleStart, {passive: false});
+            window.addEventListener('touchmove', handleMove, {passive: false});
+            window.addEventListener('touchend', handleEnd);
+        }
 
-            projectiles.forEach((p, i) => { 
-                p.x += p.vx; p.y += p.vy; p.life--; 
-                if(p.life <= 0) projectiles.splice(i, 1); 
-            });
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+        window.addEventListener('resize', resize);
 
-            camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-            pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
-            pollenVal.innerText = Math.floor(players.me.pollen) + "%";
-            document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
-        }
+        function update() {
+            if(!players.me.isDead) {
+                let dx = joyMove.dx, dy = joyMove.dy;
+                if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+                if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+                if (dx !== 0 || dy !== 0) {
+                    const m = Math.sqrt(dx*dx + dy*dy);
+                    players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+                    if (!isMouseDown && !joyAim.active) {
+                        if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+                        else players.me.dir = dy > 0 ? 'Down' : 'Up';
+                    }
+                }
+                if(joyAim.active) fire(joyAim.angle);
+                else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
+            }
 
-        function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
-            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
-            ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
-        }
+            runWaveLogic(); updateMechanics();
 
-        function draw() {
-            ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.save(); ctx.translate(-camera.x, -camera.y);
-            const sX = Math.floor(camera.x/TILE_SIZE)*TILE_SIZE, sY = Math.floor(camera.y/TILE_SIZE)*TILE_SIZE;
-            for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE) 
-                for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
-                    if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
+            if(performance.now() - lastNetUpdate > 30) { 
+                if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
+            }
 
-            flowers.forEach(f => {
-                const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
-                ctx.font = "28px Arial"; ctx.textAlign = "center";
-                ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
-                ctx.fillText(f.emoji, f.x + sway, f.y);
-            });
-            ctx.globalAlpha = 1.0;
+            // HUD SESSÃO
+            let playerListHtml = "";
+            if(players.peer.active) { 
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+                const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
+                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick} (Lvl ${players.peer.lvl})</span><span>${d}m</span></div>`;
+            }
+            if(!hive.destroyed) {
+                const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+                playerListHtml += `<div class="player-item" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hpP}%</span></div>`;
+            }
+            playerItemsContainer.innerHTML = playerListHtml;
 
-            if(!hive.destroyed) {
-                ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
-                drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
-            }
+            projectiles.forEach((p, i) => { 
+                p.x += p.vx; p.y += p.vy; p.life--; 
+                if(p.life <= 0) projectiles.splice(i, 1); 
+            });
 
-            drawIndicators();
-            enemies.forEach(en => { 
-                ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); 
-                drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); 
-            });
-            projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
+            camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+            pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
+            pollenVal.innerText = Math.floor(players.me.pollen) + "%";
+            document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+        }
 
-            particles.forEach(p => {
-                ctx.globalAlpha = p.life;
-                if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); }
-                else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); }
-            }); ctx.globalAlpha = 1.0;
+        function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
+            ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
+            ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
+        }
 
-            const drawB = (p, c, a) => {
-                if(!assets.bee[p.dir].complete || p.isDead) return;
-                ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
-                ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
-                ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-                drawHealthBar(p.x, p.y, p.hp);
-                if(p.pollen > 0 && p.pollen < 100) {
-                    ctx.fillStyle = "white"; ctx.fillRect(p.x - 15, p.y + 35, 30, 4);
-                    ctx.fillStyle = "#fffa65"; ctx.fillRect(p.x - 15, p.y + 35, 30 * (p.pollen/100), 4);
-                }
-            };
-            drawB(players.me, players.me.color, 1);
-            if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
-            ctx.restore();
-        }
+        function draw() {
+            ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.save(); ctx.translate(-camera.x, -camera.y);
+            const sX = Math.floor(camera.x/TILE_SIZE)*TILE_SIZE, sY = Math.floor(camera.y/TILE_SIZE)*TILE_SIZE;
+            for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE) 
+                for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
+                    if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
-    </script>
+            flowers.forEach(f => {
+                const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
+                ctx.font = "28px Arial"; ctx.textAlign = "center";
+                ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
+                ctx.fillText(f.emoji, f.x + sway, f.y);
+            });
+            ctx.globalAlpha = 1.0;
+
+            if(!hive.destroyed) {
+                ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
+                drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
+            }
+
+            drawIndicators();
+            enemies.forEach(en => { 
+                ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); 
+                drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); 
+            });
+            projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
+
+            particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); }
+                else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); }
+            }); ctx.globalAlpha = 1.0;
+
+            const drawB = (p, c, a) => {
+                if(!assets.bee[p.dir].complete || p.isDead) return;
+                ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
+                ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
+                ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
+                drawHealthBar(p.x, p.y, p.hp);
+            };
+            drawB(players.me, players.me.color, 1);
+            if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
+            ctx.restore();
+        }
+
+        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+    </script>
 </body>
 </html>
