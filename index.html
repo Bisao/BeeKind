@@ -534,6 +534,9 @@
                 }
             });
 
+            // LIMPEZA DE INIMIGOS MORTOS (ESSENCIAL PARA MORREREM)
+            enemies = enemies.filter(en => en.hp > 0);
+
             if (hive.hp <= 0 && !hive.destroyed) { 
                 hive.hp = 0; hive.destroyed = true; 
                 setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
@@ -579,7 +582,10 @@
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
                         if(isHost) {
                             en.hp -= 25;
-                            if(en.hp <= 0) { if(p.owner === 'me') addXp(15); }
+                            if(en.hp <= 0) { 
+                                createParticles(en.x, en.y, "#000", 10);
+                                if(p.owner === 'me') addXp(15); 
+                            }
                         } else if(p.owner === 'me') {
                             conn.send({ type: 'hit', target: 'enemy', enId: en.id });
                             addXp(15);
