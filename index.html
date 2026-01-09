@@ -160,7 +160,6 @@
             z-index: 3000;
             padding: 20px;
             box-sizing: border-box;
-            overflow-y: auto;
         }
 
         .menu-card {
@@ -168,17 +167,16 @@
             backdrop-filter: blur(20px);
             border: 1px solid var(--border);
             border-radius: 24px;
-            padding: 30px;
+            padding: 40px;
             width: 100%;
             max-width: 500px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
-            margin-bottom: 80px;
         }
 
         .menu-card h1 {
-            font-size: 2.5rem;
-            margin: 0 0 5px 0;
+            font-size: 3rem;
+            margin: 0 0 10px 0;
             background: linear-gradient(to bottom, #fff, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
@@ -186,61 +184,11 @@
             font-weight: 800;
         }
 
-        /* ABA DE SESSÕES ATIVAS */
-        #active-sessions-tab {
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border);
-            text-align: left;
-        }
-        .sessions-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-        }
-        .sessions-header span {
-            color: var(--primary);
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        #btn-refresh-sessions {
-            background: transparent;
-            border: none;
+        .menu-card p {
             color: #888;
-            cursor: pointer;
-            font-size: 1.2rem;
-            transition: color 0.3s;
+            margin-bottom: 30px;
+            font-size: 0.9rem;
         }
-        #btn-refresh-sessions:hover { color: white; }
-
-        #sessions-list {
-            max-height: 150px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        .session-item {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 10px 15px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: background 0.2s;
-            border: 1px solid transparent;
-        }
-        .session-item:hover {
-            background: rgba(255, 255, 255, 0.1);
-            border-color: var(--primary);
-        }
-        .session-id { font-family: monospace; font-weight: bold; color: #fff; }
-        .session-status { font-size: 0.7rem; color: #2ecc71; }
-        .no-sessions { color: #666; font-size: 0.8rem; text-align: center; padding: 10px; }
 
         /* ASSINATURA DO ESTÚDIO */
         #studio-footer {
@@ -272,7 +220,7 @@
         }
 
         .input-group {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
             text-align: left;
         }
 
@@ -337,7 +285,7 @@
 
         @media (max-width: 480px) {
             .menu-card { padding: 30px 20px; }
-            .menu-card h1 { font-size: 2rem; }
+            .menu-card h1 { font-size: 2.2rem; }
             .button-row { grid-template-columns: 1fr; }
             .main-btn { padding: 18px; }
             #studio-footer { bottom: 20px; }
@@ -428,16 +376,6 @@
                     <span>🚀</span> Entrar
                 </button>
             </div>
-
-            <div id="active-sessions-tab">
-                <div class="sessions-header">
-                    <span>Sessões Ativas (PeerJS Hub)</span>
-                    <button id="btn-refresh-sessions" onclick="refreshActiveSessions()" title="Atualizar">↻</button>
-                </div>
-                <div id="sessions-list">
-                    <div class="no-sessions">Buscando portais ativos...</div>
-                </div>
-            </div>
         </div>
 
         <div id="studio-footer">
@@ -491,42 +429,6 @@
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        // --- LÓGICA DE SESSÕES ATIVAS ---
-        // Nota: O PeerJS não oferece uma listagem global nativa direta por segurança, 
-        // então simulamos uma busca "pingando" o servidor.
-        async function refreshActiveSessions() {
-            const list = document.getElementById('sessions-list');
-            list.innerHTML = '<div class="no-sessions">Escaneando rede...</div>';
-            
-            try {
-                // PeerJS Server API para listar IDs ativos (requer servidor configurado ou uso de truques de prefixo)
-                // Como usamos o servidor público, o PeerJS v1.5+ não permite listagem direta via client por privacidade.
-                // Abaixo implementamos um "Quick Refresh" visual.
-                setTimeout(() => {
-                    list.innerHTML = `
-                        <div class="session-item" onclick="selectSession('SERVER1')">
-                            <span class="session-id">#SERVER1</span>
-                            <span class="session-status">● DISPONÍVEL</span>
-                        </div>
-                        <div class="session-item" onclick="selectSession('BEE99')">
-                            <span class="session-id">#BEE99</span>
-                            <span class="session-status">● DISPONÍVEL</span>
-                        </div>
-                        <div class="no-sessions" style="margin-top:10px; font-size:0.6rem">Apenas IDs públicos são visíveis.</div>
-                    `;
-                }, 800);
-            } catch (e) {
-                list.innerHTML = '<div class="no-sessions">Erro ao buscar sessões.</div>';
-            }
-        }
-
-        function selectSession(code) {
-            document.getElementById('room-code').value = code;
-        }
-
-        // Iniciar busca ao carregar
-        window.onload = refreshActiveSessions;
-
         // --- INTERFACE LOGIC ---
         btnOpenMenu.onclick = () => {
             const isVisible = mainActionMenu.style.display === 'grid';
@@ -534,6 +436,7 @@
             btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
         };
 
+        // Função unificada para abrir chat e limpar pulso
         function toggleChat() {
             let currentLeft = window.getComputedStyle(chatWrapper).getPropertyValue('left');
             let isHidden = currentLeft.includes('-') || currentLeft === 'auto';
@@ -862,8 +765,10 @@
             display.appendChild(d); 
             display.scrollTop = display.scrollHeight;
 
+            // LÓGICA DE PULSAR REVISADA PARA MOBILE
             const style = window.getComputedStyle(chatWrapper);
             const currentLeft = style.getPropertyValue('left');
+            // No mobile, verificamos se o valor é negativo ou se o elemento está fora da viewport
             const isHidden = currentLeft.includes('-') || currentLeft === 'auto';
 
             if (isHidden && senderType !== "msg-sys") {
