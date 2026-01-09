@@ -358,6 +358,7 @@
         assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
         assets.ground.src = 'Grass.png';
 
+        // --- CORE P2P LOGIC ---
         let isHost = false;
         let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
         let players = { 
@@ -371,9 +372,7 @@
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
         let mousePos = { x: 0, y: 0 }, isMouseDown = false;
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
-        
-        // --- ATUALIZAÇÃO: Tempo de onda agora é 300 segundos (5 minutos) ---
-        let waveTimer = 300, isWaveActive = false, enemiesSpawnedInWave = 0;
+        let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
         let currentSeed = 0;
         function setSeed(roomCode) {
@@ -506,41 +505,55 @@
                 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
             });
             conn.on('data', data => {
+                // Mensagens de Chat e Handshake são comuns
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
-                else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-                else if(data.type === 'hit') { 
-                    if(data.target === 'me') takeDamage(10); 
-                    if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 8); }
-                    if(data.target === 'enemy') { 
-                        let en = enemies.find(e => e.id === data.enId);
-                        if(en) { en.hp -= 25; if(en.hp <= 0) createParticles(en.x, en.y, "#000", 10); }
+                
+                // HOST RECEBE COMANDOS DO PEER
+                if(isHost) {
+                    if(data.type === 'pos') {
+                        players.peer.tX = data.x; players.peer.tY = data.y;
+                        players.peer.dir = data.dir; players.peer.nick = data.nick;
+                        players.peer.hp = data.hp; players.peer.isDead = data.isDead;
+                        players.peer.pollen = data.pollen; players.peer.lvl = data.lvl;
                     }
-                }
-                else if(data.type === 'sync_world') { 
-                    // O Cliente apenas recebe os dados calculados pelo Host
-                    enemies = data.enemies; 
-                    isWaveActive = data.isWaveActive; 
-                    hive.hp = data.hiveHp; 
-                    hive.destroyed = data.hiveDestroyed;
-                    waveTimer = data.waveTimer; 
-                    if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
-                }
-                else if(data.type === 'repair') { 
-                    hive.hp = data.hp; 
-                    hive.destroyed = (hive.hp <= 0);
-                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-                }
-                else if(data.type === 'pos') { 
-                    players.peer.tX = data.x; players.peer.tY = data.y; 
-                    players.peer.dir = data.dir; players.peer.nick = data.nick; 
-                    players.peer.hp = data.hp; players.peer.isDead = data.isDead;
-                    players.peer.pollen = data.pollen; players.peer.lvl = data.lvl;
-                    players.peer.active = true;
+                    else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
+                    else if(data.type === 'repair') {
+                        let heal = 50;
+                        hive.hp = Math.min(hive.maxHp, hive.hp + heal);
+                        if(hive.hp > 0) hive.destroyed = false;
+                        createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                    }
+                } 
+                // PEER RECEBE ESTADO DO MUNDO DO HOST
+                else {
+                    if(data.type === 'sync_world') {
+                        enemies = data.enemies;
+                        isWaveActive = data.isWaveActive;
+                        hive.hp = data.hiveHp;
+                        hive.destroyed = data.hiveDestroyed;
+                        waveTimer = data.waveTimer;
+                        
+                        // Sincroniza posição e status do Host (que para o Peer é o players.peer)
+                        players.peer.tX = data.host.x; players.peer.tY = data.host.y;
+                        players.peer.dir = data.host.dir; players.peer.hp = data.host.hp;
+                        players.peer.isDead = data.host.isDead; players.peer.lvl = data.host.lvl;
+                        players.peer.pollen = data.host.pollen;
+                        
+                        // O Host também manda o HP atual do Peer (me) para garantir autoridade
+                        players.me.hp = data.peerStatus.hp;
+                        players.me.isDead = data.peerStatus.isDead;
+
+                        if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
+                        if(data.event === 'enemy_death') createParticles(data.evX, data.evY, "#000", 10);
+                        if(data.event === 'repair_fx') createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                    }
+                    else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 }
             });
         }
 
+        // Host calcula dano, Peer apenas avisa que morreu visualmente (opcional)
         function takeDamage(amount) {
             if(players.me.isDead) return;
             players.me.hp -= amount;
@@ -556,6 +569,8 @@
             players.me.x = 1100; players.me.y = 1100;
             players.me.hp = 100; players.me.isDead = false;
             deathModal.style.display = 'none';
+            // Peer avisa o Host que deu respawn
+            if(!isHost && conn && conn.open) conn.send({type: 'pos', ...players.me});
         }
 
         function fire(angle) {
@@ -575,16 +590,15 @@
             projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
         }
 
-        // --- ATUALIZAÇÃO: Toda a lógica de IA e Tempo agora é EXCLUSIVA do Host ---
+        // --- HOST ONLY CALCULATION ---
         function runWaveLogic() {
-            if (!isHost) return; // Clientes não processam IA nem temporizadores globais
-            
+            if (!isHost) return; 
             waveTimer -= 1/60;
             
             if (waveTimer <= 0 && !isWaveActive) { 
                 isWaveActive = true; 
                 enemiesSpawnedInWave = 0; 
-                waveTimer = 300; // Reset para 5 minutos após iniciar a onda
+                waveTimer = 180; 
             }
             
             if (isWaveActive) {
@@ -603,45 +617,54 @@
             }
 
             let syncEvent = null;
+            let evX = 0, evY = 0;
+
             enemies.forEach((en) => {
                 let targetX, targetY;
-                
                 if (hive.hp > 0) {
-                    targetX = hive.x;
-                    targetY = hive.y;
-                    
+                    targetX = hive.x; targetY = hive.y;
                     if (Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
                         if(performance.now() % 60 < 2) { 
-                            hive.hp -= 2; 
-                            syncEvent = 'hive_hit'; 
-                            if(hive.hp <= 0) {
-                                hive.hp = 0;
-                                hive.destroyed = true;
-                                addMsg("SISTEMA", "A colmeia caiu! Defendam-se!", "msg-sys");
-                            }
+                            hive.hp -= 2; syncEvent = 'hive_hit'; 
+                            if(hive.hp <= 0) { hive.hp = 0; hive.destroyed = true; }
                         }
                     }
                 } else {
                     let distMe = Math.hypot(en.x - players.me.x, en.y - players.me.y);
-                    let distPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
-                    
-                    if (distMe < distPeer) {
-                        targetX = players.me.x; targetY = players.me.y;
-                    } else {
-                        targetX = players.peer.x; targetY = players.peer.y;
-                    }
+                    let distPeer = players.peer.active ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
+                    if (distMe < distPeer) { targetX = players.me.x; targetY = players.me.y; } 
+                    else { targetX = players.peer.x; targetY = players.peer.y; }
                 }
 
                 const angle = Math.atan2(targetY - en.y, targetX - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
 
-                // Host detecta dano no player local
+                // Dano Autoritário (Host decide se Peer ou Me tomam dano)
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(5);
+                if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
+                    players.peer.hp -= 5;
+                    if(players.peer.hp <= 0) { players.peer.hp = 0; players.peer.isDead = true; }
+                }
+            });
+
+            // Colisão de Projéteis Autoritária no Host
+            projectiles.forEach((p, pIdx) => {
+                enemies.forEach((en) => {
+                    if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
+                        en.hp -= 25;
+                        projectiles.splice(pIdx, 1);
+                        if(en.hp <= 0) {
+                            syncEvent = 'enemy_death'; evX = en.x; evY = en.y;
+                            if(p.owner === 'me') addXp(15);
+                            // Nota: O Host precisaria sincronizar o XP do Peer também se o Peer ganhasse
+                        }
+                    }
+                });
             });
 
             enemies = enemies.filter(en => en.hp > 0);
 
-            // Host envia o estado do mundo para o cliente
+            // SINCRONIZAÇÃO ROBUSTA (Host envia para o Peer)
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
                 conn.send({ 
                     type: 'sync_world', 
@@ -650,23 +673,26 @@
                     hiveHp: hive.hp, 
                     hiveDestroyed: hive.destroyed,
                     waveTimer: waveTimer,
-                    event: syncEvent 
+                    event: syncEvent,
+                    evX: evX, evY: evY,
+                    host: { x: players.me.x, y: players.me.y, dir: players.me.dir, hp: players.me.hp, isDead: players.me.isDead, lvl: players.me.lvl, pollen: players.me.pollen },
+                    peerStatus: { hp: players.peer.hp, isDead: players.peer.isDead }
                 });
                 lastNetUpdate = performance.now();
             }
         }
 
         function updateMechanics() {
+            // Notificações de onda (Visual)
             if(isWaveActive) {
                 waveNotification.style.display = 'block';
                 waveNotification.innerText = `FORMIGAS VIVAS: ${enemies.length}`;
             } else if (waveTimer <= 60) {
                 waveNotification.style.display = 'block';
                 waveNotification.innerText = `ATAQUE EM: ${Math.floor(waveTimer)}s`;
-            } else {
-                waveNotification.style.display = 'none';
-            }
+            } else { waveNotification.style.display = 'none'; }
 
+            // Flores (Localmente para feedback rápido, mas o XP é local)
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
@@ -678,48 +704,30 @@
                 }
             });
 
+            // Efeitos de Pólen
             if (!players.me.isDead && players.me.pollen > 0) {
-                if (Math.random() < (players.me.pollen / 100) * 0.4) {
-                    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-                }
+                if (Math.random() < (players.me.pollen / 100) * 0.4) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
             }
             if (players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-                if (Math.random() < (players.peer.pollen / 100) * 0.4) {
-                    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-                }
+                if (Math.random() < (players.peer.pollen / 100) * 0.4) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
             }
 
+            // Reparo da Colmeia (Peer pede, Host executa)
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; 
-                    let heal = 50;
                     if(isHost) {
-                        hive.hp = Math.min(hive.maxHp, hive.hp + heal);
+                        hive.hp = Math.min(hive.maxHp, hive.hp + 50);
                         if(hive.hp > 0) hive.destroyed = false;
+                        createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                     } else {
-                        conn.send({ type: 'repair', hp: Math.min(hive.maxHp, hive.hp + heal) });
+                        conn.send({ type: 'repair' });
                     }
-                    addXp(25); 
-                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-                    if(hive.hp > 0 && hive.hp <= heal) addMsg("SISTEMA", "A colmeia foi reconstruída!", "msg-sys");
+                    addXp(25);
                 }
             }
 
-            projectiles.forEach((p, pIdx) => {
-                enemies.forEach((en) => {
-                    if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
-                        if(isHost) {
-                            en.hp -= 25;
-                            if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); if(p.owner === 'me') addXp(15); }
-                        } else if(p.owner === 'me') {
-                            conn.send({ type: 'hit', target: 'enemy', enId: en.id });
-                            addXp(15);
-                        }
-                        projectiles.splice(pIdx, 1);
-                    }
-                });
-            });
-
+            // Partículas Locais
             particles.forEach((p, i) => {
                 p.x += p.vx; p.y += p.vy; p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
@@ -756,10 +764,7 @@
             d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
             const display = document.getElementById('chat-display');
             display.appendChild(d); display.scrollTop = display.scrollHeight;
-            const style = window.getComputedStyle(chatWrapper);
-            const currentLeft = style.getPropertyValue('left');
-            const isHidden = currentLeft.includes('-') || currentLeft === 'auto';
-            if (isHidden && senderType !== "msg-sys") chatMinimizeBtn.classList.add('unread-pulse');
+            if (window.getComputedStyle(chatWrapper).left.includes('-') && senderType !== "msg-sys") chatMinimizeBtn.classList.add('unread-pulse');
         }
 
         function startGame() {
@@ -834,16 +839,23 @@
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
-            runWaveLogic(); updateMechanics();
+            if(isHost) runWaveLogic(); 
+            updateMechanics();
 
-            if(performance.now() - lastNetUpdate > 30) { 
+            // Rede: Enviar posição (Peer envia comando, Host envia no sync_world)
+            if(!isHost && performance.now() - lastNetUpdate > 30) { 
                 if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
             }
 
+            // Interpolação do Peer visual
+            if(players.peer.active) { 
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.25; 
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.25; 
+            }
+
+            // Atualização de UI
             let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
             if(players.peer.active) { 
-                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
                 const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
                 playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
             }
@@ -852,11 +864,8 @@
             let hiveListHtml = "";
             const hpP = Math.floor((hive.hp/hive.maxHp)*100);
             const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
-            if(hive.hp > 0) {
-                hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-            } else {
-                hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>⚠️ COLMEIA CAÍDA! (${dist}m)</span></div>`;
-            }
+            if(hive.hp > 0) { hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hpP}% (${dist}m)</span></div>`; } 
+            else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>⚠️ COLMEIA CAÍDA!</span></div>`; }
             hiveItemsContainer.innerHTML = hiveListHtml;
 
             projectiles.forEach((p, i) => { 
@@ -884,15 +893,12 @@
             flowers.forEach(f => {
                 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
                 ctx.font = "28px Arial"; ctx.textAlign = "center";
-                ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
-                ctx.fillText(f.emoji, f.x + sway, f.y);
+                ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0; ctx.fillText(f.emoji, f.x + sway, f.y);
             });
             ctx.globalAlpha = 1.0;
 
             ctx.font = "60px Arial"; ctx.textAlign = "center"; 
-            ctx.globalAlpha = hive.hp > 0 ? 1.0 : 0.4;
-            ctx.fillText("🏠", hive.x, hive.y + 20);
-            ctx.globalAlpha = 1.0;
+            ctx.globalAlpha = hive.hp > 0 ? 1.0 : 0.4; ctx.fillText("🏠", hive.x, hive.y + 20); ctx.globalAlpha = 1.0;
             if(hive.hp > 0) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 
             drawIndicators();
@@ -916,7 +922,7 @@
                 drawHealthBar(p.x, p.y, p.hp);
             };
             drawB(players.me, players.me.color, 1);
-            if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
+            if(players.peer.active) drawB(players.peer, players.peer.color, 0.7);
             ctx.restore();
         }
 
