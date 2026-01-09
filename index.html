@@ -530,7 +530,9 @@
                         isWaveActive = data.isWaveActive;
                         hive.hp = data.hiveHp;
                         hive.destroyed = data.hiveDestroyed;
-                        waveTimer = data.waveTimer;
+                        
+                        // IMPORTANTE: Peer NÃO calcula tempo, ele obedece ao Host
+                        waveTimer = data.waveTimer; 
                         
                         // Sync Host position (Peer's friend)
                         players.peer.tX = data.host.x; players.peer.tY = data.host.y;
@@ -678,6 +680,7 @@
         }
 
         function updateMechanics() {
+            // HUD DE ONDA (Visão compartilhada do tempo do Host)
             if(isWaveActive) {
                 waveNotification.style.display = 'block';
                 waveNotification.innerText = `FORMIGAS VIVAS: ${enemies.length}`;
@@ -829,16 +832,19 @@
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
+            // APENAS O HOST processa o tempo real e lógica de ondas
             if(isHost) runWaveLogic(); 
+            
             updateMechanics();
 
             if(!isHost && performance.now() - lastNetUpdate > 30) { 
                 if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
             }
 
+            // Melhorei a interpolação para ser mais rápida (0.35) e evitar lag visual
             if(players.peer.active) { 
-                players.peer.x += (players.peer.tX - players.peer.x) * 0.25; 
-                players.peer.y += (players.peer.tY - players.peer.y) * 0.25; 
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.35; 
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.35; 
             }
 
             let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
