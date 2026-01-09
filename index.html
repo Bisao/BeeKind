@@ -41,19 +41,24 @@
             opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
-        /* PAINEL DE SESSÃO - ATUALIZADO PARA ENCOSTAR NA ESQUERDA */
-        #session-panel {
-            position: absolute; top: 100px; left: -210px; width: 210px; z-index: 101; 
+        /* PAINÉIS LATERAIS (SESSÃO E COLMEIA) */
+        .side-panel {
+            position: absolute; left: -210px; width: 210px; z-index: 101; 
             transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        #session-panel.active { left: 0px; }
-        #player-list { 
+        #session-panel { top: 100px; }
+        #hive-panel { top: 260px; } /* Posicionado abaixo do de sessão */
+
+        .side-panel.active { left: 0px; }
+        
+        .panel-content { 
             background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
             border-left: 4px solid var(--primary); font-size: 13px; 
             backdrop-filter: blur(10px); border: 1px solid var(--border);
             box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
         }
-        #btn-session-toggle {
+        
+        .panel-toggle {
             position: absolute; right: -40px; top: 0;
             width: 35px; height: 35px; background: var(--primary);
             border: none; border-radius: 0 8px 8px 0; cursor: pointer;
@@ -61,7 +66,13 @@
             box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
         }
 
-        .player-item { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .panel-title { 
+            font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
+            padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         /* HUD PÓLEN */
         #pollen-hud { 
@@ -173,7 +184,6 @@
             font-weight: 800;
         }
 
-        /* Classe especial para aproximar as letras do emoji */
         .tight-cookie {
             display: inline-block;
             margin-left: -5px;
@@ -270,11 +280,19 @@
         <div id="coords">X: 1100 Y: 1100</div>
     </div>
 
-    <div id="session-panel">
-        <button id="btn-session-toggle">👥</button>
-        <div id="player-list">
-            <div style="font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;">SESSÃO ATIVA</div>
+    <div id="session-panel" class="side-panel">
+        <button id="btn-session-toggle" class="panel-toggle">👥</button>
+        <div class="panel-content">
+            <div class="panel-title">Sessão Ativa</div>
             <div id="player-items-container"></div>
+        </div>
+    </div>
+
+    <div id="hive-panel" class="side-panel">
+        <button id="btn-hive-toggle" class="panel-toggle">🏠</button>
+        <div class="panel-content">
+            <div class="panel-title">Colmeias Ativas</div>
+            <div id="hive-items-container"></div>
         </div>
     </div>
 
@@ -346,6 +364,7 @@
         const chatInput = document.getElementById('chat-input');
         const chatWrapper = document.getElementById('chat-wrapper');
         const sessionPanel = document.getElementById('session-panel');
+        const hivePanel = document.getElementById('hive-panel');
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
         const pollenHud = document.getElementById('pollen-hud');
@@ -355,6 +374,7 @@
         const moveStick = document.getElementById('move-stick');
         const aimStick = document.getElementById('aim-stick');
         const playerItemsContainer = document.getElementById('player-items-container');
+        const hiveItemsContainer = document.getElementById('hive-items-container');
         
         const btnOpenMenu = document.getElementById('btn-open-menu');
         const mainActionMenu = document.getElementById('main-action-menu');
@@ -396,6 +416,11 @@
             document.getElementById('btn-session-toggle').innerHTML = sessionPanel.classList.contains('active') ? "«" : "👥";
         };
 
+        document.getElementById('btn-hive-toggle').onclick = () => {
+            hivePanel.classList.toggle('active');
+            document.getElementById('btn-hive-toggle').innerHTML = hivePanel.classList.contains('active') ? "«" : "🏠";
+        };
+
         function addXp(amount) {
             if(players.me.isDead) return;
             players.me.xp += amount;
@@ -422,10 +447,9 @@
                 let life = 1.0;
                 let decay = Math.random() * 0.02 + 0.01;
                 
-                // Configuração específica para efeito realista de coleta
                 if(type === 'pollen') { 
                     vx = (Math.random() - 0.5) * 1.5; 
-                    vy = Math.random() * 2; // Partículas caem
+                    vy = Math.random() * 2;
                     decay = 0.02 + Math.random() * 0.02; 
                 }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
@@ -606,19 +630,11 @@
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
-                    // Partícula ambiental da flor
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
-                    
-                    // Lógica de coleta
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                         players.me.pollen += 0.4;
                         addXp(0.1);
-                        
-                        // Efeito realista: Partículas caindo da abelha ao coletar
-                        if(Math.random() < 0.2) {
-                            createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-                        }
-
+                        if(Math.random() < 0.2) { createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen'); }
                         if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                     }
                 }
@@ -701,6 +717,7 @@
             document.getElementById('lvl-hud').style.display = 'block';
             chatWrapper.style.display = 'flex';
             sessionPanel.style.display = 'block';
+            hivePanel.style.display = 'block';
             canvas.style.display = 'block';
             if('ontouchstart' in window || navigator.maxTouchPoints > 0) {
                 moveBase.style.display = 'block'; aimBase.style.display = 'block';
@@ -773,18 +790,26 @@
                 if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
             }
 
-            let playerListHtml = "";
+            // --- ATUALIZAÇÃO DO PAINEL DE SESSÃO (PLAYERS) ---
+            let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
                 players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
                 const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-                playerListHtml += `<div class="player-item" style="color:${players.peer.color}"><span>● ${players.peer.nick} (Lvl ${players.peer.lvl})</span><span>${d}m</span></div>`;
-            }
-            if(!hive.destroyed) {
-                const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-                playerListHtml += `<div class="player-item" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base</span><span>${hpP}%</span></div>`;
+                playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
             }
             playerItemsContainer.innerHTML = playerListHtml;
+
+            // --- ATUALIZAÇÃO DO PAINEL DE COLMEIA ---
+            let hiveListHtml = "";
+            if(!hive.destroyed) {
+                const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+                const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+                hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
+            } else {
+                hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`;
+            }
+            hiveItemsContainer.innerHTML = hiveListHtml;
 
             projectiles.forEach((p, i) => { 
                 p.x += p.vx; p.y += p.vy; p.life--; 
