@@ -41,7 +41,7 @@
             opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
-        /* PAINÉIS LATERAIS (AGRUPADOS) */
+        /* PAINÉIS LATERAIS */
         #sidebar-container {
             position: absolute; left: 0; top: 100px; z-index: 101;
             display: flex; flex-direction: column; pointer-events: none;
@@ -63,7 +63,6 @@
             overflow: hidden;
         }
         
-        /* PADRONIZADO: Botões de Sessão e Colmeia */
         .panel-toggle {
             position: absolute; right: -45px; top: 0;
             width: 45px; height: 45px; background: var(--primary);
@@ -89,7 +88,7 @@
         }
         #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
-        /* MENU DE BOTÕES (CENTRO INFERIOR) */
+        /* MENU DE BOTÕES */
         #bottom-menu-container {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
             display: flex; flex-direction: column; align-items: center; gap: 15px;
@@ -120,7 +119,7 @@
         #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
         .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-        /* CHAT - POSIÇÃO ELEVADA PARA MOBILE */
+        /* CHAT */
         #chat-wrapper { 
             position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
             display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
@@ -129,7 +128,6 @@
         #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
         #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
         
-        /* PADRONIZADO: Botão do Chat */
         #btn-minimize-chat { 
             position: absolute; right: -45px; bottom: 0; 
             background: var(--primary); color: #111; 
@@ -140,26 +138,20 @@
             transition: background 0.3s;
         }
 
-        /* ANIMAÇÃO DE PULSAR PARA MENSAGEM NÃO LIDA */
         @keyframes pulse {
             0% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
             50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
             100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
         }
 
-        .unread-pulse {
-            animation: pulse 1.5s infinite ease-in-out !important;
-            z-index: 502;
-        }
+        .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
-        /* --- MENU INICIAL --- */
+        /* MENU INICIAL */
         #menu { 
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
-            z-index: 3000;
-            padding: 20px;
-            box-sizing: border-box;
+            z-index: 3000; padding: 20px; box-sizing: border-box;
         }
 
         .menu-card {
@@ -175,121 +167,49 @@
         }
 
         .menu-card h1 {
-            font-size: 3rem;
-            margin: 0 0 10px 0;
+            font-size: 3rem; margin: 0 0 10px 0;
             background: linear-gradient(to bottom, #fff, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-            font-weight: 800;
+            letter-spacing: -1px; font-weight: 800;
         }
 
-        .menu-card p {
-            color: #888;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
+        .menu-card p { color: #888; margin-bottom: 30px; font-size: 0.9rem; }
 
-        /* ASSINATURA DO ESTÚDIO */
-        #studio-footer {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            pointer-events: none;
-        }
+        #studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
+        .studio-name { font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255, 255, 255, 0.5); }
+        .studio-name b { color: var(--primary); font-weight: 800; }
+        .tight-cookie { display: inline-block; margin-left: -5px; margin-right: -4px; transform: translateY(1px); }
 
-        .studio-name {
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .studio-name b {
-            color: var(--primary);
-            font-weight: 800;
-        }
-
-        .tight-cookie {
-            display: inline-block;
-            margin-left: -5px;
-            margin-right: -4px;
-            transform: translateY(1px); 
-        }
-
-        .input-group {
-            margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            color: var(--primary);
-            margin-bottom: 8px;
-            font-weight: bold;
-            padding-left: 5px;
-        }
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; font-weight: bold; padding-left: 5px; }
 
         .menu-input {
-            width: 100%;
-            padding: 14px 18px;
+            width: 100%; padding: 14px 18px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
             border-radius: 12px;
-            color: white;
-            font-size: 1rem;
+            color: white; font-size: 1rem;
             box-sizing: border-box;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .menu-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1);
-        }
+        .menu-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1); }
 
-        .button-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 10px;
-        }
+        .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
 
         .main-btn {
-            padding: 16px;
-            cursor: pointer;
-            border-radius: 12px;
-            border: none;
-            font-weight: 800;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            padding: 16px; cursor: pointer; border-radius: 12px; border: none;
+            font-weight: 800; font-size: 0.9rem; text-transform: uppercase;
+            letter-spacing: 1px; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
         }
 
         .btn-create { background: var(--primary); color: #111; }
         .btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
-
         .btn-join { background: var(--secondary); color: white; }
         .btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
-
         .main-btn:active { transform: scale(0.95); }
-
-        @media (max-width: 480px) {
-            .menu-card { padding: 30px 20px; }
-            .menu-card h1 { font-size: 2.2rem; }
-            .button-row { grid-template-columns: 1fr; }
-            .main-btn { padding: 18px; }
-            #studio-footer { bottom: 20px; }
-        }
 
         /* JOYSTICKS */
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
@@ -429,6 +349,23 @@
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
+        // --- SISTEMA DE SEED ---
+        let currentSeed = 0;
+        function setSeed(roomCode) {
+            let seed = 0;
+            for (let i = 0; i < roomCode.length; i++) {
+                seed = ((seed << 5) - seed) + roomCode.charCodeAt(i);
+                seed |= 0;
+            }
+            currentSeed = Math.abs(seed);
+        }
+
+        function seededRandom(max = 1, min = 0) {
+            currentSeed = (currentSeed * 9301 + 49297) % 233280;
+            const rnd = currentSeed / 233280;
+            return min + rnd * (max - min);
+        }
+
         // --- INTERFACE LOGIC ---
         btnOpenMenu.onclick = () => {
             const isVisible = mainActionMenu.style.display === 'grid';
@@ -436,24 +373,16 @@
             btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
         };
 
-        // Função unificada para abrir chat e limpar pulso
         function toggleChat() {
             let currentLeft = window.getComputedStyle(chatWrapper).getPropertyValue('left');
             let isHidden = currentLeft.includes('-') || currentLeft === 'auto';
-            
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
             chatMinimizeBtn.innerHTML = isHidden ? "«" : "💬";
-            
-            if (isHidden) {
-                chatMinimizeBtn.classList.remove('unread-pulse');
-            }
+            if (isHidden) chatMinimizeBtn.classList.remove('unread-pulse');
         }
 
         chatMinimizeBtn.onclick = toggleChat;
-        chatMinimizeBtn.ontouchstart = (e) => {
-            e.preventDefault();
-            toggleChat();
-        };
+        chatMinimizeBtn.ontouchstart = (e) => { e.preventDefault(); toggleChat(); };
 
         document.getElementById('btn-session-toggle').onclick = () => {
             sessionPanel.classList.toggle('active');
@@ -490,39 +419,32 @@
                 let vy = (Math.random() - 0.5) * 4;
                 let life = 1.0;
                 let decay = Math.random() * 0.02 + 0.01;
-                
-                if(type === 'pollen') { 
-                    vx = (Math.random() - 0.5) * 1.5; 
-                    vy = Math.random() * 1.5; 
-                    decay = 0.015 + Math.random() * 0.015; 
-                }
+                if(type === 'pollen') { vx = (Math.random() - 0.5) * 1.5; vy = Math.random() * 1.5; decay = 0.015 + Math.random() * 0.015; }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
-                
                 particles.push({ x, y, vx, vy, life, decay, color, type });
             }
         }
 
         function generateFlowers() {
+            flowers = []; // Limpa flores existentes
             const types = ["🌸", "🌻", "🌷"];
-            for(let i=0; i<25; i++) {
+            // Aqui usamos o seededRandom para que todos vejam as mesmas flores
+            for(let i=0; i<35; i++) {
                 flowers.push({
-                    x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
-                    emoji: types[Math.floor(Math.random() * types.length)],
-                    cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
+                    x: seededRandom(3000, -1000), 
+                    y: seededRandom(3000, -1000),
+                    emoji: types[Math.floor(seededRandom(types.length))],
+                    cooldown: 0, maxCooldown: 300, phase: seededRandom(Math.PI * 2)
                 });
             }
         }
-        generateFlowers();
 
         window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
         window.addEventListener('mousedown', () => isMouseDown = true);
         window.addEventListener('mouseup', () => isMouseDown = false);
         window.addEventListener('keydown', e => {
             if(document.activeElement === chatInput) { 
-                if(e.key === 'Enter') {
-                    e.preventDefault();
-                    sendMsg(); 
-                }
+                if(e.key === 'Enter') { e.preventDefault(); sendMsg(); }
                 return; 
             }
             if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
@@ -531,16 +453,22 @@
         window.addEventListener('keyup', e => keys[e.code] = false);
 
         function startSession(host) {
-            const code = document.getElementById('room-code').value.trim();
+            const code = document.getElementById('room-code').value.trim().toUpperCase();
             const nick = document.getElementById('player-nick').value.trim();
             if(!nick || !code) return alert("Preencha o Nickname e o Código!");
+            
             isHost = host;
+            setSeed(code); // Define a seed baseada no código da sala
+            generateFlowers(); // Gera o mundo antes de iniciar
+
             players.me.nick = nick;
             players.me.color = host ? "#f1c40f" : "#3498db";
             players.peer.color = host ? "#3498db" : "#f1c40f";
+            
             peer = host ? new Peer('bee-' + code) : new Peer();
             peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-' + code); setupConn(); } });
             peer.on('connection', c => { conn = c; setupConn(); });
+            peer.on('error', err => alert("Erro: " + err.type));
         }
 
         function setupConn() {
@@ -638,34 +566,20 @@
             enemies.forEach((en) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
-                
                 if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-                    if(performance.now() % 60 < 2) {
-                        hive.hp -= 2;
-                        syncEvent = 'hive_hit';
-                    }
+                    if(performance.now() % 60 < 2) { hive.hp -= 2; syncEvent = 'hive_hit'; }
                 }
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-                if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30) {
-                    if(performance.now() % 60 < 2) conn.send({type: 'hit', target: 'me'});
-                }
             });
 
             enemies = enemies.filter(en => en.hp > 0);
-
             if (hive.hp <= 0 && !hive.destroyed) { 
                 hive.hp = 0; hive.destroyed = true; 
                 setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
             }
 
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
-                conn.send({ 
-                    type: 'sync_world', 
-                    enemies: enemies, 
-                    isWaveActive: isWaveActive, 
-                    hiveHp: hive.hp,
-                    event: syncEvent
-                });
+                conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp, event: syncEvent });
                 lastNetUpdate = performance.now();
             }
         }
@@ -676,31 +590,18 @@
                 else {
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-                        players.me.pollen += 0.4;
-                        addXp(0.1);
+                        players.me.pollen += 0.4; addXp(0.1);
                         if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                     }
                 }
             });
 
-            if(!players.me.isDead && players.me.pollen > 0) {
-                if(Math.random() < 0.1) {
-                    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-                }
-            }
-            if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-                if(Math.random() < 0.1) {
-                    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-                }
-            }
-
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; 
-                    if(isHost) { hive.hp = Math.min(hive.maxHp, hive.hp + 50); }
-                    else { conn.send({ type: 'repair' }); }
-                    addXp(25);
-                    createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                    if(isHost) hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                    else conn.send({ type: 'repair', hp: Math.min(hive.maxHp, hive.hp + 50) });
+                    addXp(25); createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
             }
 
@@ -709,10 +610,7 @@
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
                         if(isHost) {
                             en.hp -= 25;
-                            if(en.hp <= 0) { 
-                                createParticles(en.x, en.y, "#000", 10);
-                                if(p.owner === 'me') addXp(15); 
-                            }
+                            if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); if(p.owner === 'me') addXp(15); }
                         } else if(p.owner === 'me') {
                             conn.send({ type: 'hit', target: 'enemy', enId: en.id });
                             addXp(15);
@@ -750,11 +648,8 @@
             const text = chatInput.value.trim();
             if(!text) return;
             addMsg(players.me.nick, text, "me");
-            if(conn && conn.open) {
-                conn.send({ type: 'chat', msg: text });
-            }
-            chatInput.value = ""; 
-            chatInput.blur();
+            if(conn && conn.open) conn.send({ type: 'chat', msg: text });
+            chatInput.value = ""; chatInput.blur();
         }
 
         function addMsg(author, text, senderType) {
@@ -762,18 +657,11 @@
             const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
             d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
             const display = document.getElementById('chat-display');
-            display.appendChild(d); 
-            display.scrollTop = display.scrollHeight;
-
-            // LÓGICA DE PULSAR REVISADA PARA MOBILE
+            display.appendChild(d); display.scrollTop = display.scrollHeight;
             const style = window.getComputedStyle(chatWrapper);
             const currentLeft = style.getPropertyValue('left');
-            // No mobile, verificamos se o valor é negativo ou se o elemento está fora da viewport
             const isHidden = currentLeft.includes('-') || currentLeft === 'auto';
-
-            if (isHidden && senderType !== "msg-sys") {
-                chatMinimizeBtn.classList.add('unread-pulse');
-            }
+            if (isHidden && senderType !== "msg-sys") chatMinimizeBtn.classList.add('unread-pulse');
         }
 
         function startGame() {
@@ -868,9 +756,7 @@
                 const hpP = Math.floor((hive.hp/hive.maxHp)*100);
                 const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
                 hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-            } else {
-                hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`;
-            }
+            } else hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`;
             hiveItemsContainer.innerHTML = hiveListHtml;
 
             projectiles.forEach((p, i) => { 
