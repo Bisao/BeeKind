@@ -79,15 +79,6 @@
 
         .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-        /* HUD PÓLEN */
-        #pollen-hud { 
-            position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
-            background: var(--bg-dark); padding: 15px; border-radius: 15px;
-            border-right: 5px solid #fffa65; display: none; text-align: center;
-            min-width: 80px; backdrop-filter: blur(10px); z-index: 100; border: 1px solid var(--border);
-        }
-        #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
-
         /* MENU DE BOTÕES */
         #bottom-menu-container {
             position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -255,7 +246,6 @@
         <button id="btn-open-menu">☰</button>
     </div>
 
-    <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
     <div id="death-modal">
         <h2 class="modal-title">Derrotado</h2>
         <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
@@ -318,8 +308,6 @@
         const hivePanel = document.getElementById('hive-panel');
         const deathModal = document.getElementById('death-modal');
         const gameOverModal = document.getElementById('game-over-modal');
-        const pollenHud = document.getElementById('pollen-hud');
-        const pollenVal = document.getElementById('pollen-val');
         const moveBase = document.getElementById('move-base');
         const aimBase = document.getElementById('aim-base');
         const moveStick = document.getElementById('move-stick');
@@ -349,7 +337,6 @@
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
         let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        // --- SISTEMA DE SEED ---
         let currentSeed = 0;
         function setSeed(roomCode) {
             let seed = 0;
@@ -366,7 +353,6 @@
             return min + rnd * (max - min);
         }
 
-        // --- INTERFACE LOGIC ---
         btnOpenMenu.onclick = () => {
             const isVisible = mainActionMenu.style.display === 'grid';
             mainActionMenu.style.display = isVisible ? 'none' : 'grid';
@@ -419,16 +405,22 @@
                 let vy = (Math.random() - 0.5) * 4;
                 let life = 1.0;
                 let decay = Math.random() * 0.02 + 0.01;
-                if(type === 'pollen') { vx = (Math.random() - 0.5) * 1.5; vy = Math.random() * 1.5; decay = 0.015 + Math.random() * 0.015; }
+                
+                if(type === 'pollen') { 
+                    // Partícula cai da abelha de forma realista
+                    vx = (Math.random() - 0.5) * 1.5; 
+                    vy = 0.5 + Math.random() * 1.5; // Gravidade: sempre cai
+                    decay = 0.01 + Math.random() * 0.015; 
+                }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
+                
                 particles.push({ x, y, vx, vy, life, decay, color, type });
             }
         }
 
         function generateFlowers() {
-            flowers = []; // Limpa flores existentes
+            flowers = [];
             const types = ["🌸", "🌻", "🌷"];
-            // Aqui usamos o seededRandom para que todos vejam as mesmas flores
             for(let i=0; i<35; i++) {
                 flowers.push({
                     x: seededRandom(3000, -1000), 
@@ -458,8 +450,8 @@
             if(!nick || !code) return alert("Preencha o Nickname e o Código!");
             
             isHost = host;
-            setSeed(code); // Define a seed baseada no código da sala
-            generateFlowers(); // Gera o mundo antes de iniciar
+            setSeed(code);
+            generateFlowers();
 
             players.me.nick = nick;
             players.me.color = host ? "#f1c40f" : "#3498db";
@@ -588,13 +580,30 @@
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
+                    // Partículas flutuando nas flores (opcional, mantido para ambiência)
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
+                    
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                         players.me.pollen += 0.4; addXp(0.1);
                         if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                     }
                 }
             });
+
+            // --- EFEITO VISUAL DE CARGA DE PÓLEN ---
+            // Abelha principal
+            if (!players.me.isDead && players.me.pollen > 0) {
+                // Aumenta a frequência conforme carrega mais pólen
+                if (Math.random() < (players.me.pollen / 100) * 0.4) {
+                    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+                }
+            }
+            // Abelha Peer
+            if (players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+                if (Math.random() < (players.peer.pollen / 100) * 0.4) {
+                    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+                }
+            }
 
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
@@ -765,8 +774,6 @@
             });
 
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-            pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
-            pollenVal.innerText = Math.floor(players.me.pollen) + "%";
             document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
         }
 
