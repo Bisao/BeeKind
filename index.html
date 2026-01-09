@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Hive Kingdom</title>
+    <title>The Hive Kingdom - Pro Edition</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { 
@@ -41,19 +41,17 @@
             opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
+        /* PAINÉIS LATERAIS */
         #sidebar-container {
             position: absolute; left: 0; top: 100px; z-index: 101;
             display: flex; flex-direction: column; pointer-events: none;
         }
-
         .side-panel {
             position: relative; left: -210px; width: 210px;
             transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             pointer-events: auto;
         }
-
         .side-panel.active { left: 0px; }
-        
         .panel-content { 
             background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
             border-left: 4px solid var(--primary); font-size: 13px; 
@@ -61,7 +59,6 @@
             box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
             overflow: hidden;
         }
-        
         .panel-toggle {
             position: absolute; right: -45px; top: 0;
             width: 45px; height: 45px; background: var(--primary);
@@ -69,13 +66,11 @@
             font-size: 20px; display: flex; align-items: center; justify-content: center;
             box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
         }
-
         .panel-title { 
             font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
             padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
             text-transform: uppercase;
         }
-
         .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
         #pollen-hud { 
@@ -138,7 +133,6 @@
             50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
             100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
         }
-
         .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
         #menu { 
@@ -147,7 +141,6 @@
             background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
             z-index: 3000; padding: 20px; box-sizing: border-box;
         }
-
         .menu-card {
             background: rgba(40, 40, 40, 0.6);
             backdrop-filter: blur(20px);
@@ -159,7 +152,6 @@
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
         }
-
         .menu-card h1 {
             font-size: 2.8rem; margin: 0;
             background: linear-gradient(to bottom, #fff, var(--primary));
@@ -168,12 +160,10 @@
             letter-spacing: -1px; font-weight: 800;
             text-transform: uppercase;
         }
-
         .menu-card .slogan {
             color: var(--primary); font-size: 0.85rem; font-weight: 600;
             letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; opacity: 0.9;
         }
-
         .menu-card p.version { color: #888; margin-bottom: 30px; font-size: 0.75rem; }
 
         #studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
@@ -183,7 +173,6 @@
 
         .input-group { margin-bottom: 20px; text-align: left; }
         .input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; font-weight: bold; padding-left: 5px; }
-
         .menu-input {
             width: 100%; padding: 14px 18px;
             background: rgba(0, 0, 0, 0.3);
@@ -193,23 +182,16 @@
             box-sizing: border-box;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
-
         .menu-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1); }
-
         .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
-
         .main-btn {
             padding: 16px; cursor: pointer; border-radius: 12px; border: none;
             font-weight: 800; font-size: 0.9rem; text-transform: uppercase;
             letter-spacing: 1px; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex; align-items: center; justify-content: center; gap: 10px;
         }
-
         .btn-create { background: var(--primary); color: #111; }
-        .btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
         .btn-join { background: var(--secondary); color: white; }
-        .btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
-        .main-btn:active { transform: scale(0.95); }
 
         .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
         #move-base { left: 40px; }
@@ -276,7 +258,7 @@
         <div class="menu-card">
             <h1>THE HIVE KINGDOM</h1>
             <div class="slogan">Long live the King. Long live the Hive</div>
-            <p class="version">RPG Multiplayer Edition • v1.3</p>
+            <p class="version">RPG Multiplayer Edition • v1.4 (DeltaTime Stable)</p>
             
             <div class="input-group">
                 <label>Identidade</label>
@@ -340,11 +322,12 @@
             peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0 } 
         };
         
-        // BUFFER DE COMANDOS: O Host guarda o que o Peer pediu para processar no frame correto
-        let networkBuffer = {
-            hits: [],
-            repairs: []
-        };
+        // BUFFER DE COMANDOS P2P
+        let networkBuffer = { hits: [], repairs: [] };
+        
+        // --- DELTA TIME SYSTEM ---
+        let lastFrameTime = performance.now();
+        let dt = 0; // Delta time em segundos
 
         let projectiles = [], enemies = [], flowers = [], particles = []; 
         let camera = { x: 0, y: 0 }, peer, conn, keys = {};
@@ -447,13 +430,11 @@
         function setupConn() {
             conn.on('open', () => { 
                 players.peer.active = true;
-                players.peer.lastSeen = Date.now();
+                players.peer.lastSeen = performance.now();
                 startGame(); 
                 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
             });
             conn.on('data', data => {
-                // APENAS DADOS: Não processamos nada de movimento ou lógica aqui.
-                // Guardamos em buffers para o gameLoop processar no frame correto.
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
                 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
                 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
@@ -468,7 +449,7 @@
                     else { if(data.target === 'me') takeDamage(10); }
                 }
                 else if(data.type === 'sync_world') { 
-                    players.peer.lastSeen = Date.now();
+                    players.peer.lastSeen = performance.now();
                     enemies = data.enemies.map(enNew => {
                         let existing = enemies.find(e => e.id === enNew.id);
                         return existing ? {...enNew} : enNew;
@@ -480,14 +461,14 @@
                     if(isHost) networkBuffer.repairs.push(data);
                 }
                 else if(data.type === 'pos') { 
-                    players.peer.lastSeen = Date.now();
+                    players.peer.lastSeen = performance.now();
                     players.peer.tX = data.x; players.peer.tY = data.y; 
                     players.peer.dir = data.dir; players.peer.hp = data.hp; 
                     players.peer.isDead = data.isDead; players.peer.pollen = data.pollen; 
                     players.peer.lvl = data.lvl; players.peer.active = true;
                 }
                 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
-                else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
+                else if(data.type === 'pong') { players.peer.lastSeen = performance.now(); }
             });
         }
 
@@ -509,34 +490,34 @@
         }
 
         function fire(angle) {
-            if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
+            if(performance.now() - lastShootTime < 180 || players.me.isDead) return;
             spawnProjectile(players.me.x, players.me.y, angle, true);
             if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
-            lastShootTime = Date.now();
+            lastShootTime = performance.now();
         }
 
         function spawnProjectile(x, y, angle, isMe) {
-            projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
+            projectiles.push({ x, y, vx: Math.cos(angle)*720, vy: Math.sin(angle)*720, life: 1.0, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
         }
 
+        // --- LÓGICA DE SIMULAÇÃO (DeltaTime Base) ---
         function runWaveLogic() {
-            // Se não for host, apenas prediz movimento local dos inimigos existentes
             if (!isHost) {
-                enemies.forEach(en => { en.x += en.vx; en.y += en.vy; });
+                enemies.forEach(en => { en.x += en.vx * dt; en.y += en.vy * dt; });
                 return;
             }
 
-            // --- LÓGICA DE HEARTBEAT ---
-            if(Date.now() - lastHeartbeat > 3000) {
+            // HEARTBEAT
+            if(performance.now() - lastHeartbeat > 3000) {
                 if(conn && conn.open) conn.send({type: 'ping'});
-                lastHeartbeat = Date.now();
+                lastHeartbeat = performance.now();
             }
-            if(players.peer.active && Date.now() - players.peer.lastSeen > 10000) {
+            if(players.peer.active && performance.now() - players.peer.lastSeen > 10000) {
                 players.peer.active = false;
                 addMsg("SISTEMA", `${players.peer.nick} desconectou.`, "msg-sys");
             }
 
-            // --- PROCESSAR BUFFER DE REDE (Hits do Peer) ---
+            // PROCESSAR BUFFERS
             while(networkBuffer.hits.length > 0) {
                 let data = networkBuffer.hits.shift();
                 if(data.target === 'me') { 
@@ -555,8 +536,6 @@
                     }
                 }
             }
-
-            // --- PROCESSAR BUFFER DE REPARO ---
             while(networkBuffer.repairs.length > 0) {
                 networkBuffer.repairs.shift();
                 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
@@ -564,12 +543,12 @@
                 conn.send({ type: 'reward_xp', amount: 25 });
             }
 
-            // --- ONDAS E MOVIMENTO ---
-            waveTimer -= 1/60;
+            // ONDAS
+            waveTimer -= dt;
             if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
             
             if (isWaveActive) {
-                let now = Date.now();
+                let now = performance.now();
                 if (enemiesSpawnedInWave < 20 && now - lastEnemySpawnTime > 2000) {
                     const angle = Math.random() * Math.PI * 2;
                     enemies.push({ 
@@ -584,20 +563,19 @@
 
             enemies.forEach((en) => {
                 const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
-                en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
-                en.x += en.vx; en.y += en.vy;
+                en.vx = Math.cos(angle) * 120; en.vy = Math.sin(angle) * 120;
+                en.x += en.vx * dt; en.y += en.vy * dt;
                 
                 if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-                    if(performance.now() % 60 < 2) hive.hp -= 2;
+                    hive.hp -= 5 * dt; // Dano por segundo
                 }
-                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
+                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30) takeDamage(10 * dt);
             });
 
             enemies = enemies.filter(en => en.hp > 0);
-
             if (hive.hp <= 0 && !hive.destroyed) { hive.hp = 0; hive.destroyed = true; setTimeout(() => gameOverModal.style.display = 'flex', 1500); }
 
-            // ENVIO DE SYNC (A cada 50ms fixos)
+            // SYNC REDE
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
                 conn.send({ 
                     type: 'sync_world', 
@@ -610,10 +588,10 @@
 
         function updateMechanics() {
             flowers.forEach(f => {
-                if(f.cooldown > 0) f.cooldown -= 1/60;
+                if(f.cooldown > 0) f.cooldown -= dt;
                 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-                    players.me.pollen += 0.4;
-                    if(isHost) addXp(0.1); 
+                    players.me.pollen += 24 * dt; // Taxa fixa por segundo
+                    if(isHost) addXp(6 * dt); 
                     if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                 }
             });
@@ -633,15 +611,16 @@
             }
 
             projectiles.forEach((p, pIdx) => {
+                p.x += p.vx * dt; p.y += p.vy * dt; p.life -= dt;
+                if(p.life <= 0) { projectiles.splice(pIdx, 1); return; }
+
                 enemies.forEach((en) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
                         if(isHost) {
                             en.hp -= 25;
                             createParticles(en.x, en.y, "#ff0000", 5);
                             if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); if(p.owner === 'me') addXp(15); }
-                        } else if(p.owner === 'me') {
-                            conn.send({ type: 'hit', target: 'enemy', enId: en.id });
-                        }
+                        } else if(p.owner === 'me') { conn.send({ type: 'hit', target: 'enemy', enId: en.id }); }
                         projectiles.splice(pIdx, 1);
                     }
                 });
@@ -696,7 +675,9 @@
             hivePanel.style.display = 'block';
             canvas.style.display = 'block';
             if('ontouchstart' in window) { moveBase.style.display = 'block'; aimBase.style.display = 'block'; setupMultitouch(); }
-            resize(); requestAnimationFrame(gameLoop);
+            resize(); 
+            lastFrameTime = performance.now();
+            requestAnimationFrame(gameLoop);
         }
 
         function setupMultitouch() {
@@ -741,13 +722,19 @@
         window.addEventListener('resize', resize);
 
         function update() {
+            // CALCULO DELTA TIME
+            const now = performance.now();
+            dt = Math.min((now - lastFrameTime) / 1000, 0.1); // Clamp de 0.1s para evitar saltos gigantes
+            lastFrameTime = now;
+
             if(!players.me.isDead) {
                 let dx = joyMove.dx, dy = joyMove.dy;
                 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
                 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
                 if (dx !== 0 || dy !== 0) {
                     const m = Math.sqrt(dx*dx + dy*dy);
-                    players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+                    players.me.x += (dx/m) * 300 * dt; // 300 pixels por segundo
+                    players.me.y += (dy/m) * 300 * dt;
                     if (!joyAim.active) {
                         if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
                         else players.me.dir = dy > 0 ? 'Down' : 'Up';
@@ -757,7 +744,6 @@
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
-            // AQUI É O SEGREDO: A simulação só roda uma vez por frame do Host
             runWaveLogic(); 
             updateMechanics();
 
@@ -765,8 +751,9 @@
 
             let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
             if(players.peer.active) { 
-                players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-                players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+                // Suavização do movimento do peer via interpolação
+                players.peer.x += (players.peer.tX - players.peer.x) * (15 * dt); 
+                players.peer.y += (players.peer.tY - players.peer.y) * (15 * dt); 
                 const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
                 playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
             }
@@ -780,7 +767,6 @@
             } else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`; }
             hiveItemsContainer.innerHTML = hiveListHtml;
 
-            projectiles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1); });
             camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
             pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
             pollenVal.innerText = Math.floor(players.me.pollen) + "%";
@@ -789,7 +775,7 @@
 
         function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
             ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
-            ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
+            ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, Math.max(0, w * (hp/max)), h);
         }
 
         function draw() {
