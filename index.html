@@ -41,14 +41,14 @@
             opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
         }
 
-        /* PAINEL DE SESSÃO */
+        /* PAINEL DE SESSÃO - ATUALIZADO PARA ENCOSTAR NA ESQUERDA */
         #session-panel {
-            position: absolute; top: 100px; left: -210px; width: 200px; z-index: 101; 
+            position: absolute; top: 100px; left: -210px; width: 210px; z-index: 101; 
             transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        #session-panel.active { left: 15px; }
+        #session-panel.active { left: 0px; }
         #player-list { 
-            background: var(--bg-dark); padding: 15px; border-radius: 12px; 
+            background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
             border-left: 4px solid var(--primary); font-size: 13px; 
             backdrop-filter: blur(10px); border: 1px solid var(--border);
             box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
