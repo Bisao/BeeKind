@@ -178,7 +178,7 @@
             display: inline-block;
             margin-left: -5px;
             margin-right: -4px;
-            transform: translateY(1px); /* Ajuste fino de altura do emoji */
+            transform: translateY(1px); 
         }
 
         .input-group {
@@ -421,8 +421,15 @@
                 let vy = (Math.random() - 0.5) * 4;
                 let life = 1.0;
                 let decay = Math.random() * 0.02 + 0.01;
-                if(type === 'pollen') { vx *= 0.2; vy *= 0.2; decay = 0.005; }
+                
+                // Configuração específica para efeito realista de coleta
+                if(type === 'pollen') { 
+                    vx = (Math.random() - 0.5) * 1.5; 
+                    vy = Math.random() * 2; // Partículas caem
+                    decay = 0.02 + Math.random() * 0.02; 
+                }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
+                
                 particles.push({ x, y, vx, vy, life, decay, color, type });
             }
         }
@@ -599,10 +606,19 @@
             flowers.forEach(f => {
                 if(f.cooldown > 0) f.cooldown -= 1/60;
                 else {
+                    // Partícula ambiental da flor
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
+                    
+                    // Lógica de coleta
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
                         players.me.pollen += 0.4;
                         addXp(0.1);
+                        
+                        // Efeito realista: Partículas caindo da abelha ao coletar
+                        if(Math.random() < 0.2) {
+                            createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+                        }
+
                         if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
                     }
                 }
