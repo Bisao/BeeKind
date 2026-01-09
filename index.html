@@ -162,17 +162,23 @@
         }
 
         .studio-name {
-            font-size: 12px;
+            font-size: 14px;
             text-transform: uppercase;
             letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.4);
-            font-weight: 300;
+            color: rgba(255, 255, 255, 0.5);
         }
 
         .studio-name b {
             color: var(--primary);
             font-weight: 800;
-            opacity: 0.8;
+        }
+
+        /* Classe especial para aproximar as letras do emoji */
+        .tight-cookie {
+            display: inline-block;
+            margin-left: -5px;
+            margin-right: -4px;
+            transform: translateY(1px); /* Ajuste fino de altura do emoji */
         }
 
         .input-group {
@@ -325,7 +331,7 @@
         </div>
 
         <div id="studio-footer">
-            <div class="studio-name">Developed by <b>FUN🍪COOK STUDIO</b></div>
+            <div class="studio-name"><b>FUN<span class="tight-cookie">🍪</span>COOK STUDIO</b></div>
         </div>
     </div>
 
