@@ -371,7 +371,9 @@
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
         let mousePos = { x: 0, y: 0 }, isMouseDown = false;
         let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
-        let waveTimer = 300, isWaveActive = false, enemiesSpawnedInWave = 0; // Alterado para 300 (5 min)
+        
+        // --- ATUALIZAÇÃO: Tempo de onda agora é 300 segundos (5 minutos) ---
+        let waveTimer = 300, isWaveActive = false, enemiesSpawnedInWave = 0;
 
         let currentSeed = 0;
         function setSeed(roomCode) {
@@ -516,7 +518,7 @@
                     }
                 }
                 else if(data.type === 'sync_world') { 
-                    // Peers apenas aceitam o estado do mundo vindo do Host
+                    // O Cliente apenas recebe os dados calculados pelo Host
                     enemies = data.enemies; 
                     isWaveActive = data.isWaveActive; 
                     hive.hp = data.hiveHp; 
@@ -573,16 +575,16 @@
             projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
         }
 
+        // --- ATUALIZAÇÃO: Toda a lógica de IA e Tempo agora é EXCLUSIVA do Host ---
         function runWaveLogic() {
-            // APENAS O HOST PROCESSA LÓGICA DE ONDA
-            if (!isHost) return; 
+            if (!isHost) return; // Clientes não processam IA nem temporizadores globais
             
             waveTimer -= 1/60;
             
             if (waveTimer <= 0 && !isWaveActive) { 
                 isWaveActive = true; 
                 enemiesSpawnedInWave = 0; 
-                waveTimer = 300; // Reset para 5 minutos
+                waveTimer = 300; // Reset para 5 minutos após iniciar a onda
             }
             
             if (isWaveActive) {
@@ -621,7 +623,7 @@
                     }
                 } else {
                     let distMe = Math.hypot(en.x - players.me.x, en.y - players.me.y);
-                    let distPeer = players.peer.active ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
+                    let distPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
                     
                     if (distMe < distPeer) {
                         targetX = players.me.x; targetY = players.me.y;
@@ -633,11 +635,13 @@
                 const angle = Math.atan2(targetY - en.y, targetX - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
 
+                // Host detecta dano no player local
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(5);
             });
 
             enemies = enemies.filter(en => en.hp > 0);
 
+            // Host envia o estado do mundo para o cliente
             if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
                 conn.send({ 
                     type: 'sync_world', 
@@ -653,7 +657,6 @@
         }
 
         function updateMechanics() {
-            // Lógica de UI e animações locais (roda para ambos)
             if(isWaveActive) {
                 waveNotification.style.display = 'block';
                 waveNotification.innerText = `FORMIGAS VIVAS: ${enemies.length}`;
@@ -680,6 +683,11 @@
                     createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
                 }
             }
+            if (players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+                if (Math.random() < (players.peer.pollen / 100) * 0.4) {
+                    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+                }
+            }
 
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
@@ -693,25 +701,23 @@
                     }
                     addXp(25); 
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
+                    if(hive.hp > 0 && hive.hp <= heal) addMsg("SISTEMA", "A colmeia foi reconstruída!", "msg-sys");
                 }
             }
 
-            // Apenas quem é dono do projétil processa o acerto local para evitar double damage
             projectiles.forEach((p, pIdx) => {
-                if (p.owner === 'me') {
-                    enemies.forEach((en) => {
-                        if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
-                            if(isHost) {
-                                en.hp -= 25;
-                                if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); addXp(15); }
-                            } else {
-                                conn.send({ type: 'hit', target: 'enemy', enId: en.id });
-                                addXp(15);
-                            }
-                            projectiles.splice(pIdx, 1);
+                enemies.forEach((en) => {
+                    if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
+                        if(isHost) {
+                            en.hp -= 25;
+                            if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); if(p.owner === 'me') addXp(15); }
+                        } else if(p.owner === 'me') {
+                            conn.send({ type: 'hit', target: 'enemy', enId: en.id });
+                            addXp(15);
                         }
-                    });
-                }
+                        projectiles.splice(pIdx, 1);
+                    }
+                });
             });
 
             particles.forEach((p, i) => {
@@ -828,9 +834,7 @@
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
-            // Chamada de lógica
-            runWaveLogic(); 
-            updateMechanics();
+            runWaveLogic(); updateMechanics();
 
             if(performance.now() - lastNetUpdate > 30) { 
                 if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
