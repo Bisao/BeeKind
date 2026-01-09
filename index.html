@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - RPG Edition</title>
+    <title>The Hive Kingdom</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <style>
         :root { 
@@ -180,14 +180,25 @@
         }
 
         .menu-card h1 {
-            font-size: 3rem; margin: 0 0 10px 0;
+            font-size: 2.8rem; margin: 0;
             background: linear-gradient(to bottom, #fff, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: -1px; font-weight: 800;
+            text-transform: uppercase;
         }
 
-        .menu-card p { color: #888; margin-bottom: 30px; font-size: 0.9rem; }
+        .menu-card .slogan {
+            color: var(--primary);
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            opacity: 0.9;
+        }
+
+        .menu-card p.version { color: #888; margin-bottom: 30px; font-size: 0.75rem; }
 
         #studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
         .studio-name { font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255, 255, 255, 0.5); }
@@ -288,8 +299,9 @@
 
     <div id="menu">
         <div class="menu-card">
-            <h1>BEE WORLD</h1>
-            <p>RPG Multiplayer Edition • v1.2</p>
+            <h1>THE HIVE KINGDOM</h1>
+            <div class="slogan">Long live the King. Long live the Hive</div>
+            <p class="version">RPG Multiplayer Edition • v1.2</p>
             
             <div class="input-group">
                 <label>Identidade</label>
@@ -589,9 +601,7 @@
             enemies.forEach((en) => {
                 let targetX, targetY;
                 
-                // --- NOVA LÓGICA DE AGGRO ---
                 if (hive.hp > 0) {
-                    // Atacar colmeia se ela estiver viva
                     targetX = hive.x;
                     targetY = hive.y;
                     
@@ -607,7 +617,6 @@
                         }
                     }
                 } else {
-                    // Atacar abelhas se a colmeia estiver morta
                     let distMe = Math.hypot(en.x - players.me.x, en.y - players.me.y);
                     let distPeer = players.peer.active ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
                     
@@ -621,7 +630,6 @@
                 const angle = Math.atan2(targetY - en.y, targetX - en.x);
                 en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
 
-                // Dano no player
                 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(5);
             });
 
@@ -674,7 +682,6 @@
                 }
             }
 
-            // --- LÓGICA DE CONSERTO DA COLMEIA ---
             if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; 
@@ -875,7 +882,6 @@
             });
             ctx.globalAlpha = 1.0;
 
-            // Desenhar Colmeia
             ctx.font = "60px Arial"; ctx.textAlign = "center"; 
             ctx.globalAlpha = hive.hp > 0 ? 1.0 : 0.4;
             ctx.fillText("🏠", hive.x, hive.y + 20);
