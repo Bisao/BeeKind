@@ -394,7 +394,8 @@ players.me.xp += amount;
 if(players.me.xp >= players.me.nextXp) {
 players.me.xp -= players.me.nextXp;
 players.me.lvl++;
-players.me.nextXp = players.me.lvl * 100;
+// ESCALONAMENTO DE XP: Aumento exponencial
+players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
 addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}!`, "msg-sys");
 createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
 }
@@ -517,7 +518,7 @@ else if(data.type === 'repair') {
 if(isHost) {
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
 conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-conn.send({ type: 'reward_xp', amount: 25 });
+conn.send({ type: 'reward_xp', amount: 15 }); // XP ajustado
 }
 }
 else if(data.type === 'hit') { 
@@ -591,7 +592,7 @@ networkBuffer.repairs.shift();
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
 if(players.peer.active && conn && conn.open) {
     conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-    conn.send({ type: 'reward_xp', amount: 25 });
+    conn.send({ type: 'reward_xp', amount: 15 }); // XP ajustado
 }
 }
 
@@ -658,7 +659,7 @@ else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.po
 players.me.isCollecting = true; // Actively collecting
 if(isHost) {
 players.me.pollen += 0.4;
-addXp(0.1); 
+addXp(0.02); // NERF XP DE COLETA
 if(players.me.pollen >= 100) { 
 f.cooldown = f.maxCooldown; 
 players.me.pollen = 100;
@@ -681,7 +682,7 @@ players.me.pollen = 0;
 if(isHost) { 
 hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
 createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-addXp(25);
+addXp(15); // NERF XP DE REPARO
 } else { conn.send({ type: 'repair' }); }
 }
 }
@@ -703,8 +704,16 @@ for (let i = projectiles.length - 1; i >= 0; i--) {
                 if(en.hp <= 0) { 
                     createParticles(en.x, en.y, "#000", 10); 
                     if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
-                    if(p.owner === 'me') addXp(15);
-                    if(p.owner === 'peer' && players.peer.active && conn && conn.open) conn.send({ type: 'reward_xp', amount: 15 });
+                    
+                    // LÓGICA DE XP COMPARTILHADO (FORMIGAS)
+                    const totalKillXp = 30;
+                    if(players.peer.active && !players.peer.isDead) {
+                        const splitXp = totalKillXp / 2;
+                        addXp(splitXp); // Host ganha metade
+                        if(conn && conn.open) conn.send({ type: 'reward_xp', amount: splitXp }); // Peer ganha metade
+                    } else {
+                        addXp(totalKillXp); // Solo ganha tudo
+                    }
                 }
             } 
             hit = true;
