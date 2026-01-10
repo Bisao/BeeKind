@@ -7,218 +7,286 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
 :root { 
---primary: #f1c40f; 
---primary-dark: #d4ac0d;
---secondary: #3498db;
---bg-dark: rgba(20, 20, 20, 0.85); 
---text-main: #ffffff; 
---xp-color: #3498db; 
---border: rgba(255, 255, 255, 0.1); 
---glass: rgba(255, 255, 255, 0.05);
+    --primary: #f1c40f; 
+    --primary-dark: #b7950b;
+    --secondary: #3498db;
+    --bg-dark: rgba(18, 18, 18, 0.95); 
+    --text-main: #ffffff; 
+    --xp-color: #3498db; 
+    --border: rgba(255, 255, 255, 0.1); 
+    --glass: rgba(255, 255, 255, 0.05);
+    --royal-gold: #ffd700;
+    --royal-bg: #1a1a1a;
 }
 
-body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+body { margin: 0; overflow: hidden; background: #0f0f0f; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
 canvas { display: none; image-rendering: pixelated; }
 
-/* HUD CENTRAL */
+/* --- HUD CENTRAL --- */
 #central-hud {
-position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-display: flex; flex-direction: column; align-items: center; gap: 8px;
-z-index: 100; pointer-events: none;
+    position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    z-index: 100; pointer-events: none;
 }
 #lvl-hud {
-background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
-text-align: center; min-width: 220px; backdrop-filter: blur(10px);
-border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
+    text-align: center; min-width: 220px; backdrop-filter: blur(10px);
+    border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
 #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
 #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 #coords { 
-font-family: monospace; color: var(--primary); background: var(--bg-dark); 
-padding: 4px 15px; border-radius: 12px; font-size: 12px; 
-border: 1px solid var(--border); backdrop-filter: blur(5px);
-opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    font-family: monospace; color: var(--primary); background: var(--bg-dark); 
+    padding: 4px 15px; border-radius: 12px; font-size: 12px; 
+    border: 1px solid var(--border); backdrop-filter: blur(5px);
+    opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* HUD DA HORDA */
+/* --- HUD DA HORDA --- */
 #horde-hud {
-font-family: monospace; font-weight: 800; color: #e74c3c;
-background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
-font-size: 16px; border: 1px solid rgba(231, 76, 60, 0.3);
-backdrop-filter: blur(5px); display: none; margin-top: 5px;
-text-transform: uppercase; letter-spacing: 1px;
-text-align: center; box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
+    font-family: monospace; font-weight: 800; color: #e74c3c;
+    background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
+    font-size: 16px; border: 1px solid rgba(231, 76, 60, 0.3);
+    backdrop-filter: blur(5px); display: none; margin-top: 5px;
+    text-transform: uppercase; letter-spacing: 1px;
+    text-align: center; box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
 }
 
 .warn-pulse { animation: warnPulse 1s infinite alternate; }
-
 @keyframes warnPulse {
     from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
     to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
 }
 
+/* --- SIDEBARS --- */
 #sidebar-container {
-position: absolute; left: 0; top: 100px; z-index: 101;
-display: flex; flex-direction: column; pointer-events: none;
+    position: absolute; left: 0; top: 100px; z-index: 101;
+    display: flex; flex-direction: column; pointer-events: none;
 }
-
 .side-panel {
-position: relative; left: -210px; width: 210px;
-transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-pointer-events: auto;
+    position: relative; left: -210px; width: 210px;
+    transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto;
 }
-
 .side-panel.active { left: 0px; }
-
 .panel-content { 
-background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
-border-left: 4px solid var(--primary); font-size: 13px; 
-backdrop-filter: blur(10px); border: 1px solid var(--border);
-box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
-overflow: hidden;
+    background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
+    border-left: 4px solid var(--primary); font-size: 13px; 
+    backdrop-filter: blur(10px); border: 1px solid var(--border);
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
+    overflow: hidden;
 }
-
 .panel-toggle {
-position: absolute; right: -45px; top: 0;
-width: 45px; height: 45px; background: var(--primary);
-border: none; border-radius: 0 8px 8px 0; cursor: pointer;
-font-size: 20px; display: flex; align-items: center; justify-content: center;
-box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
+    position: absolute; right: -45px; top: 0;
+    width: 45px; height: 45px; background: var(--primary);
+    border: none; border-radius: 0 8px 8px 0; cursor: pointer;
+    font-size: 20px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
 }
-
 .panel-title { 
-font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
-padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
-text-transform: uppercase;
+    font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
+    padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase;
 }
-
 .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
+/* --- MENU INFERIOR --- */
 #bottom-menu-container {
-position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-display: flex; flex-direction: column; align-items: center; gap: 15px;
-z-index: 500;
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 15px;
+    z-index: 500;
 }
 #main-action-menu {
-background: var(--bg-dark); border: 1px solid var(--primary);
-padding: 15px; border-radius: 15px; display: none;
-backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-grid-template-columns: repeat(3, 1fr); gap: 10px;
+    background: var(--bg-dark); border: 1px solid var(--primary);
+    padding: 15px; border-radius: 15px; display: none;
+    backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+    grid-template-columns: repeat(3, 1fr); gap: 10px;
 }
 .square-btn {
-width: 50px; height: 50px; background: rgba(255,255,255,0.1);
-border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
-cursor: pointer; display: flex; align-items: center; justify-content: center;
-font-size: 24px; transition: all 0.2s;
+    width: 50px; height: 50px; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; transition: all 0.2s;
 }
 .square-btn:hover { background: var(--primary); transform: scale(1.05); }
 #btn-open-menu {
-width: 60px; height: 60px; background: var(--primary);
-border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
-cursor: pointer; font-size: 28px; display: flex; align-items: center;
-justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-z-index: 501;
+    width: 60px; height: 60px; background: var(--primary);
+    border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
+    cursor: pointer; font-size: 28px; display: flex; align-items: center;
+    justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    z-index: 501;
 }
 
+/* --- MODALS --- */
 #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
 .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
+/* --- CHAT --- */
 #chat-wrapper { 
-position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
-display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
+    display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 }
 #chat-display { height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px; }
 #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
 #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
 
 #btn-minimize-chat { 
-position: absolute; right: -45px; bottom: 0; 
-background: var(--primary); color: #111; 
-border: none; border-radius: 0 8px 8px 0; cursor: pointer; 
-width: 45px; height: 45px; 
-font-size: 20px; font-weight: bold; 
-box-shadow: 4px 0 10px rgba(0,0,0,0.3); 
-transition: background 0.3s;
+    position: absolute; right: -45px; bottom: 0; 
+    background: var(--primary); color: #111; 
+    border: none; border-radius: 0 8px 8px 0; cursor: pointer; 
+    width: 45px; height: 45px; 
+    font-size: 20px; font-weight: bold; 
+    box-shadow: 4px 0 10px rgba(0,0,0,0.3); 
+    transition: background 0.3s;
 }
 
 @keyframes pulse {
-0% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
-50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
-100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+    0% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+    50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
+    100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 }
-
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
+/* --- NOVO MENU ESTILIZADO (MEDIEVAL HIVE) --- */
 #menu { 
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-display: flex; flex-direction: column; align-items: center; justify-content: center;
-background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
-z-index: 3000; padding: 20px; box-sizing: border-box;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #2c2504 0%, #000000 100%);
+    z-index: 3000; padding: 20px; box-sizing: border-box;
+    overflow: hidden;
+}
+
+/* Background animado de favo de mel */
+.hex-bg {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: 
+        radial-gradient(var(--royal-gold) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.05;
+    pointer-events: none;
+    animation: panBg 60s linear infinite;
+}
+
+@keyframes panBg { from { background-position: 0 0; } to { background-position: 40px 40px; } }
+
+/* Partículas flutuantes no menu */
+.pollen-particle {
+    position: absolute; background: var(--primary);
+    border-radius: 50%; opacity: 0.6;
+    animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+    0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
 }
 
 .menu-card {
-background: rgba(40, 40, 40, 0.6);
-backdrop-filter: blur(20px);
-border: 1px solid var(--border);
-border-radius: 24px;
-padding: 40px;
-width: 100%;
-max-width: 500px;
-box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-text-align: center;
+    position: relative;
+    background: rgba(10, 10, 10, 0.9);
+    border: 2px solid var(--royal-gold);
+    border-radius: 16px;
+    padding: 40px 30px;
+    width: 100%; max-width: 450px;
+    box-shadow: 0 0 30px rgba(241, 196, 15, 0.15), inset 0 0 50px rgba(0,0,0,0.8);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    z-index: 10;
 }
 
+/* Título Épico */
 .menu-card h1 {
-font-size: 2.8rem; margin: 0;
-background: linear-gradient(to bottom, #fff, var(--primary));
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-letter-spacing: -1px; font-weight: 800;
-text-transform: uppercase;
+    font-family: 'Times New Roman', serif;
+    font-size: 2.2rem; margin: 0 0 10px 0;
+    color: var(--royal-gold);
+    text-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+    padding-bottom: 15px;
 }
 
-.menu-card .slogan {
-color: var(--primary); font-size: 0.85rem; font-weight: 600;
-letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; opacity: 0.9;
+.update-badge {
+    display: inline-block;
+    background: linear-gradient(45deg, #b7950b, #f1c40f);
+    color: #000;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+    animation: glowBadge 2s infinite alternate;
 }
 
-.menu-card p.version { color: #888; margin-bottom: 30px; font-size: 0.75rem; }
-
-#studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
-.studio-name { font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255, 255, 255, 0.5); }
-.studio-name b { color: var(--primary); font-weight: 800; }
-.tight-cookie { display: inline-block; margin-left: -5px; margin-right: -4px; transform: translateY(1px); }
-
-.input-group { margin-bottom: 20px; text-align: left; }
-.input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; font-weight: bold; padding-left: 5px; }
+@keyframes glowBadge { from { box-shadow: 0 0 5px var(--primary); } to { box-shadow: 0 0 15px var(--primary); } }
 
 .menu-input {
-width: 100%; padding: 14px 18px;
-background: rgba(0, 0, 0, 0.3);
-border: 1px solid var(--border);
-border-radius: 12px;
-color: white; font-size: 1rem;
-box-sizing: border-box;
-transition: border-color 0.3s, box-shadow 0.3s;
+    width: 100%; padding: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #444;
+    border-left: 3px solid var(--primary-dark);
+    border-radius: 4px;
+    color: #e0e0e0; font-size: 1rem;
+    margin-bottom: 5px;
+    box-sizing: border-box;
+    transition: all 0.3s;
+    font-family: monospace;
 }
 
-.menu-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1); }
+.menu-input:focus {
+    outline: none;
+    border-color: var(--royal-gold);
+    background: rgba(20, 20, 20, 0.9);
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.1);
+}
 
-.button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+.input-group label {
+    display: block; text-align: left;
+    color: #aaa; font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 6px; margin-top: 15px;
+    letter-spacing: 1px;
+}
+
+.button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
 
 .main-btn {
-padding: 16px; cursor: pointer; border-radius: 12px; border: none;
-font-weight: 800; font-size: 0.9rem; text-transform: uppercase;
-letter-spacing: 1px; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-display: flex; align-items: center; justify-content: center; gap: 10px;
+    padding: 16px; cursor: pointer; border-radius: 6px; border: none;
+    font-weight: 800; font-size: 0.95rem; text-transform: uppercase;
+    letter-spacing: 1px; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: 'Segoe UI', sans-serif;
+    position: relative; overflow: hidden;
 }
 
-.btn-create { background: var(--primary); color: #111; }
-.btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
-.btn-join { background: var(--secondary); color: white; }
-.btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
-.main-btn:active { transform: scale(0.95); }
+/* Efeito de brilho nos botões */
+.main-btn::after {
+    content: ''; position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+    transform: rotate(45deg) translateY(-100%);
+    transition: transform 0.5s;
+}
+.main-btn:hover::after { transform: rotate(45deg) translateY(0%); }
+
+.btn-create { 
+    background: linear-gradient(to bottom, #f1c40f, #d4ac0d); 
+    color: #121212; border: 1px solid #f39c12;
+}
+.btn-join { 
+    background: linear-gradient(to bottom, #3498db, #2980b9); 
+    color: white; border: 1px solid #2980b9;
+}
+
+#studio-footer { 
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+    text-align: center; pointer-events: none; z-index: 10;
+    opacity: 0.7; font-size: 0.8rem;
+}
 
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
 #move-base { left: 40px; }
@@ -229,87 +297,91 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 <body>
 
 <div id="central-hud">
-<div id="lvl-hud">
-<div id="lvl-text">Nível 1</div>
-<div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
-</div>
-<div id="coords">X: 1100 Y: 1100</div>
-<div id="horde-hud"></div>
+    <div id="lvl-hud">
+        <div id="lvl-text">Nível 1</div>
+        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+    </div>
+    <div id="coords">X: 1100 Y: 1100</div>
+    <div id="horde-hud"></div>
 </div>
 
 <div id="sidebar-container">
-<div id="session-panel" class="side-panel">
-<button id="btn-session-toggle" class="panel-toggle">👥</button>
-<div class="panel-content">
-<div class="panel-title">Sessão Ativa</div>
-<div id="player-items-container"></div>
-</div>
-</div>
+    <div id="session-panel" class="side-panel">
+        <button id="btn-session-toggle" class="panel-toggle">👥</button>
+        <div class="panel-content">
+            <div class="panel-title">Sessão Ativa</div>
+            <div id="player-items-container"></div>
+        </div>
+    </div>
 
-<div id="hive-panel" class="side-panel">
-<button id="btn-hive-toggle" class="panel-toggle">🏠</button>
-<div class="panel-content">
-<div class="panel-title">Colmeias Ativas</div>
-<div id="hive-items-container"></div>
-</div>
-</div>
+    <div id="hive-panel" class="side-panel">
+        <button id="btn-hive-toggle" class="panel-toggle">🏠</button>
+        <div class="panel-content">
+            <div class="panel-title">Colmeias Ativas</div>
+            <div id="hive-items-container"></div>
+        </div>
+    </div>
 </div>
 
 <div id="bottom-menu-container">
-<div id="main-action-menu">
-<button class="square-btn" title="Abelhas">🐝</button>
-<button class="square-btn" style="opacity: 0.3;">⚙️</button>
-<button class="square-btn" style="opacity: 0.3;">🎒</button>
-</div>
-<button id="btn-open-menu">☰</button>
+    <div id="main-action-menu">
+        <button class="square-btn" title="Abelhas">🐝</button>
+        <button class="square-btn" style="opacity: 0.3;">⚙️</button>
+        <button class="square-btn" style="opacity: 0.3;">🎒</button>
+    </div>
+    <button id="btn-open-menu">☰</button>
 </div>
 
 <div id="death-modal">
-<h2 class="modal-title">Derrotado</h2>
-<button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
+    <h2 class="modal-title">Derrotado</h2>
+    <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
 </div>
 <div id="game-over-modal">
-<h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
-<button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
+    <h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
+    <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
 </div>
 
 <div id="chat-wrapper">
-<button id="btn-minimize-chat">💬</button>
-<div id="chat-display"></div>
-<div id="chat-input-area">
-<input type="text" id="chat-input" placeholder="Falar..." autocomplete="off">
-</div>
+    <button id="btn-minimize-chat">💬</button>
+    <div id="chat-display"></div>
+    <div id="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Falar..." autocomplete="off">
+    </div>
 </div>
 
 <div id="menu">
-<div class="menu-card">
-<h1>THE HIVE KINGDOM</h1>
-<div class="slogan">Long live the King. Long live the Hive</div>
-<p class="version">RPG Multiplayer Edition • v1.3</p>
+    <div class="hex-bg"></div>
+    <div class="menu-card">
+        <h1>The Hive Kingdom</h1>
+        <div class="update-badge">Update: Pollen War • v1.4</div>
+        
+        <div class="input-group">
+            <label>Identidade do Guerreiro</label>
+            <input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido..." maxlength="12">
+        </div>
 
-<div class="input-group">
-<label>Identidade</label>
-<input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido no jogo..." maxlength="12">
-</div>
+        <div class="input-group">
+            <label>Portal do Reino (Código)</label>
+            <input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="6">
+        </div>
 
-<div class="input-group">
-<label>Portal (Código da Sala)</label>
-<input type="text" id="room-code" class="menu-input" placeholder="Ex: ABC123" maxlength="6">
-</div>
+        <div class="button-row">
+            <button class="main-btn btn-create" onclick="startSession(true)">
+                <span>👑</span> Fundar Reino
+            </button>
+            <button class="main-btn btn-join" onclick="startSession(false)">
+                <span>⚔️</span> Juntar-se
+            </button>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 0.8rem; color: #666; font-style: italic;">
+            "Proteja a Rainha. Colete o Ouro. Sobreviva."
+        </div>
+    </div>
 
-<div class="button-row">
-<button class="main-btn btn-create" onclick="startSession(true)">
-<span>🏠</span> Criar Sala
-</button>
-<button class="main-btn btn-join" onclick="startSession(false)">
-<span>🚀</span> Entrar
-</button>
-</div>
-</div>
-
-<div id="studio-footer">
-<div class="studio-name"><b>FUN<span class="tight-cookie">🍪</span>COOK STUDIO</b></div>
-</div>
+    <div id="studio-footer">
+        FUN COOK STUDIO &copy; 2024
+    </div>
 </div>
 
 <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
@@ -318,6 +390,23 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 <canvas id="gameCanvas"></canvas>
 
 <script>
+// --- SCRIPT DE PARTÍCULAS DO MENU ---
+function createMenuParticles() {
+    const menu = document.getElementById('menu');
+    for(let i=0; i<30; i++) {
+        const p = document.createElement('div');
+        p.classList.add('pollen-particle');
+        p.style.left = Math.random() * 100 + '%';
+        p.style.width = (Math.random() * 4 + 2) + 'px';
+        p.style.height = p.style.width;
+        p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+        p.style.animationDelay = (Math.random() * 5) + 's';
+        menu.appendChild(p);
+    }
+}
+createMenuParticles();
+
+// --- GAME LOGIC ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false });
 const chatInput = document.getElementById('chat-input');
