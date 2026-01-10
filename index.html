@@ -498,7 +498,7 @@ conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
 conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
 }
 }
-else if(data.type === 'wave_clear') { 
+else if(data.type === 'wave_clear') { // Peer recebe sinal de vitória
 showWaveClearEffect();
 }
 else if(data.type === 'sync_world') { 
@@ -509,14 +509,15 @@ return existing ? {...enNew} : enNew;
 });
 isWaveActive = data.isWaveActive; 
 hive.hp = data.hiveHp;
+// SYNC DO TIMER
 waveTimer = data.waveTimer;
 enemiesSpawnedInWave = data.enemiesSpawned;
 }
 else if(data.type === 'repair') { 
 if(isHost) {
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-if(conn && conn.open) conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-if(conn && conn.open) conn.send({ type: 'reward_xp', amount: 25 });
+conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
+conn.send({ type: 'reward_xp', amount: 25 });
 }
 }
 else if(data.type === 'hit') { 
@@ -530,8 +531,6 @@ players.peer.tX = data.x; players.peer.tY = data.y;
 players.peer.dir = data.dir; players.peer.hp = data.hp; 
 players.peer.isDead = data.isDead; players.peer.pollen = data.pollen; 
 players.peer.lvl = data.lvl; players.peer.active = true;
-// Sync do estado de coleta visual do peer (não crítico para lógica, mas bom para visual)
-if(data.isCollecting !== undefined) players.peer.isCollecting = data.isCollecting;
 }
 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
 else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
@@ -540,7 +539,7 @@ else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
 
 function showWaveClearEffect() {
 addMsg("SISTEMA", "HORDA DESTRUÍDA! +3 Minutos de Paz.", "msg-sys");
-createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); 
+createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); // Explosão azul na base
 }
 
 function takeDamage(amount) {
@@ -589,16 +588,17 @@ addMsg("SISTEMA", `${players.peer.nick} desconectou.`, "msg-sys");
 while(networkBuffer.repairs.length > 0) {
 networkBuffer.repairs.shift();
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-if(conn && conn.open) conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-if(conn && conn.open) conn.send({ type: 'reward_xp', amount: 25 });
+conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
+conn.send({ type: 'reward_xp', amount: 25 });
 }
 
 waveTimer -= 1/60;
 if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
 
+// FIM DA HORDA
 if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
    isWaveActive = false;
-   waveTimer = 180; 
+   waveTimer = 180; // 3 Minutos de paz
    showWaveClearEffect();
    if(conn && conn.open) conn.send({type: 'wave_clear'});
 }
@@ -626,7 +626,7 @@ if(performance.now() % 60 < 2) hive.hp -= 2;
 }
 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
 if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
-if(conn && conn.open) conn.send({type:'hit', target:'me', amount: 2}); 
+conn.send({type:'hit', target:'me', amount: 2}); 
 }
 });
 
@@ -639,8 +639,8 @@ conn.send({
 type: 'sync_world', 
 enemies: enemies.map(e => ({id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, hp: e.hp})), 
 isWaveActive: isWaveActive, hiveHp: hive.hp,
-waveTimer: waveTimer, 
-enemiesSpawned: enemiesSpawnedInWave 
+waveTimer: waveTimer, // Enviando Timer
+enemiesSpawned: enemiesSpawnedInWave // Enviando contagem
 });
 lastNetUpdate = performance.now();
 }
@@ -651,7 +651,7 @@ players.me.isCollecting = false;
 flowers.forEach((f, index) => {
 if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-players.me.isCollecting = true;
+players.me.isCollecting = true; 
 if(isHost) {
 players.me.pollen += 0.4;
 addXp(0.1); 
@@ -678,33 +678,46 @@ if(isHost) {
 hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
 createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
 addXp(25);
-} else { if(conn && conn.open) conn.send({ type: 'repair' }); }
+} else { conn.send({ type: 'repair' }); }
 }
 }
 
-// CORREÇÃO: Loop reverso para evitar pulos e crash
+// FIX: Loop Reverso para Projetil (Seguro para remover itens durante iteração)
 for (let i = projectiles.length - 1; i >= 0; i--) {
     let p = projectiles[i];
-    let hit = false;
-    for (let j = 0; j < enemies.length; j++) {
-        let en = enemies[j];
-        if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
-            if(isHost) {
-                en.hp -= 25;
-                createParticles(en.x, en.y, "#ff0000", 5);
-                if(conn && conn.open) conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
-                if(en.hp <= 0) { 
-                    createParticles(en.x, en.y, "#000", 10); 
-                    if(conn && conn.open) conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
-                    if(p.owner === 'me') addXp(15);
-                    if(p.owner === 'peer' && conn && conn.open) conn.send({ type: 'reward_xp', amount: 15 });
-                }
+    let remove = false;
+
+    // Movimentação e Vida
+    p.x += p.vx;
+    p.y += p.vy;
+    p.life--;
+    if (p.life <= 0) remove = true;
+
+    // Colisão com Inimigos (se ainda vivo)
+    if (!remove) {
+        for (let j = 0; j < enemies.length; j++) {
+            let en = enemies[j];
+            if (Math.hypot(p.x - en.x, p.y - en.y) < 35) {
+                if (isHost) {
+                    en.hp -= 25;
+                    createParticles(en.x, en.y, "#ff0000", 5);
+                    conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
+                    if (en.hp <= 0) { 
+                        createParticles(en.x, en.y, "#000", 10); 
+                        conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
+                        if (p.owner === 'me') addXp(15);
+                        if (p.owner === 'peer') conn.send({ type: 'reward_xp', amount: 15 });
+                    }
+                } 
+                remove = true;
+                break; // Projetil acerta apenas 1 alvo
             }
-            hit = true;
-            break; // Bala explode no primeiro impacto
         }
     }
-    if(hit) projectiles.splice(i, 1);
+
+    if (remove) {
+        projectiles.splice(i, 1);
+    }
 }
 
 particles.forEach((p, i) => {
@@ -713,12 +726,14 @@ if(p.life <= 0) particles.splice(i, 1);
 });
 }
 
+// NOVA FUNÇÃO: Gerencia o HUD da Horda
 function updateHordeHud() {
     const hud = document.getElementById('horde-hud');
     if (isWaveActive) {
         hud.style.display = 'block';
         hud.style.color = '#ff4757';
         hud.classList.remove('warn-pulse');
+        // Calculo de inimigos restantes: (Total - Nascidos) + Vivos na tela
         const remaining = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
         hud.innerText = `⚠️ INVASÃO: ${remaining} ⚠️`;
     } else if (waveTimer <= 60) {
@@ -732,12 +747,144 @@ function updateHordeHud() {
     }
 }
 
+function drawIndicators() {
+if (players.peer.active && !players.peer.isDead) {
+const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
+if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
+}
+if(!hive.destroyed) {
+const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
+if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
+}
+}
+
+function drawArrow(dx, dy, color, radius = 70) {
+const angle = Math.atan2(dy, dx);
+ctx.save(); ctx.translate(players.me.x, players.me.y); ctx.rotate(angle);
+ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8); ctx.closePath();
+ctx.fillStyle = color; ctx.fill(); ctx.restore();
+}
+
+function sendMsg() {
+const text = chatInput.value.trim();
+if(!text) return;
+addMsg(players.me.nick, text, "me");
+if(conn && conn.open) conn.send({ type: 'chat', msg: text });
+chatInput.value = ""; chatInput.blur();
+}
+
+function addMsg(author, text, senderType) {
+const d = document.createElement('div');
+const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
+d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
+const display = document.getElementById('chat-display');
+display.appendChild(d); display.scrollTop = display.scrollHeight;
+if (window.getComputedStyle(chatWrapper).left.includes('-') && senderType !== "msg-sys") chatMinimizeBtn.classList.add('unread-pulse');
+}
+
+function startGame() {
+document.getElementById('menu').style.display = 'none';
+document.getElementById('lvl-hud').style.display = 'block';
+chatWrapper.style.display = 'flex';
+sessionPanel.style.display = 'block';
+hivePanel.style.display = 'block';
+canvas.style.display = 'block';
+if('ontouchstart' in window) { moveBase.style.display = 'block'; aimBase.style.display = 'block'; setupMultitouch(); }
+resize(); requestAnimationFrame(gameLoop);
+}
+
+function setupMultitouch() {
+const handleStart = (e) => {
+for(let t of e.changedTouches) {
+const rM = moveBase.getBoundingClientRect(), rA = aimBase.getBoundingClientRect();
+if(t.clientX > rM.left && t.clientX < rM.right && t.clientY > rM.top && t.clientY < rM.bottom) touchIds.move = t.identifier;
+if(t.clientX > rA.left && t.clientX < rA.right && t.clientY > rA.top && t.clientY < rA.bottom) touchIds.aim = t.identifier;
+}
+};
+const handleMove = (e) => {
+e.preventDefault();
+for(let t of e.touches) {
+if(t.identifier === touchIds.move) {
+const r = moveBase.getBoundingClientRect();
+const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40), a = Math.atan2(dy, dx);
+moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
+}
+if(t.identifier === touchIds.aim) {
+const r = aimBase.getBoundingClientRect();
+const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
+aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
+}
+}
+};
+const handleEnd = (e) => {
+for(let t of e.changedTouches) {
+if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; moveStick.style.transform = 'none'; }
+if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; aimStick.style.transform = 'none'; }
+}
+};
+window.addEventListener('touchstart', handleStart, {passive: false});
+window.addEventListener('touchmove', handleMove, {passive: false});
+window.addEventListener('touchend', handleEnd);
+}
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+
+function update() {
+if(!players.me.isDead) {
+let dx = joyMove.dx, dy = joyMove.dy;
+if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+if (dx !== 0 || dy !== 0) {
+const m = Math.sqrt(dx*dx + dy*dy);
+players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+if (!joyAim.active) {
+if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+else players.me.dir = dy > 0 ? 'Down' : 'Up';
+}
+}
+if(joyAim.active) fire(joyAim.angle);
+else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
+}
+
+runWaveLogic(); 
+updateMechanics();
+// Atualiza a UI da horda (Timer ou Contador)
+updateHordeHud();
+
+if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
+
+let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
+if(players.peer.active) { 
+players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
+players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
+playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
+}
+playerItemsContainer.innerHTML = playerListHtml;
+
+let hiveListHtml = "";
+if(!hive.destroyed) {
+const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
+} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`; }
+hiveItemsContainer.innerHTML = hiveListHtml;
+
+camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+}
+
 function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
 ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
 ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
 }
 
-// NOVA BARRA DE PÓLEN VISUAL
+// NOVA FUNÇÃO: Desenha barra de pólen abaixo da abelha
 function drawPollenBar(x, y, pollen, w = 50, h = 6, offset = -40) {
     ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
     ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
@@ -783,6 +930,7 @@ ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
+// Desenha barra de pólen se estiver coletando e não estiver cheia
 if(p.isCollecting && p.pollen < 100) {
     drawPollenBar(p.x, p.y, p.pollen);
 }
