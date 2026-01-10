@@ -41,7 +41,7 @@ border: 1px solid var(--border); backdrop-filter: blur(5px);
 opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* NOVO: HUD DA HORDA */
+/* HUD DA HORDA */
 #horde-hud {
 font-family: monospace; font-weight: 800; color: #e74c3c;
 background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
@@ -94,14 +94,6 @@ text-transform: uppercase;
 }
 
 .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-
-#pollen-hud { 
-position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
-background: var(--bg-dark); padding: 15px; border-radius: 15px;
-border-right: 5px solid #fffa65; display: none; text-align: center;
-min-width: 80px; backdrop-filter: blur(10px); z-index: 100; border: 1px solid var(--border);
-}
-#pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
 #bottom-menu-container {
 position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
@@ -272,7 +264,6 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 <button id="btn-open-menu">☰</button>
 </div>
 
-<div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
 <div id="death-modal">
 <h2 class="modal-title">Derrotado</h2>
 <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
@@ -336,8 +327,6 @@ const sessionPanel = document.getElementById('session-panel');
 const hivePanel = document.getElementById('hive-panel');
 const deathModal = document.getElementById('death-modal');
 const gameOverModal = document.getElementById('game-over-modal');
-const pollenHud = document.getElementById('pollen-hud');
-const pollenVal = document.getElementById('pollen-val');
 const moveBase = document.getElementById('move-base');
 const aimBase = document.getElementById('aim-base');
 const moveStick = document.getElementById('move-stick');
@@ -354,8 +343,8 @@ assets.ground.src = 'Grass.png';
 let isHost = false;
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
 let players = { 
-me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100 }, 
-peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0 } 
+me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100, isCollecting: false }, 
+peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false } 
 };
 
 // BUFFER DE COMANDOS
@@ -658,9 +647,11 @@ lastNetUpdate = performance.now();
 }
 
 function updateMechanics() {
+players.me.isCollecting = false; // Reset state
 flowers.forEach((f, index) => {
 if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+players.me.isCollecting = true; // Actively collecting
 if(isHost) {
 players.me.pollen += 0.4;
 addXp(0.1); 
@@ -867,14 +858,19 @@ hiveItemsContainer.innerHTML = hiveListHtml;
 
 projectiles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1); });
 camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
-pollenVal.innerText = Math.floor(players.me.pollen) + "%";
 document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
 }
 
 function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
 ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
 ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
+}
+
+// NOVA FUNÇÃO: Desenha barra de pólen abaixo da abelha
+function drawPollenBar(x, y, pollen, w = 50, h = 6, offset = -40) {
+    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
+    ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
+    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1; ctx.strokeRect(x - w/2, y - offset, w, h);
 }
 
 function draw() {
@@ -916,6 +912,10 @@ ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
+// Desenha barra de pólen se estiver coletando e não estiver cheia
+if(p.isCollecting && p.pollen < 100) {
+    drawPollenBar(p.x, p.y, p.pollen);
+}
 };
 drawB(players.me, players.me.color, 1);
 if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
