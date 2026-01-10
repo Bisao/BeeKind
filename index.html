@@ -8,19 +8,21 @@
 <style>
 :root { 
 --primary: #f1c40f; 
---primary-dark: #d4ac0d;
+--primary-dark: #b7950b;
 --secondary: #3498db;
---bg-dark: rgba(20, 20, 20, 0.85); 
+--bg-dark: rgba(18, 18, 18, 0.95); 
 --text-main: #ffffff; 
 --xp-color: #3498db; 
 --border: rgba(255, 255, 255, 0.1); 
 --glass: rgba(255, 255, 255, 0.05);
+--royal-gold: #ffd700;
+--royal-bg: #1a1a1a;
 }
 
-body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+body { margin: 0; overflow: hidden; background: #0f0f0f; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
 canvas { display: none; image-rendering: pixelated; }
 
-/* HUD CENTRAL */
+/* --- HUD CENTRAL --- */
 #central-hud {
 position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
 display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -41,7 +43,7 @@ border: 1px solid var(--border); backdrop-filter: blur(5px);
 opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* HUD DA HORDA */
+/* --- HUD DA HORDA --- */
 #horde-hud {
 font-family: monospace; font-weight: 800; color: #e74c3c;
 background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
@@ -52,25 +54,22 @@ text-align: center; box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
 }
 
 .warn-pulse { animation: warnPulse 1s infinite alternate; }
-
 @keyframes warnPulse {
 from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
 to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
 }
 
+/* --- SIDEBARS --- */
 #sidebar-container {
 position: absolute; left: 0; top: 100px; z-index: 101;
 display: flex; flex-direction: column; pointer-events: none;
 }
-
 .side-panel {
 position: relative; left: -210px; width: 210px;
 transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 pointer-events: auto;
 }
-
 .side-panel.active { left: 0px; }
-
 .panel-content { 
 background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
 border-left: 4px solid var(--primary); font-size: 13px; 
@@ -78,7 +77,6 @@ backdrop-filter: blur(10px); border: 1px solid var(--border);
 box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
 overflow: hidden;
 }
-
 .panel-toggle {
 position: absolute; right: -45px; top: 0;
 width: 45px; height: 45px; background: var(--primary);
@@ -86,15 +84,14 @@ border: none; border-radius: 0 8px 8px 0; cursor: pointer;
 font-size: 20px; display: flex; align-items: center; justify-content: center;
 box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
 }
-
 .panel-title { 
 font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
 padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
 text-transform: uppercase;
 }
-
 .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
+/* --- MENU INFERIOR --- */
 #bottom-menu-container {
 position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
 display: flex; flex-direction: column; align-items: center; gap: 15px;
@@ -121,9 +118,11 @@ justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 z-index: 501;
 }
 
+/* --- MODALS --- */
 #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
 .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
+/* --- CHAT --- */
 #chat-wrapper { 
 position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
 display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
@@ -147,78 +146,305 @@ transition: background 0.3s;
 50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
 100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 }
-
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
+/* --- LOADING SCREEN --- */
+#loading-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #111 0%, #000 100%);
+    z-index: 4000; /* Acima do menu */
+    display: none; /* Começa escondido */
+    flex-direction: column; align-items: center; justify-content: center;
+}
+
+#loading-scene {
+    width: 80%; max-width: 600px;
+    height: 100px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+#loading-bar-track {
+    position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 16px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#loading-bar-active-fill {
+    width: 0%; height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    box-shadow: 0 0 10px var(--primary);
+}
+
+/* Personagens do Loading */
+#loading-ant {
+    position: absolute; bottom: 16px; /* Em cima da barra */
+    left: 0; transform: translateX(-50%);
+    font-size: 30px;
+    transition: left 0.1s linear;
+}
+
+#loading-bee-container {
+    position: absolute; bottom: 30px; /* Um pouco mais alto que a formiga */
+    left: -10%; /* Começa fora */
+    width: 50px; height: 50px;
+    transform: translateX(-50%);
+    transition: left 0.1s linear, transform 0.3s;
+}
+
+#loading-bee-img {
+    width: 100%; height: 100%;
+    image-rendering: pixelated;
+    animation: flightBob 0.5s infinite alternate;
+}
+
+@keyframes flightBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+/* Efeito de Tiro */
+.muzzle-flash {
+    position: absolute; right: -10px; top: 25px;
+    width: 10px; height: 10px;
+    background: #ffeb3b;
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 10px #ffeb3b;
+    animation: shootFlash 0.3s infinite;
+}
+
+@keyframes shootFlash { 0% { opacity: 0; } 50% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; } }
+
+/* Cookie Giratório */
+#loading-cookie {
+    position: absolute; bottom: 30px; right: 30px;
+    font-size: 40px;
+    animation: spinCookie 2s linear infinite;
+}
+
+@keyframes spinCookie { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.explosion-text { font-size: 40px !important; animation: explodeScale 0.5s ease-out forwards; }
+@keyframes explodeScale { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.5); } 100% { transform: translateX(-50%) scale(0); opacity: 0; } }
+
+/* --- NOVO MENU ESTILIZADO (MEDIEVAL HIVE) --- */
 #menu { 
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 display: flex; flex-direction: column; align-items: center; justify-content: center;
-background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+background: radial-gradient(circle at center, #2c2504 0%, #000000 100%);
 z-index: 3000; padding: 20px; box-sizing: border-box;
+overflow: hidden;
+}
+
+/* Background animado de favo de mel */
+.hex-bg {
+position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+background-image: 
+radial-gradient(var(--royal-gold) 1px, transparent 1px);
+background-size: 40px 40px;
+opacity: 0.05;
+pointer-events: none;
+animation: panBg 60s linear infinite;
+}
+
+@keyframes panBg { from { background-position: 0 0; } to { background-position: 40px 40px; } }
+
+/* Partículas flutuantes no menu */
+.pollen-particle {
+position: absolute; background: var(--primary);
+border-radius: 50%; opacity: 0.6;
+animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+50% { opacity: 0.8; }
+100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
 }
 
 .menu-card {
-background: rgba(40, 40, 40, 0.6);
-backdrop-filter: blur(20px);
-border: 1px solid var(--border);
-border-radius: 24px;
-padding: 40px;
-width: 100%;
-max-width: 500px;
-box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+position: relative;
+background: rgba(10, 10, 10, 0.9);
+border: 2px solid var(--royal-gold);
+border-radius: 16px;
+padding: 40px 30px;
+width: 100%; max-width: 500px;
+box-shadow: 0 0 30px rgba(241, 196, 15, 0.15), inset 0 0 50px rgba(0,0,0,0.8);
 text-align: center;
+backdrop-filter: blur(10px);
+z-index: 10;
+}
+
+/* ESTILOS ESPECÍFICOS DO TITULO (COROA E ABELHAS) */
+.title-box {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 15px;
+margin-bottom: 10px;
+padding-bottom: 15px;
+border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.bee-flank {
+width: 50px; height: 50px;
+animation: swayBee 2s infinite ease-in-out alternate;
+image-rendering: pixelated;
+flex-shrink: 0;
+}
+
+.bee-left { animation-delay: 0s; }
+.bee-right { animation-delay: 1s; }
+
+@keyframes swayBee {
+from { transform: translateY(0) rotate(-10deg); }
+to { transform: translateY(-8px) rotate(10deg); }
+}
+
+/* Título Épico */
+.menu-card h1 {
+font-family: 'Times New Roman', serif;
+font-size: 2.2rem; margin: 0;
+color: var(--royal-gold);
+text-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
+text-transform: uppercase;
+letter-spacing: 2px;
+white-space: nowrap; /* Não quebrar a palavra */
+}
+
+/* G com Coroa */
+.crown-g {
+position: relative;
+display: inline-block;
+}
+
+.crown-g::before {
+content: '👑';
+position: absolute;
+top: -28px;
+right: -10px;
+font-size: 2rem;
+transform: rotate(25deg);
+filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));
+pointer-events: none;
+}
+
+.update-badge {
+display: inline-block;
+background: linear-gradient(45deg, #b7950b, #f1c40f);
+color: #000;
+padding: 6px 14px;
+border-radius: 20px;
+font-size: 0.8rem;
+font-weight: bold;
+text-transform: uppercase;
+margin-bottom: 25px;
+box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+animation: glowBadge 2s infinite alternate;
+}
+
+@keyframes glowBadge { from { box-shadow: 0 0 5px var(--primary); } to { box-shadow: 0 0 15px var(--primary); } }
+
+.menu-input {
+width: 100%; padding: 15px;
+background: rgba(0, 0, 0, 0.6);
+border: 1px solid #444;
+border-left: 3px solid var(--primary-dark);
+border-radius: 4px;
+color: #e0e0e0; font-size: 1rem;
+margin-bottom: 5px;
+box-sizing: border-box;
+transition: all 0.3s;
+font-family: monospace;
+}
+
+.menu-input:focus {
+outline: none;
+border-color: var(--royal-gold);
+background: rgba(20, 20, 20, 0.9);
+box-shadow: 0 0 15px rgba(241, 196, 15, 0.1);
+}
+
+.input-group label {
+display: block; text-align: left;
+color: #aaa; font-size: 0.75rem;
+text-transform: uppercase;
+margin-bottom: 6px; margin-top: 15px;
+letter-spacing: 1px;
+}
+
+.button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
+
+.main-btn {
+padding: 16px; cursor: pointer; border-radius: 6px; border: none;
+font-weight: 800; font-size: 0.95rem; text-transform: uppercase;
+letter-spacing: 1px; transition: all 0.2s;
+display: flex; align-items: center; justify-content: center; gap: 8px;
+font-family: 'Segoe UI', sans-serif;
+position: relative; overflow: hidden;
+}
+
+/* Efeito de brilho nos botões */
+.main-btn::after {
+content: ''; position: absolute; top: -50%; left: -50%;
+width: 200%; height: 200%;
+background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+transform: rotate(45deg) translateY(-100%);
+transition: transform 0.5s;
+}
+.main-btn:hover::after { transform: rotate(45deg) translateY(0%); }
+
+.btn-create { 
+background: linear-gradient(to bottom, #f1c40f, #d4ac0d); 
+color: #121212; border: 1px solid #f39c12;
+}
+.btn-join { 
+background: linear-gradient(to bottom, #3498db, #2980b9); 
+color: white; border: 1px solid #2980b9;
+}
+
+#studio-footer { 
+position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+text-align: center; pointer-events: none; z-index: 10;
+opacity: 0.7; font-size: 0.8rem;
+white-space: nowrap;
+}
+
+/* MEDIA QUERIES PARA MOBILE */
+@media (max-width: 600px) {
+.menu-card {
+padding: 30px 15px;
+width: 95%;
+}
+
+.title-box {
+gap: 5px; /* Menor gap para as abelhas ficarem perto */
 }
 
 .menu-card h1 {
-font-size: 2.8rem; margin: 0;
-background: linear-gradient(to bottom, #fff, var(--primary));
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-letter-spacing: -1px; font-weight: 800;
-text-transform: uppercase;
+font-size: 1.4rem; /* Reduz fonte para não quebrar */
 }
 
-.menu-card .slogan {
-color: var(--primary); font-size: 0.85rem; font-weight: 600;
-letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; opacity: 0.9;
+.bee-flank {
+width: 35px; height: 35px; /* Abelhas menores */
 }
 
-.menu-card p.version { color: #888; margin-bottom: 30px; font-size: 0.75rem; }
-
-#studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
-.studio-name { font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255, 255, 255, 0.5); }
-.studio-name b { color: var(--primary); font-weight: 800; }
-.tight-cookie { display: inline-block; margin-left: -5px; margin-right: -4px; transform: translateY(1px); }
-
-.input-group { margin-bottom: 20px; text-align: left; }
-.input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; font-weight: bold; padding-left: 5px; }
-
-.menu-input {
-width: 100%; padding: 14px 18px;
-background: rgba(0, 0, 0, 0.3);
-border: 1px solid var(--border);
-border-radius: 12px;
-color: white; font-size: 1rem;
-box-sizing: border-box;
-transition: border-color 0.3s, box-shadow 0.3s;
+.crown-g::before {
+font-size: 1.4rem;
+top: -18px;
+right: -6px;
 }
 
-.menu-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1); }
-
-.button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+.button-row {
+gap: 10px;
+}
 
 .main-btn {
-padding: 16px; cursor: pointer; border-radius: 12px; border: none;
-font-weight: 800; font-size: 0.9rem; text-transform: uppercase;
-letter-spacing: 1px; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-display: flex; align-items: center; justify-content: center; gap: 10px;
+font-size: 0.8rem;
+padding: 14px 5px;
 }
-
-.btn-create { background: var(--primary); color: #111; }
-.btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
-.btn-join { background: var(--secondary); color: white; }
-.btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
-.main-btn:active { transform: scale(0.95); }
+}
 
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
 #move-base { left: 40px; }
@@ -281,34 +507,59 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 </div>
 </div>
 
+<div id="loading-screen">
+    <div id="loading-scene">
+        <div id="loading-bee-container">
+            <div class="muzzle-flash"></div>
+            <img src="BeeRight.png" id="loading-bee-img">
+        </div>
+        <div id="loading-ant">🐜</div>
+        <div id="loading-bar-track">
+            <div id="loading-bar-active-fill"></div>
+        </div>
+    </div>
+    <h3 style="color:var(--primary); letter-spacing: 2px; text-transform: uppercase;">Carregando Mundo...</h3>
+    <div id="loading-cookie">🍪</div>
+</div>
+
 <div id="menu">
+<div class="hex-bg"></div>
 <div class="menu-card">
-<h1>THE HIVE KINGDOM</h1>
-<div class="slogan">Long live the King. Long live the Hive</div>
-<p class="version">RPG Multiplayer Edition • v1.3</p>
+
+<div class="title-box">
+<img src="BeeLeft.png" class="bee-flank bee-left">
+<h1>The Hive Kin<span class="crown-g">g</span>dom</h1>
+<img src="BeeRight.png" class="bee-flank bee-right">
+</div>
+
+<div class="update-badge">Update: Pollen War • v1.4</div>
 
 <div class="input-group">
-<label>Identidade</label>
-<input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido no jogo..." maxlength="12">
+<label>Identidade do Guerreiro</label>
+<input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido..." maxlength="12">
 </div>
 
 <div class="input-group">
-<label>Portal (Código da Sala)</label>
-<input type="text" id="room-code" class="menu-input" placeholder="Ex: ABC123" maxlength="6">
+<label>Portal do Reino (Código)</label>
+<input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="6">
 </div>
 
 <div class="button-row">
 <button class="main-btn btn-create" onclick="startSession(true)">
-<span>🏠</span> Criar Sala
+<span>👑</span> Fundar Reino
 </button>
 <button class="main-btn btn-join" onclick="startSession(false)">
-<span>🚀</span> Entrar
+<span>⚔️</span> Juntar-se
 </button>
+</div>
+
+<div style="margin-top: 20px; font-size: 0.8rem; color: #666; font-style: italic;">
+"Proteja a Rainha. Colete o Ouro. Sobreviva."
 </div>
 </div>
 
 <div id="studio-footer">
-<div class="studio-name"><b>FUN<span class="tight-cookie">🍪</span>COOK STUDIO</b></div>
+FUN🍪COOK STUDIO &copy; 2025
 </div>
 </div>
 
@@ -318,6 +569,94 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 <canvas id="gameCanvas"></canvas>
 
 <script>
+// --- SCRIPT DE PARTÍCULAS DO MENU ---
+function createMenuParticles() {
+const menu = document.getElementById('menu');
+for(let i=0; i<30; i++) {
+const p = document.createElement('div');
+p.classList.add('pollen-particle');
+p.style.left = Math.random() * 100 + '%';
+p.style.width = (Math.random() * 4 + 2) + 'px';
+p.style.height = p.style.width;
+p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+p.style.animationDelay = (Math.random() * 5) + 's';
+menu.appendChild(p);
+}
+}
+createMenuParticles();
+
+// --- LOGICA DE LOADING ---
+function startLoadingSequence() {
+    // 1. Esconde Menu e Mostra Loading
+    document.getElementById('menu').style.display = 'none';
+    const loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.style.display = 'flex';
+
+    // Elementos
+    const bar = document.getElementById('loading-bar-active-fill');
+    const ant = document.getElementById('loading-ant');
+    const beeCont = document.getElementById('loading-bee-container');
+    const beeImg = document.getElementById('loading-bee-img');
+    const muzzle = document.querySelector('.muzzle-flash');
+
+    const duration = 20000; // 20 Segundos
+    const startTime = Date.now();
+    let exploded = false;
+
+    function frame() {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        let pct = Math.min(1, elapsed / duration);
+        const pctVal = pct * 100;
+
+        if (pct < 1) {
+            // Atualiza posições
+            bar.style.width = pctVal + '%';
+            ant.style.left = pctVal + '%';
+            
+            // Abelha segue um pouco atrás (lag de 8%)
+            let beePos = Math.max(0, pctVal - 8); 
+            beeCont.style.left = beePos + '%';
+
+            requestAnimationFrame(frame);
+        } else {
+            // FIM DO CARREGAMENTO
+            if(!exploded) {
+                exploded = true;
+                bar.style.width = '100%';
+                
+                // Formiga explode
+                ant.innerText = "💥";
+                ant.classList.add('explosion-text');
+                
+                // Abelha para de atirar
+                muzzle.style.display = 'none';
+                
+                // Abelha atualiza sprite e centraliza
+                beeImg.src = 'BeeDown.png';
+                beeImg.style.animation = 'none'; // Para o balanço de voo
+                
+                // Move abelha para o centro
+                beeCont.style.transition = 'left 0.5s ease-out';
+                beeCont.style.left = '50%';
+
+                // Aguarda 2 segundos e inicia o jogo
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    if(isHost) {
+                        generateFlowers();
+                        startGame();
+                    } else {
+                        startGame();
+                    }
+                }, 2000);
+            }
+        }
+    }
+    requestAnimationFrame(frame);
+}
+
+// --- GAME LOGIC ---
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false });
 const chatInput = document.getElementById('chat-input');
@@ -428,7 +767,6 @@ flowers.push({
 id: i, // ID para sync
 x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
 emoji: types[Math.floor(Math.random() * types.length)],
-cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
 cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2,
 growState: 'mature', // Flores iniciais já são maduras
 plantTime: 0
@@ -462,6 +800,8 @@ peer.on('open', () => {
 if(host) {
 generateFlowers();
 startGame(); 
+// generateFlowers(); // Removido daqui, vai para o fim do loading
+startLoadingSequence(); 
 } else { 
 conn = peer.connect('bee-' + code); 
 setupConn(); 
@@ -478,6 +818,7 @@ if(isHost) {
 conn.send({ type: 'init_flowers', data: flowers });
 } else {
 startGame(); 
+startLoadingSequence(); 
 }
 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
 });
@@ -496,7 +837,6 @@ if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
 if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
 }
 else if(data.type === 'req_pollen') {
-if(isHost && flowers[data.id] && flowers[data.id].cooldown <= 0) {
 if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
 flowers[data.id].cooldown = flowers[data.id].maxCooldown;
 players.peer.pollen += 0.4;
@@ -619,14 +959,34 @@ const angle = Math.random() * Math.PI * 2;
 enemies.push({ 
 id: Math.random().toString(36).substr(2, 9),
 x: hive.x + Math.cos(angle) * 1000, y: hive.y + Math.sin(angle) * 1000, 
-hp: 100, vx: 0, vy: 0
+hp: 100, vx: 0, vy: 0,
+behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' // 35% de chance de caçar players
 });
 enemiesSpawnedInWave++; lastEnemySpawnTime = now;
 }
 }
 
 enemies.forEach((en) => {
-const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
+// LÓGICA DE ALVO (IA)
+let targetX = hive.x;
+let targetY = hive.y;
+
+if (en.behavior === 'hunter') {
+// Encontrar player vivo mais próximo
+let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
+let dPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
+
+if (dMe < Infinity || dPeer < Infinity) {
+if (dMe <= dPeer) {
+targetX = players.me.x; targetY = players.me.y;
+} else {
+targetX = players.peer.x; targetY = players.peer.y;
+}
+}
+// Se ambos estiverem mortos, o alvo padrão (hive) permanece
+}
+
+const angle = Math.atan2(targetY - en.y, targetX - en.x);
 en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
 en.x += en.vx; en.y += en.vy;
 
@@ -658,31 +1018,86 @@ lastNetUpdate = performance.now();
 
 // HOST: Cria uma nova flor (Semente)
 function spawnFlower(x, y) {
-    const types = ["🌸", "🌻", "🌷"];
-    const id = flowers.length; // Simple ID
-    flowers.push({
-        id: id,
-        x: x, 
-        y: y,
-        emoji: types[Math.floor(Math.random() * types.length)],
-        cooldown: 0, 
-        maxCooldown: 300, 
-        phase: Math.random() * Math.PI * 2,
-        growState: 'seed',
-        plantTime: Date.now()
-    });
-    // Sync imediato ao criar
-    if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
+const types = ["🌸", "🌻", "🌷"];
+const id = flowers.length; // Simple ID
+flowers.push({
+id: id,
+x: x, 
+y: y,
+emoji: types[Math.floor(Math.random() * types.length)],
+cooldown: 0, 
+maxCooldown: 300, 
+phase: Math.random() * Math.PI * 2,
+growState: 'seed',
+plantTime: Date.now()
+});
+// Sync imediato ao criar
+if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 }
 
 function updateMechanics() {
 players.me.isCollecting = false; // Reset state
+
+// LÓGICA DE POLITIZAÇÃO E DROP DE PÓLEN (Apenas Host processa lógica de spawn)
+if(isHost) {
+let needsFlowerSync = false;
+const now = Date.now();
+
+// 1. Processar Host (Me)
+if(players.me.pollen > 0 && !players.me.isDead) {
+// Se estiver se movendo
+if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
+// Rastro de polen
+if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+players.me.pollen = Math.max(0, players.me.pollen - 0.05);
+
+// Chance de nascer flor (0.2% por tick)
+if(Math.random() < 0.002) {
+spawnFlower(players.me.x, players.me.y);
+}
+}
+}
+
+// 2. Processar Peer (Baseado na ultima posição conhecida)
+if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+// Não temos input direto, usamos 'active' e assumimos movimento se posição mudar (mas aqui simplificamos)
+// Vamos apenas checar se ele tem pólen. Para simplificar, assumimos que ele se move.
+if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+
+if(Math.random() < 0.002) {
+spawnFlower(players.peer.x, players.peer.y);
+}
+}
+
+// 3. Atualizar crescimento das flores
+flowers.forEach(f => {
+if(f.growState !== 'mature') {
+const age = now - f.plantTime;
+// 2 minutos (120000ms) para virar Broto
+if(f.growState === 'seed' && age >= 120000) {
+f.growState = 'sprout';
+needsFlowerSync = true;
+}
+// 5 minutos (300000ms) para virar Flor
+if(f.growState === 'sprout' && age >= 300000) {
+f.growState = 'mature';
+needsFlowerSync = true;
+}
+}
+});
+
+if(needsFlowerSync && players.peer.active && conn && conn.open) {
+conn.send({ type: 'sync_flowers_list', data: flowers });
+}
+}
+
+
 flowers.forEach((f, index) => {
+// Só interage se for madura
+if(f.growState === 'mature') {
 if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
 players.me.isCollecting = true; // Actively collecting
-
-// LÓGICA DE POLITIZAÇÃO E DROP DE PÓLEN (Apenas Host processa lógica de spawn)
 if(isHost) {
 players.me.pollen += 0.4;
 addXp(0.02); // NERF XP DE COLETA
@@ -695,78 +1110,8 @@ if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd',
 if(Math.random() < 0.1) {
 conn.send({ type: 'req_pollen', id: index });
 }
-    let needsFlowerSync = false;
-    const now = Date.now();
-
-    // 1. Processar Host (Me)
-    if(players.me.pollen > 0 && !players.me.isDead) {
-        // Se estiver se movendo
-        if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
-             // Rastro de polen
-             if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-             players.me.pollen = Math.max(0, players.me.pollen - 0.05);
-             
-             // Chance de nascer flor (0.2% por tick)
-             if(Math.random() < 0.002) {
-                 spawnFlower(players.me.x, players.me.y);
-             }
-        }
-    }
-
-    // 2. Processar Peer (Baseado na ultima posição conhecida)
-    if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-         // Não temos input direto, usamos 'active' e assumimos movimento se posição mudar (mas aqui simplificamos)
-         // Vamos apenas checar se ele tem pólen. Para simplificar, assumimos que ele se move.
-         if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-         
-         if(Math.random() < 0.002) {
-             spawnFlower(players.peer.x, players.peer.y);
-         }
-    }
-
-    // 3. Atualizar crescimento das flores
-    flowers.forEach(f => {
-        if(f.growState !== 'mature') {
-            const age = now - f.plantTime;
-            // 2 minutos (120000ms) para virar Broto
-            if(f.growState === 'seed' && age >= 120000) {
-                f.growState = 'sprout';
-                needsFlowerSync = true;
-            }
-            // 5 minutos (300000ms) para virar Flor
-            if(f.growState === 'sprout' && age >= 300000) {
-                f.growState = 'mature';
-                needsFlowerSync = true;
-            }
-        }
-    });
-
-    if(needsFlowerSync && players.peer.active && conn && conn.open) {
-        conn.send({ type: 'sync_flowers_list', data: flowers });
-    }
 }
-
-
-flowers.forEach((f, index) => {
-// Só interage se for madura
-if(f.growState === 'mature') {
-    if(f.cooldown > 0) f.cooldown -= 1/60;
-    else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-        players.me.isCollecting = true; // Actively collecting
-        if(isHost) {
-            players.me.pollen += 0.4;
-            addXp(0.02); // NERF XP DE COLETA
-            if(players.me.pollen >= 100) { 
-                f.cooldown = f.maxCooldown; 
-                players.me.pollen = 100;
-                if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: index, time: f.maxCooldown });
-            }
-        } else {
-            if(Math.random() < 0.1) {
-                conn.send({ type: 'req_pollen', id: index });
-            }
-        }
-    }
+}
 }
 });
 
@@ -1038,7 +1383,6 @@ if(f.growState === 'seed') return;
 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
 ctx.font = "28px Arial"; ctx.textAlign = "center";
 ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
-ctx.fillText(f.emoji, f.x + sway, f.y);
 
 let emoji = f.emoji;
 if(f.growState === 'sprout') emoji = "🌱";
@@ -1071,7 +1415,7 @@ ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI";
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
 // Desenha barra de pólen se estiver coletando e não estiver cheia
-if(p.isCollecting && p.pollen < 100) {
+if(p.isCollecting || p.pollen > 0) {
 drawPollenBar(p.x, p.y, p.pollen);
 }
 };
