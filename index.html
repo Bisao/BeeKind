@@ -189,45 +189,65 @@ canvas { display: none; image-rendering: pixelated; }
     border: 2px solid var(--royal-gold);
     border-radius: 16px;
     padding: 40px 30px;
-    width: 100%; max-width: 450px;
+    width: 100%; max-width: 500px;
     box-shadow: 0 0 30px rgba(241, 196, 15, 0.15), inset 0 0 50px rgba(0,0,0,0.8);
     text-align: center;
     backdrop-filter: blur(10px);
     z-index: 10;
 }
 
+/* ESTILOS ESPECÍFICOS DO TITULO (COROA E ABELHAS) */
+.title-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.bee-flank {
+    width: 50px; height: 50px;
+    animation: swayBee 2s infinite ease-in-out alternate;
+    image-rendering: pixelated;
+    flex-shrink: 0;
+}
+
+.bee-left { animation-delay: 0s; }
+.bee-right { animation-delay: 1s; }
+
+@keyframes swayBee {
+    from { transform: translateY(0) rotate(-10deg); }
+    to { transform: translateY(-8px) rotate(10deg); }
+}
+
 /* Título Épico */
 .menu-card h1 {
     font-family: 'Times New Roman', serif;
-    font-size: 2.2rem; margin: 0 0 10px 0;
+    font-size: 2.2rem; margin: 0;
     color: var(--royal-gold);
     text-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
     text-transform: uppercase;
     letter-spacing: 2px;
-    border-bottom: 1px solid rgba(241, 196, 15, 0.3);
-    padding-bottom: 15px;
+    white-space: nowrap; /* Não quebrar a palavra */
 }
 
-/* COROA NO G */
-.royal-g {
+/* G com Coroa */
+.crown-g {
     position: relative;
     display: inline-block;
 }
 
-.royal-g::after {
+.crown-g::before {
     content: '👑';
     position: absolute;
     top: -28px;
-    left: -10px;
-    font-size: 1.8rem;
-    transform: rotate(-25deg);
-    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
-    animation: crownFloat 3s ease-in-out infinite alternate;
-}
-
-@keyframes crownFloat {
-    from { transform: rotate(-25deg) translateY(0); }
-    to { transform: rotate(-25deg) translateY(-3px); }
+    right: -10px;
+    font-size: 2rem;
+    transform: rotate(25deg);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));
+    pointer-events: none;
 }
 
 .update-badge {
@@ -308,6 +328,42 @@ canvas { display: none; image-rendering: pixelated; }
     position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
     text-align: center; pointer-events: none; z-index: 10;
     opacity: 0.7; font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* MEDIA QUERIES PARA MOBILE */
+@media (max-width: 600px) {
+    .menu-card {
+        padding: 30px 15px;
+        width: 95%;
+    }
+    
+    .title-box {
+        gap: 5px; /* Menor gap para as abelhas ficarem perto */
+    }
+
+    .menu-card h1 {
+        font-size: 1.4rem; /* Reduz fonte para não quebrar */
+    }
+
+    .bee-flank {
+        width: 35px; height: 35px; /* Abelhas menores */
+    }
+
+    .crown-g::before {
+        font-size: 1.4rem;
+        top: -18px;
+        right: -6px;
+    }
+
+    .button-row {
+        gap: 10px;
+    }
+    
+    .main-btn {
+        font-size: 0.8rem;
+        padding: 14px 5px;
+    }
 }
 
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
@@ -374,7 +430,13 @@ canvas { display: none; image-rendering: pixelated; }
 <div id="menu">
     <div class="hex-bg"></div>
     <div class="menu-card">
-        <h1>The Hive Kin<span class="royal-g">g</span>dom</h1>
+        
+        <div class="title-box">
+            <img src="BeeLeft.png" class="bee-flank bee-left">
+            <h1>The Hive Kin<span class="crown-g">g</span>dom</h1>
+            <img src="BeeRight.png" class="bee-flank bee-right">
+        </div>
+
         <div class="update-badge">Update: Pollen War • v1.4</div>
         
         <div class="input-group">
@@ -402,7 +464,7 @@ canvas { display: none; image-rendering: pixelated; }
     </div>
 
     <div id="studio-footer">
-        FUN COOK STUDIO &copy; 2024
+        FUN🍪COOK STUDIO &copy; 2025
     </div>
 </div>
 
