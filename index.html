@@ -539,6 +539,7 @@ canvas { display: none; image-rendering: pixelated; }
 
 <div id="menu">
     <div class="hex-bg"></div>
+    
     <div class="menu-card">
         
         <div class="title-box">
@@ -555,16 +556,21 @@ canvas { display: none; image-rendering: pixelated; }
         </div>
 
         <div class="input-group">
-            <label>Portal do Reino (Código)</label>
-            <input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="6">
+            <label>Nome do Reino (ID da Sala)</label>
+            <input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="12">
+        </div>
+        
+        <div class="input-group">
+            <label>Chave do Reino (Senha)</label>
+            <input type="password" id="room-pass" class="menu-input" placeholder="Senha secreta..." maxlength="10">
         </div>
 
         <div class="button-row">
             <button class="main-btn btn-create" onclick="startSession(true)">
-                <span>👑</span> Fundar Reino
+                <span>👑</span> Criar Reino
             </button>
             <button class="main-btn btn-join" onclick="startSession(false)">
-                <span>⚔️</span> Juntar-se
+                <span>⚔️</span> Entrar
             </button>
         </div>
         
@@ -585,7 +591,6 @@ canvas { display: none; image-rendering: pixelated; }
 
 <script>
 // --- BLOQUEIO DE ZOOM NO SAFARI (IOS) ---
-// O Safari ignora user-scalable=no, então precisamos bloquear gestos manualmente
 document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 document.addEventListener('gesturechange', function(e) { e.preventDefault(); }); 
 document.addEventListener('gestureend', function(e) { e.preventDefault(); });
@@ -606,21 +611,27 @@ function createMenuParticles() {
 }
 createMenuParticles();
 
+// --- CARREGAR DADOS SALVOS DO LOCALSTORAGE ---
+window.onload = function() {
+    if(localStorage.getItem('hive_nick')) document.getElementById('player-nick').value = localStorage.getItem('hive_nick');
+    if(localStorage.getItem('hive_room')) document.getElementById('room-code').value = localStorage.getItem('hive_room');
+    if(localStorage.getItem('hive_pass')) document.getElementById('room-pass').value = localStorage.getItem('hive_pass');
+};
+
 // --- LOGICA DE LOADING ---
 function startLoadingSequence() {
-    // 1. Esconde Menu e Mostra Loading
     document.getElementById('menu').style.display = 'none';
     const loadingScreen = document.getElementById('loading-screen');
     loadingScreen.style.display = 'flex';
 
-    // Elementos
     const bar = document.getElementById('loading-bar-active-fill');
     const ant = document.getElementById('loading-ant');
     const beeCont = document.getElementById('loading-bee-container');
     const beeImg = document.getElementById('loading-bee-img');
     const muzzle = document.querySelector('.muzzle-flash');
 
-    const duration = 10000; // 10 Segundos
+    // TEMPO DE LOADING OTIMIZADO
+    const duration = 5000; 
     const startTime = Date.now();
     let exploded = false;
 
@@ -631,37 +642,23 @@ function startLoadingSequence() {
         const pctVal = pct * 100;
 
         if (pct < 1) {
-            // Atualiza posições
             bar.style.width = pctVal + '%';
             ant.style.left = pctVal + '%';
-            
-            // Abelha segue um pouco atrás (lag de 8%)
-            let beePos = Math.max(0, pctVal - 30); 
+            let beePos = Math.max(0, pctVal - 1); 
             beeCont.style.left = beePos + '%';
-
             requestAnimationFrame(frame);
         } else {
-            // FIM DO CARREGAMENTO
             if(!exploded) {
                 exploded = true;
                 bar.style.width = '100%';
-                
-                // Formiga explode
                 ant.innerText = "💥";
                 ant.classList.add('explosion-text');
-                
-                // Abelha para de atirar
                 muzzle.style.display = 'none';
-                
-                // Abelha atualiza sprite e centraliza
                 beeImg.src = 'BeeDown.png';
-                beeImg.style.animation = 'none'; // Para o balanço de voo
-                
-                // Move abelha para o centro
+                beeImg.style.animation = 'none'; 
                 beeCont.style.transition = 'left 0.5s ease-out';
                 beeCont.style.left = '50%';
 
-                // Aguarda 2 segundos e inicia o jogo
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                     if(isHost) {
@@ -670,7 +667,7 @@ function startLoadingSequence() {
                     } else {
                         startGame();
                     }
-                }, 2000);
+                }, 1000);
             }
         }
     }
@@ -701,17 +698,14 @@ assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets
 assets.ground.src = 'Grass.png';
 
 let isHost = false;
+let hostPassword = ""; // Senha do host
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
 let players = { 
 me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100, isCollecting: false }, 
-peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false } 
+peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false, authorized: false } 
 };
 
-// BUFFER DE COMANDOS
-let networkBuffer = {
-repairs: []
-};
-
+let networkBuffer = { repairs: [] };
 let projectiles = [], enemies = [], flowers = [], particles = []; 
 let camera = { x: 0, y: 0 }, peer, conn, keys = {};
 const TILE_SIZE = 64;
@@ -754,7 +748,6 @@ players.me.xp += amount;
 if(players.me.xp >= players.me.nextXp) {
 players.me.xp -= players.me.nextXp;
 players.me.lvl++;
-// ESCALONAMENTO DE XP: Aumento exponencial
 players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
 addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}!`, "msg-sys");
 createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
@@ -785,11 +778,11 @@ flowers = [];
 const types = ["🌸", "🌻", "🌷"];
 for(let i=0; i<25; i++) {
 flowers.push({
-id: i, // ID para sync
+id: i, 
 x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
 emoji: types[Math.floor(Math.random() * types.length)],
 cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2,
-growState: 'mature', // Flores iniciais já são maduras
+growState: 'mature', 
 plantTime: 0
 });
 }
@@ -808,119 +801,193 @@ keys[e.code] = true;
 });
 window.addEventListener('keyup', e => keys[e.code] = false);
 
+// --- NOVA FUNÇÃO START SESSION ROBUSTA ---
 function startSession(host) {
     const code = document.getElementById('room-code').value.trim();
     const nick = document.getElementById('player-nick').value.trim();
-    if(!nick || !code) return alert("Preencha o Nickname e o Código!");
+    const pass = document.getElementById('room-pass').value.trim();
+    
+    if(!nick || !code || !pass) return alert("Preencha o Nick, o Nome do Reino e a Senha!");
+
+    // SALVAR DADOS LOCALMENTE
+    localStorage.setItem('hive_nick', nick);
+    localStorage.setItem('hive_room', code);
+    localStorage.setItem('hive_pass', pass);
 
     isHost = host;
+    hostPassword = pass;
     players.me.nick = nick;
     players.me.color = host ? "#f1c40f" : "#3498db";
     players.peer.color = host ? "#3498db" : "#f1c40f";
 
-    // Se já houver uma instância de Peer, destrua-a
     if(peer && !peer.destroyed) peer.destroy();
 
-    peer = host ? new Peer('bee-' + code) : new Peer();
+    // ID UNICO BASEADO NO NOME DO REINO
+    const peerId = host ? 'hive-game-' + code : null; // Host força esse ID. Client é random.
+
+    peer = new Peer(peerId);
     
-    // --- TRATAMENTO DE ERRO CRÍTICO (ID EM USO) ---
+    // Tratamento de Erros de Conexão
     peer.on('error', (err) => {
         console.error(err);
         if(err.type === 'unavailable-id') {
-            alert("Este código de Reino já está sendo usado! Tente outro ou espere um pouco.");
+            alert("Este Nome de Reino já está em uso! Escolha outro.");
+        } else if (err.type === 'peer-unavailable') {
+            alert("Reino não encontrado! Verifique o nome.");
         } else {
             alert("Erro na conexão: " + err.type);
         }
     });
 
-    peer.on('open', () => { 
+    peer.on('open', (id) => { 
+        console.log("Peer ID: " + id);
         if(host) {
-            // generateFlowers(); // Removido daqui, vai para o fim do loading
+            // HOST: Inicia Loading
             startLoadingSequence(); 
         } else { 
-            conn = peer.connect('bee-' + code); 
+            // CLIENT: Tenta conectar no ID do Host
+            conn = peer.connect('hive-game-' + code); 
+            
+            // Timeout de conexão
+            setTimeout(() => {
+                if(!conn || !conn.open) {
+                    // Se não abriu em 5s, alerta (mas o peer.on('error') costuma pegar antes)
+                    console.log("Tentativa de conexão lenta...");
+                }
+            }, 5000);
+
             setupConn(); 
         } 
     });
     
-    peer.on('connection', c => { conn = c; setupConn(); });
+    peer.on('connection', c => { 
+        // Apenas HOST recebe conexões aqui
+        conn = c; 
+        setupConn(); 
+    });
 }
 
 function setupConn() {
-conn.on('open', () => { 
-players.peer.active = true;
-players.peer.lastSeen = Date.now();
-if(isHost) {
-conn.send({ type: 'init_flowers', data: flowers });
-} else {
-startLoadingSequence(); 
-}
-conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
-});
-conn.on('data', data => {
-if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
-else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
-else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-else if(data.type === 'reward_xp') { addXp(data.amount); }
-else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; }
-else if(data.type === 'init_flowers') { flowers = data.data; }
-else if(data.type === 'sync_flowers_list') { flowers = data.data; } // Sincroniza lista completa
-else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; }
-else if(data.type === 'fx') { 
-if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
-if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
-if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
-}
-else if(data.type === 'req_pollen') {
-if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
-flowers[data.id].cooldown = flowers[data.id].maxCooldown;
-players.peer.pollen += 0.4;
-conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
-conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
-}
-}
-else if(data.type === 'wave_clear') { // Peer recebe sinal de vitória
-showWaveClearEffect();
-}
-else if(data.type === 'sync_world') { 
-players.peer.lastSeen = Date.now();
-enemies = data.enemies.map(enNew => {
-let existing = enemies.find(e => e.id === enNew.id);
-return existing ? {...enNew} : enNew;
-});
-isWaveActive = data.isWaveActive; 
-hive.hp = data.hiveHp;
-// SYNC DO TIMER
-waveTimer = data.waveTimer;
-enemiesSpawnedInWave = data.enemiesSpawned;
-}
-else if(data.type === 'repair') { 
-if(isHost) {
-hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-conn.send({ type: 'reward_xp', amount: 15 }); // XP ajustado
-}
-}
-else if(data.type === 'hit') { 
-if(!isHost && data.target === 'me') {
-takeDamage(data.amount); 
-}
-}
-else if(data.type === 'pos') { 
-players.peer.lastSeen = Date.now();
-players.peer.tX = data.x; players.peer.tY = data.y; 
-players.peer.dir = data.dir; players.peer.hp = data.hp; 
-players.peer.isDead = data.isDead; players.peer.pollen = data.pollen; 
-players.peer.lvl = data.lvl; players.peer.active = true;
-}
-else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
-else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
-});
+    conn.on('open', () => { 
+        // CLIENT: Assim que conecta, envia a senha para autenticar
+        if(!isHost) {
+            conn.send({ 
+                type: 'auth', 
+                pass: document.getElementById('room-pass').value.trim(), 
+                nick: players.me.nick,
+                color: players.me.color
+            });
+        }
+    });
+
+    conn.on('data', data => {
+        // --- LOGICA DE AUTENTICAÇÃO (HOST) ---
+        if (isHost && data.type === 'auth') {
+            if (data.pass === hostPassword) {
+                // Senha correta
+                players.peer.nick = data.nick;
+                players.peer.color = data.color;
+                players.peer.authorized = true;
+                players.peer.active = true;
+                players.peer.lastSeen = Date.now();
+                
+                // Envia sucesso e estado inicial
+                conn.send({ type: 'auth_success' });
+                conn.send({ type: 'init_flowers', data: flowers });
+                conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
+                addMsg("SISTEMA", `${data.nick} entrou no reino!`, "msg-sys");
+            } else {
+                // Senha incorreta
+                conn.send({ type: 'auth_fail' });
+                setTimeout(() => { conn.close(); }, 500); // Fecha conexão
+            }
+            return;
+        }
+
+        // --- RESPOSTA DE AUTENTICAÇÃO (CLIENT) ---
+        if (!isHost) {
+            if (data.type === 'auth_success') {
+                startLoadingSequence();
+                return;
+            } else if (data.type === 'auth_fail') {
+                alert("SENHA INCORRETA! Você não pode entrar neste Reino.");
+                peer.destroy();
+                return;
+            }
+        }
+
+        // Se for Host, ignora dados de peer não autorizado
+        if (isHost && !players.peer.authorized) return;
+
+        // --- DADOS DO JOGO (NORMAL) ---
+        if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
+        else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
+        else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
+        else if(data.type === 'reward_xp') { addXp(data.amount); }
+        else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; }
+        else if(data.type === 'init_flowers') { flowers = data.data; }
+        else if(data.type === 'sync_flowers_list') { flowers = data.data; } 
+        else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; }
+        else if(data.type === 'fx') { 
+            if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
+            if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
+            if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
+        }
+        else if(data.type === 'req_pollen') {
+            if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
+                flowers[data.id].cooldown = flowers[data.id].maxCooldown;
+                players.peer.pollen += 0.4;
+                conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
+                conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
+            }
+        }
+        else if(data.type === 'wave_clear') { 
+            showWaveClearEffect();
+        }
+        else if(data.type === 'sync_world') { 
+            players.peer.lastSeen = Date.now();
+            enemies = data.enemies.map(enNew => {
+                let existing = enemies.find(e => e.id === enNew.id);
+                return existing ? {...enNew} : enNew;
+            });
+            isWaveActive = data.isWaveActive; 
+            hive.hp = data.hiveHp;
+            waveTimer = data.waveTimer;
+            enemiesSpawnedInWave = data.enemiesSpawned;
+        }
+        else if(data.type === 'repair') { 
+            if(isHost) {
+                hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
+                conn.send({ type: 'reward_xp', amount: 15 }); 
+            }
+        }
+        else if(data.type === 'hit') { 
+            if(!isHost && data.target === 'me') {
+                takeDamage(data.amount); 
+            }
+        }
+        else if(data.type === 'pos') { 
+            players.peer.lastSeen = Date.now();
+            players.peer.tX = data.x; players.peer.tY = data.y; 
+            players.peer.dir = data.dir; players.peer.hp = data.hp; 
+            players.peer.isDead = data.isDead; players.peer.pollen = data.pollen; 
+            players.peer.lvl = data.lvl; players.peer.active = true;
+        }
+        else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
+        else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
+    });
+    
+    conn.on('close', () => {
+        players.peer.active = false;
+        players.peer.authorized = false;
+        addMsg("SISTEMA", "Conexão perdida.", "msg-sys");
+    });
 }
 
 function showWaveClearEffect() {
 addMsg("SISTEMA", "HORDA DESTRUÍDA! +3 Minutos de Paz.", "msg-sys");
-createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); // Explosão azul na base
+createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); 
 }
 
 function takeDamage(amount) {
@@ -943,7 +1010,6 @@ deathModal.style.display = 'none';
 function fire(angle) {
 if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
 spawnProjectile(players.me.x, players.me.y, angle, true);
-// Otimização: Só envia se peer ativo
 if(players.peer.active && conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
 lastShootTime = Date.now();
 }
@@ -972,17 +1038,16 @@ networkBuffer.repairs.shift();
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
 if(players.peer.active && conn && conn.open) {
     conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-    conn.send({ type: 'reward_xp', amount: 15 }); // XP ajustado
+    conn.send({ type: 'reward_xp', amount: 15 }); 
 }
 }
 
 waveTimer -= 1/60;
 if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
 
-// FIM DA HORDA
 if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
    isWaveActive = false;
-   waveTimer = 180; // 3 Minutos de paz
+   waveTimer = 180; 
    showWaveClearEffect();
    if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
 }
@@ -995,19 +1060,17 @@ enemies.push({
 id: Math.random().toString(36).substr(2, 9),
 x: hive.x + Math.cos(angle) * 1000, y: hive.y + Math.sin(angle) * 1000, 
 hp: 100, vx: 0, vy: 0,
-behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' // 35% de chance de caçar players
+behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' 
 });
 enemiesSpawnedInWave++; lastEnemySpawnTime = now;
 }
 }
 
 enemies.forEach((en) => {
-    // LÓGICA DE ALVO (IA)
     let targetX = hive.x;
     let targetY = hive.y;
 
     if (en.behavior === 'hunter') {
-        // Encontrar player vivo mais próximo
         let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
         let dPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
 
@@ -1018,7 +1081,6 @@ enemies.forEach((en) => {
                 targetX = players.peer.x; targetY = players.peer.y;
             }
         }
-        // Se ambos estiverem mortos, o alvo padrão (hive) permanece
     }
 
     const angle = Math.atan2(targetY - en.y, targetX - en.x);
@@ -1038,23 +1100,21 @@ enemies = enemies.filter(en => en.hp > 0);
 
 if (hive.hp <= 0 && !hive.destroyed) { hive.hp = 0; hive.destroyed = true; setTimeout(() => gameOverModal.style.display = 'flex', 1500); }
 
-// Otimização: Só manda sync se tiver peer
 if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
 conn.send({ 
 type: 'sync_world', 
 enemies: enemies.map(e => ({id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, hp: e.hp})), 
 isWaveActive: isWaveActive, hiveHp: hive.hp,
-waveTimer: waveTimer, // Enviando Timer
-enemiesSpawned: enemiesSpawnedInWave // Enviando contagem
+waveTimer: waveTimer, 
+enemiesSpawned: enemiesSpawnedInWave 
 });
 lastNetUpdate = performance.now();
 }
 }
 
-// HOST: Cria uma nova flor (Semente)
 function spawnFlower(x, y) {
     const types = ["🌸", "🌻", "🌷"];
-    const id = flowers.length; // Simple ID
+    const id = flowers.length; 
     flowers.push({
         id: id,
         x: x, 
@@ -1066,54 +1126,40 @@ function spawnFlower(x, y) {
         growState: 'seed',
         plantTime: Date.now()
     });
-    // Sync imediato ao criar
     if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 }
 
 function updateMechanics() {
-players.me.isCollecting = false; // Reset state
+players.me.isCollecting = false; 
 
-// LÓGICA DE POLITIZAÇÃO E DROP DE PÓLEN (Apenas Host processa lógica de spawn)
 if(isHost) {
     let needsFlowerSync = false;
     const now = Date.now();
 
-    // 1. Processar Host (Me)
     if(players.me.pollen > 0 && !players.me.isDead) {
-        // Se estiver se movendo
         if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
-             // Rastro de polen
              if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
              players.me.pollen = Math.max(0, players.me.pollen - 0.05);
-             
-             // Chance de nascer flor (0.2% por tick)
              if(Math.random() < 0.002) {
                  spawnFlower(players.me.x, players.me.y);
              }
         }
     }
 
-    // 2. Processar Peer (Baseado na ultima posição conhecida)
     if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-         // Não temos input direto, usamos 'active' e assumimos movimento se posição mudar (mas aqui simplificamos)
-         // Vamos apenas checar se ele tem pólen. Para simplificar, assumimos que ele se move.
          if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-         
          if(Math.random() < 0.002) {
              spawnFlower(players.peer.x, players.peer.y);
          }
     }
 
-    // 3. Atualizar crescimento das flores
     flowers.forEach(f => {
         if(f.growState !== 'mature') {
             const age = now - f.plantTime;
-            // 2 minutos (120000ms) para virar Broto
             if(f.growState === 'seed' && age >= 120000) {
                 f.growState = 'sprout';
                 needsFlowerSync = true;
             }
-            // 5 minutos (300000ms) para virar Flor
             if(f.growState === 'sprout' && age >= 300000) {
                 f.growState = 'mature';
                 needsFlowerSync = true;
@@ -1128,14 +1174,13 @@ if(isHost) {
 
 
 flowers.forEach((f, index) => {
-// Só interage se for madura
 if(f.growState === 'mature') {
     if(f.cooldown > 0) f.cooldown -= 1/60;
     else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-        players.me.isCollecting = true; // Actively collecting
+        players.me.isCollecting = true; 
         if(isHost) {
             players.me.pollen += 0.4;
-            addXp(0.02); // NERF XP DE COLETA
+            addXp(0.02); 
             if(players.me.pollen >= 100) { 
                 f.cooldown = f.maxCooldown; 
                 players.me.pollen = 100;
@@ -1150,36 +1195,29 @@ if(f.growState === 'mature') {
 }
 });
 
-// Partículas visuais de coleta (mantido para feedback)
 if(!players.me.isDead && players.me.pollen > 0 && Math.random() < 0.1) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0 && Math.random() < 0.1) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
 
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
 players.me.pollen = 0; 
-
-// --- ALTERAÇÃO SOLICITADA: CURA AO REPARAR ---
 if(players.me.hp < 100) {
-    players.me.hp = Math.min(100, players.me.hp + 1); // 1% de 100 é 1
-    createParticles(players.me.x, players.me.y, "#2ecc71", 10); // Partículas verdes de cura
+    players.me.hp = Math.min(100, players.me.hp + 1); 
+    createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
     addMsg("SISTEMA", "Curado (+1 HP) pelo Pólen.", "msg-sys");
 }
-// ----------------------------------------------
-
 if(isHost) { 
 hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
 createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-addXp(15); // NERF XP DE REPARO
+addXp(15); 
 } else { conn.send({ type: 'repair' }); }
 }
 }
 
-// CORREÇÃO CRÍTICA: Loop reverso para evitar crash no splice
 for (let i = projectiles.length - 1; i >= 0; i--) {
     let p = projectiles[i];
     let hit = false;
     
-    // Check collision with enemies
     for (let j = 0; j < enemies.length; j++) {
         let en = enemies[j];
         if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
@@ -1192,19 +1230,18 @@ for (let i = projectiles.length - 1; i >= 0; i--) {
                     createParticles(en.x, en.y, "#000", 10); 
                     if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
                     
-                    // LÓGICA DE XP COMPARTILHADO (FORMIGAS)
                     const totalKillXp = 30;
                     if(players.peer.active && !players.peer.isDead) {
                         const splitXp = totalKillXp / 2;
-                        addXp(splitXp); // Host ganha metade
-                        if(conn && conn.open) conn.send({ type: 'reward_xp', amount: splitXp }); // Peer ganha metade
+                        addXp(splitXp); 
+                        if(conn && conn.open) conn.send({ type: 'reward_xp', amount: splitXp }); 
                     } else {
-                        addXp(totalKillXp); // Solo ganha tudo
+                        addXp(totalKillXp); 
                     }
                 }
             } 
             hit = true;
-            break; // Bullet hit something, stop checking other enemies
+            break; 
         }
     }
 
@@ -1213,7 +1250,6 @@ for (let i = projectiles.length - 1; i >= 0; i--) {
         continue;
     }
 
-    // Movement & Life decay
     p.x += p.vx; p.y += p.vy; 
     p.life--; 
     if(p.life <= 0) {
@@ -1227,14 +1263,12 @@ if(p.life <= 0) particles.splice(i, 1);
 });
 }
 
-// NOVA FUNÇÃO: Gerencia o HUD da Horda
 function updateHordeHud() {
     const hud = document.getElementById('horde-hud');
     if (isWaveActive) {
         hud.style.display = 'block';
         hud.style.color = '#ff4757';
         hud.classList.remove('warn-pulse');
-        // Calculo de inimigos restantes: (Total - Nascidos) + Vivos na tela
         const remaining = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
         hud.innerText = `⚠️ INVASÃO: ${remaining} ⚠️`;
     } else if (waveTimer <= 60) {
@@ -1335,7 +1369,6 @@ window.addEventListener('touchend', handleEnd);
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize);
 
-// NOVA FUNÇÃO: Calcula direção baseada no ângulo (Prioridade para o Tiro)
 function getDirFromAngle(angle) {
     const deg = angle * (180 / Math.PI);
     if (deg >= -45 && deg <= 45) return 'Right';
@@ -1350,19 +1383,16 @@ function update() {
         if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
         if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
-        // Movimento
         if (dx !== 0 || dy !== 0) {
             const m = Math.sqrt(dx*dx + dy*dy);
             players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
             
-            // Só atualiza direção baseada no movimento se NÃO estiver mirando/atirando
             if (!joyAim.active && !isMouseDown) {
                 if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
                 else players.me.dir = dy > 0 ? 'Down' : 'Up';
             }
         }
 
-        // Lógica de Tiro e Direção da Sprite (Prioritária)
         if(joyAim.active) {
             players.me.dir = getDirFromAngle(joyAim.angle);
             fire(joyAim.angle);
@@ -1405,7 +1435,6 @@ ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
 ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
 }
 
-// NOVA FUNÇÃO: Desenha barra de pólen abaixo da abelha
 function drawPollenBar(x, y, pollen, w = 50, h = 6, offset = -40) {
     ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
     ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
@@ -1421,7 +1450,6 @@ for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE)
 if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
 flowers.forEach(f => {
-// Só desenha se não for semente
 if(f.growState === 'seed') return;
 
 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
@@ -1458,7 +1486,6 @@ ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
-// Desenha barra de pólen se estiver coletando e não estiver cheia
 if(p.isCollecting || p.pollen > 0) {
     drawPollenBar(p.x, p.y, p.pollen);
 }
