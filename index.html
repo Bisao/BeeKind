@@ -148,6 +148,86 @@ canvas { display: none; image-rendering: pixelated; }
 }
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
+/* --- LOADING SCREEN --- */
+#loading-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #111 0%, #000 100%);
+    z-index: 4000; /* Acima do menu */
+    display: none; /* Começa escondido */
+    flex-direction: column; align-items: center; justify-content: center;
+}
+
+#loading-scene {
+    width: 80%; max-width: 600px;
+    height: 100px;
+    position: relative;
+    margin-bottom: 20px;
+}
+
+#loading-bar-track {
+    position: absolute; bottom: 0; left: 0;
+    width: 100%; height: 16px;
+    background: rgba(255,255,255,0.1);
+    border: 2px solid var(--primary);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+#loading-bar-active-fill {
+    width: 0%; height: 100%;
+    background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+    box-shadow: 0 0 10px var(--primary);
+}
+
+/* Personagens do Loading */
+#loading-ant {
+    position: absolute; bottom: 16px; /* Em cima da barra */
+    left: 0; transform: translateX(-50%);
+    font-size: 30px;
+    transition: left 0.1s linear;
+}
+
+#loading-bee-container {
+    position: absolute; bottom: 30px; /* Um pouco mais alto que a formiga */
+    left: -10%; /* Começa fora */
+    width: 50px; height: 50px;
+    transform: translateX(-50%);
+    transition: left 0.1s linear, transform 0.3s;
+}
+
+#loading-bee-img {
+    width: 100%; height: 100%;
+    image-rendering: pixelated;
+    animation: flightBob 0.5s infinite alternate;
+}
+
+@keyframes flightBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+/* Efeito de Tiro */
+.muzzle-flash {
+    position: absolute; right: -10px; top: 25px;
+    width: 10px; height: 10px;
+    background: #ffeb3b;
+    border-radius: 50%;
+    opacity: 0;
+    box-shadow: 0 0 10px #ffeb3b;
+    animation: shootFlash 0.3s infinite;
+}
+
+@keyframes shootFlash { 0% { opacity: 0; } 50% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; } }
+
+/* Cookie Giratório */
+#loading-cookie {
+    position: absolute; bottom: 30px; right: 30px;
+    font-size: 40px;
+    animation: spinCookie 2s linear infinite;
+}
+
+@keyframes spinCookie { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.explosion-text { font-size: 40px !important; animation: explodeScale 0.5s ease-out forwards; }
+@keyframes explodeScale { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.5); } 100% { transform: translateX(-50%) scale(0); opacity: 0; } }
+
 /* --- NOVO MENU ESTILIZADO (MEDIEVAL HIVE) --- */
 #menu { 
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -427,6 +507,21 @@ canvas { display: none; image-rendering: pixelated; }
     </div>
 </div>
 
+<div id="loading-screen">
+    <div id="loading-scene">
+        <div id="loading-bee-container">
+            <div class="muzzle-flash"></div>
+            <img src="BeeRight.png" id="loading-bee-img">
+        </div>
+        <div id="loading-ant">🐜</div>
+        <div id="loading-bar-track">
+            <div id="loading-bar-active-fill"></div>
+        </div>
+    </div>
+    <h3 style="color:var(--primary); letter-spacing: 2px; text-transform: uppercase;">Carregando Mundo...</h3>
+    <div id="loading-cookie">🍪</div>
+</div>
+
 <div id="menu">
     <div class="hex-bg"></div>
     <div class="menu-card">
@@ -489,6 +584,77 @@ function createMenuParticles() {
     }
 }
 createMenuParticles();
+
+// --- LOGICA DE LOADING ---
+function startLoadingSequence() {
+    // 1. Esconde Menu e Mostra Loading
+    document.getElementById('menu').style.display = 'none';
+    const loadingScreen = document.getElementById('loading-screen');
+    loadingScreen.style.display = 'flex';
+
+    // Elementos
+    const bar = document.getElementById('loading-bar-active-fill');
+    const ant = document.getElementById('loading-ant');
+    const beeCont = document.getElementById('loading-bee-container');
+    const beeImg = document.getElementById('loading-bee-img');
+    const muzzle = document.querySelector('.muzzle-flash');
+
+    const duration = 20000; // 20 Segundos
+    const startTime = Date.now();
+    let exploded = false;
+
+    function frame() {
+        const now = Date.now();
+        const elapsed = now - startTime;
+        let pct = Math.min(1, elapsed / duration);
+        const pctVal = pct * 100;
+
+        if (pct < 1) {
+            // Atualiza posições
+            bar.style.width = pctVal + '%';
+            ant.style.left = pctVal + '%';
+            
+            // Abelha segue um pouco atrás (lag de 8%)
+            let beePos = Math.max(0, pctVal - 8); 
+            beeCont.style.left = beePos + '%';
+
+            requestAnimationFrame(frame);
+        } else {
+            // FIM DO CARREGAMENTO
+            if(!exploded) {
+                exploded = true;
+                bar.style.width = '100%';
+                
+                // Formiga explode
+                ant.innerText = "💥";
+                ant.classList.add('explosion-text');
+                
+                // Abelha para de atirar
+                muzzle.style.display = 'none';
+                
+                // Abelha atualiza sprite e centraliza
+                beeImg.src = 'BeeDown.png';
+                beeImg.style.animation = 'none'; // Para o balanço de voo
+                
+                // Move abelha para o centro
+                beeCont.style.transition = 'left 0.5s ease-out';
+                beeCont.style.left = '50%';
+
+                // Aguarda 2 segundos e inicia o jogo
+                setTimeout(() => {
+                    loadingScreen.style.display = 'none';
+                    if(isHost) {
+                        generateFlowers();
+                        startGame();
+                    } else {
+                        startGame();
+                    }
+                }, 2000);
+            }
+        }
+    }
+    requestAnimationFrame(frame);
+}
 
 // --- GAME LOGIC ---
 const canvas = document.getElementById('gameCanvas');
@@ -632,8 +798,8 @@ players.peer.color = host ? "#3498db" : "#f1c40f";
 peer = host ? new Peer('bee-' + code) : new Peer();
 peer.on('open', () => { 
 if(host) {
-generateFlowers();
-startGame(); 
+// generateFlowers(); // Removido daqui, vai para o fim do loading
+startLoadingSequence(); 
 } else { 
 conn = peer.connect('bee-' + code); 
 setupConn(); 
@@ -649,7 +815,7 @@ players.peer.lastSeen = Date.now();
 if(isHost) {
 conn.send({ type: 'init_flowers', data: flowers });
 } else {
-startGame(); 
+startLoadingSequence(); 
 }
 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
 });
