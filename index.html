@@ -208,6 +208,28 @@ canvas { display: none; image-rendering: pixelated; }
     padding-bottom: 15px;
 }
 
+/* COROA NO G */
+.royal-g {
+    position: relative;
+    display: inline-block;
+}
+
+.royal-g::after {
+    content: '👑';
+    position: absolute;
+    top: -28px;
+    left: -10px;
+    font-size: 1.8rem;
+    transform: rotate(-25deg);
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+    animation: crownFloat 3s ease-in-out infinite alternate;
+}
+
+@keyframes crownFloat {
+    from { transform: rotate(-25deg) translateY(0); }
+    to { transform: rotate(-25deg) translateY(-3px); }
+}
+
 .update-badge {
     display: inline-block;
     background: linear-gradient(45deg, #b7950b, #f1c40f);
@@ -352,7 +374,7 @@ canvas { display: none; image-rendering: pixelated; }
 <div id="menu">
     <div class="hex-bg"></div>
     <div class="menu-card">
-        <h1>The Hive Kingdom</h1>
+        <h1>The Hive Kin<span class="royal-g">g</span>dom</h1>
         <div class="update-badge">Update: Pollen War • v1.4</div>
         
         <div class="input-group">
