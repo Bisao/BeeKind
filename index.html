@@ -1157,6 +1157,15 @@ if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0 && Mat
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
 players.me.pollen = 0; 
+
+// --- ALTERAÇÃO SOLICITADA: CURA AO REPARAR ---
+if(players.me.hp < 100) {
+    players.me.hp = Math.min(100, players.me.hp + 1); // 1% de 100 é 1
+    createParticles(players.me.x, players.me.y, "#2ecc71", 10); // Partículas verdes de cura
+    addMsg("SISTEMA", "Curado (+1 HP) pelo Pólen.", "msg-sys");
+}
+// ----------------------------------------------
+
 if(isHost) { 
 hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
 createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
