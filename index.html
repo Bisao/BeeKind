@@ -369,6 +369,9 @@ canvas { display: none; image-rendering: pixelated; }
     box-sizing: border-box;
     transition: all 0.3s;
     font-family: monospace;
+    /* Correção para input funcionar com user-select: none no body */
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .menu-input:focus {
@@ -806,24 +809,41 @@ keys[e.code] = true;
 window.addEventListener('keyup', e => keys[e.code] = false);
 
 function startSession(host) {
-const code = document.getElementById('room-code').value.trim();
-const nick = document.getElementById('player-nick').value.trim();
-if(!nick || !code) return alert("Preencha o Nickname e o Código!");
-isHost = host;
-players.me.nick = nick;
-players.me.color = host ? "#f1c40f" : "#3498db";
-players.peer.color = host ? "#3498db" : "#f1c40f";
-peer = host ? new Peer('bee-' + code) : new Peer();
-peer.on('open', () => { 
-if(host) {
-// generateFlowers(); // Removido daqui, vai para o fim do loading
-startLoadingSequence(); 
-} else { 
-conn = peer.connect('bee-' + code); 
-setupConn(); 
-} 
-});
-peer.on('connection', c => { conn = c; setupConn(); });
+    const code = document.getElementById('room-code').value.trim();
+    const nick = document.getElementById('player-nick').value.trim();
+    if(!nick || !code) return alert("Preencha o Nickname e o Código!");
+
+    isHost = host;
+    players.me.nick = nick;
+    players.me.color = host ? "#f1c40f" : "#3498db";
+    players.peer.color = host ? "#3498db" : "#f1c40f";
+
+    // Se já houver uma instância de Peer, destrua-a
+    if(peer && !peer.destroyed) peer.destroy();
+
+    peer = host ? new Peer('bee-' + code) : new Peer();
+    
+    // --- TRATAMENTO DE ERRO CRÍTICO (ID EM USO) ---
+    peer.on('error', (err) => {
+        console.error(err);
+        if(err.type === 'unavailable-id') {
+            alert("Este código de Reino já está sendo usado! Tente outro ou espere um pouco.");
+        } else {
+            alert("Erro na conexão: " + err.type);
+        }
+    });
+
+    peer.on('open', () => { 
+        if(host) {
+            // generateFlowers(); // Removido daqui, vai para o fim do loading
+            startLoadingSequence(); 
+        } else { 
+            conn = peer.connect('bee-' + code); 
+            setupConn(); 
+        } 
+    });
+    
+    peer.on('connection', c => { conn = c; setupConn(); });
 }
 
 function setupConn() {
