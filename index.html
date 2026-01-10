@@ -839,49 +839,69 @@ window.addEventListener('touchend', handleEnd);
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize);
 
+// NOVA FUNÇÃO: Calcula direção baseada no ângulo (Prioridade para o Tiro)
+function getDirFromAngle(angle) {
+    const deg = angle * (180 / Math.PI);
+    if (deg >= -45 && deg <= 45) return 'Right';
+    if (deg > 45 && deg < 135) return 'Down';
+    if (deg >= 135 || deg <= -135) return 'Left';
+    return 'Up';
+}
+
 function update() {
-if(!players.me.isDead) {
-let dx = joyMove.dx, dy = joyMove.dy;
-if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
-if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
-if (dx !== 0 || dy !== 0) {
-const m = Math.sqrt(dx*dx + dy*dy);
-players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-if (!joyAim.active) {
-if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
-else players.me.dir = dy > 0 ? 'Down' : 'Up';
-}
-}
-if(joyAim.active) fire(joyAim.angle);
-else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
-}
+    if(!players.me.isDead) {
+        let dx = joyMove.dx, dy = joyMove.dy;
+        if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+        if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
-runWaveLogic(); 
-updateMechanics();
-// Atualiza a UI da horda (Timer ou Contador)
-updateHordeHud();
+        // Movimento
+        if (dx !== 0 || dy !== 0) {
+            const m = Math.sqrt(dx*dx + dy*dy);
+            players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+            
+            // Só atualiza direção baseada no movimento se NÃO estiver mirando/atirando
+            if (!joyAim.active && !isMouseDown) {
+                if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+                else players.me.dir = dy > 0 ? 'Down' : 'Up';
+            }
+        }
 
-if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
+        // Lógica de Tiro e Direção da Sprite (Prioritária)
+        if(joyAim.active) {
+            players.me.dir = getDirFromAngle(joyAim.angle);
+            fire(joyAim.angle);
+        } else if(isMouseDown) {
+            const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
+            players.me.dir = getDirFromAngle(angle);
+            fire(angle);
+        }
+    }
 
-let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
-if(players.peer.active) { 
-players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
-const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
-}
-playerItemsContainer.innerHTML = playerListHtml;
+    runWaveLogic(); 
+    updateMechanics();
+    updateHordeHud();
 
-let hiveListHtml = "";
-if(!hive.destroyed) {
-const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
-hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`; }
-hiveItemsContainer.innerHTML = hiveListHtml;
+    if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
 
-camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+    let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
+    if(players.peer.active) { 
+        players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
+        players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+        const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
+        playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
+    }
+    playerItemsContainer.innerHTML = playerListHtml;
+
+    let hiveListHtml = "";
+    if(!hive.destroyed) {
+        const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+        const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+        hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
+    } else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`; }
+    hiveItemsContainer.innerHTML = hiveListHtml;
+
+    camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+    document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
 }
 
 function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
