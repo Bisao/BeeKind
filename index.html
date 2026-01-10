@@ -1,86 +1,77 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Bee World - RPG Edition</title>
-    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
-    <style>
-        :root { 
-            --primary: #f1c40f; 
-            --primary-dark: #d4ac0d;
-            --secondary: #3498db;
-            --bg-dark: rgba(20, 20, 20, 0.85); 
-            --text-main: #ffffff; 
-            --xp-color: #3498db; 
-            --border: rgba(255, 255, 255, 0.1); 
-            --glass: rgba(255, 255, 255, 0.05);
-        }
-        
-        body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
-        canvas { display: none; image-rendering: pixelated; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Hive Kingdom</title>
+<script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+<style>
+:root { 
+--primary: #f1c40f; 
+--primary-dark: #d4ac0d;
+--secondary: #3498db;
+--bg-dark: rgba(20, 20, 20, 0.85); 
+--text-main: #ffffff; 
+--xp-color: #3498db; 
+--border: rgba(255, 255, 255, 0.1); 
+--glass: rgba(255, 255, 255, 0.05);
+}
 
-        /* HUD CENTRAL */
-        #central-hud {
-            position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; gap: 8px;
-            z-index: 100; pointer-events: none;
-        }
-        #lvl-hud {
-            background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
-            text-align: center; min-width: 220px; backdrop-filter: blur(10px);
-            border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-        }
-        #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
-        #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
-        #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
-        #coords { 
-            font-family: monospace; color: var(--primary); background: var(--bg-dark); 
-            padding: 4px 15px; border-radius: 12px; font-size: 12px; 
-            border: 1px solid var(--border); backdrop-filter: blur(5px);
-            opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
+body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+canvas { display: none; image-rendering: pixelated; }
 
-        /* PAINÉIS LATERAIS (AGRUPADOS) */
-        #sidebar-container {
-            position: absolute; left: 0; top: 100px; z-index: 101;
-            display: flex; flex-direction: column; pointer-events: none;
-        }
+/* HUD CENTRAL */
+#central-hud {
+position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+display: flex; flex-direction: column; align-items: center; gap: 8px;
+z-index: 100; pointer-events: none;
+}
+#lvl-hud {
+background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
+text-align: center; min-width: 220px; backdrop-filter: blur(10px);
+border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+}
+#xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+#xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
+#lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
+#coords { 
+font-family: monospace; color: var(--primary); background: var(--bg-dark); 
+padding: 4px 15px; border-radius: 12px; font-size: 12px; 
+border: 1px solid var(--border); backdrop-filter: blur(5px);
+opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+}
 
-        .side-panel {
-            position: relative; left: -210px; width: 210px;
-            transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            pointer-events: auto;
-        }
-
-        .side-panel.active { left: 0px; }
-        
-        .panel-content { 
-            background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
-            border-left: 4px solid var(--primary); font-size: 13px; 
-            backdrop-filter: blur(10px); border: 1px solid var(--border);
-            box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
-            overflow: hidden;
-        }
-        
-        /* PADRONIZADO: Botões de Sessão e Colmeia */
-        .panel-toggle {
-            position: absolute; right: -45px; top: 0;
-            width: 45px; height: 45px; background: var(--primary);
-            border: none; border-radius: 0 8px 8px 0; cursor: pointer;
-            font-size: 20px; display: flex; align-items: center; justify-content: center;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
-        }
-
-        .panel-title { 
-            font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
-            padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
+        /* NOTIFICAÇÃO DE ONDA */
+        #wave-notification {
+            background: rgba(192, 57, 43, 0.9);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: bold;
             text-transform: uppercase;
+            letter-spacing: 1px;
+            border: 1px solid rgba(255,255,255,0.2);
+            display: none;
+            animation: wavePulse 1.5s infinite;
+            box-shadow: 0 0 15px rgba(192, 57, 43, 0.5);
         }
 
-        .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        @keyframes wavePulse {
+            0% { transform: scale(1); opacity: 0.9; }
+            50% { transform: scale(1.05); opacity: 1; box-shadow: 0 0 20px rgba(192, 57, 43, 0.8); }
+            100% { transform: scale(1); opacity: 0.9; }
+        }
 
-        /* HUD PÓLEN */
+        /* PAINÉIS LATERAIS */
+#sidebar-container {
+position: absolute; left: 0; top: 100px; z-index: 101;
+display: flex; flex-direction: column; pointer-events: none;
+@@ -101,7 +78,14 @@
+
+.item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+
+        /* MENU DE BOTÕES */
         #pollen-hud { 
             position: absolute; top: 50%; right: 20px; transform: translateY(-50%);
             background: var(--bg-dark); padding: 15px; border-radius: 15px;
@@ -89,80 +80,33 @@
         }
         #pollen-val { font-size: 24px; font-weight: bold; color: #fffa65; }
 
-        /* MENU DE BOTÕES (CENTRO INFERIOR) */
-        #bottom-menu-container {
-            position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-            display: flex; flex-direction: column; align-items: center; gap: 15px;
-            z-index: 500;
-        }
-        #main-action-menu {
-            background: var(--bg-dark); border: 1px solid var(--primary);
-            padding: 15px; border-radius: 15px; display: none;
-            backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-            grid-template-columns: repeat(3, 1fr); gap: 10px;
-        }
-        .square-btn {
-            width: 50px; height: 50px; background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
-            cursor: pointer; display: flex; align-items: center; justify-content: center;
-            font-size: 24px; transition: all 0.2s;
-        }
-        .square-btn:hover { background: var(--primary); transform: scale(1.05); }
-        #btn-open-menu {
-            width: 60px; height: 60px; background: var(--primary);
-            border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
-            cursor: pointer; font-size: 28px; display: flex; align-items: center;
-            justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-            z-index: 501;
-        }
+#bottom-menu-container {
+position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+display: flex; flex-direction: column; align-items: center; gap: 15px;
+@@ -128,11 +112,9 @@
+z-index: 501;
+}
 
         /* MODAIS */
-        #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
-        .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
+#death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
+.modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-        /* CHAT - POSIÇÃO ELEVADA PARA MOBILE */
-        #chat-wrapper { 
-            position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
-            display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-        }
-        #chat-display { height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px; }
-        #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
-        #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
-        
-        /* PADRONIZADO: Botão do Chat */
-        #btn-minimize-chat { 
-            position: absolute; right: -45px; bottom: 0; 
-            background: var(--primary); color: #111; 
-            border: none; border-radius: 0 8px 8px 0; cursor: pointer; 
-            width: 45px; height: 45px; 
-            font-size: 20px; font-weight: bold; 
-            box-shadow: 4px 0 10px rgba(0,0,0,0.3); 
-            transition: background 0.3s;
-        }
+        /* CHAT */
+#chat-wrapper { 
+position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
+display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+@@ -159,7 +141,6 @@
 
-        /* ANIMAÇÃO DE PULSAR PARA MENSAGEM NÃO LIDA */
-        @keyframes pulse {
-            0% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
-            50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
-            100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
-        }
+.unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
-        .unread-pulse {
-            animation: pulse 1.5s infinite ease-in-out !important;
-            z-index: 502;
-        }
+        /* MENU INICIAL */
+#menu { 
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+display: flex; flex-direction: column; align-items: center; justify-content: center;
+@@ -168,78 +149,39 @@
+}
 
-        /* --- MENU INICIAL --- */
-        #menu { 
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
-            z-index: 3000;
-            padding: 20px;
-            box-sizing: border-box;
-        }
-
-        .menu-card {
+.menu-card {
             background: rgba(40, 40, 40, 0.6);
             backdrop-filter: blur(20px);
             border: 1px solid var(--border);
@@ -172,191 +116,143 @@
             max-width: 500px;
             box-shadow: 0 20px 50px rgba(0,0,0,0.5);
             text-align: center;
-        }
+            background: rgba(40, 40, 40, 0.6); backdrop-filter: blur(20px);
+            border: 1px solid var(--border); border-radius: 24px; padding: 40px;
+            width: 100%; max-width: 500px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); text-align: center;
+}
 
-        .menu-card h1 {
-            font-size: 3rem;
-            margin: 0 0 10px 0;
-            background: linear-gradient(to bottom, #fff, var(--primary));
+.menu-card h1 {
+font-size: 2.8rem; margin: 0;
+background: linear-gradient(to bottom, #fff, var(--primary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            letter-spacing: -1px;
-            font-weight: 800;
-        }
-
-        .menu-card p {
-            color: #888;
-            margin-bottom: 30px;
-            font-size: 0.9rem;
-        }
-
-        /* ASSINATURA DO ESTÚDIO */
-        #studio-footer {
-            position: absolute;
-            bottom: 30px;
-            left: 50%;
-            transform: translateX(-50%);
-            text-align: center;
-            pointer-events: none;
-        }
-
-        .studio-name {
-            font-size: 14px;
+            letter-spacing: -1px; font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 4px;
-            color: rgba(255, 255, 255, 0.5);
         }
 
-        .studio-name b {
+        .menu-card .slogan {
             color: var(--primary);
-            font-weight: 800;
-        }
-
-        .tight-cookie {
-            display: inline-block;
-            margin-left: -5px;
-            margin-right: -4px;
-            transform: translateY(1px); 
-        }
-
-        .input-group {
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 2px;
             margin-bottom: 20px;
-            text-align: left;
-        }
-
-        .input-group label {
-            display: block;
-            font-size: 0.75rem;
             text-transform: uppercase;
-            color: var(--primary);
-            margin-bottom: 8px;
-            font-weight: bold;
-            padding-left: 5px;
-        }
+            opacity: 0.9;
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            letter-spacing: -1px; font-weight: 800; text-transform: uppercase;
+}
 
-        .menu-input {
-            width: 100%;
-            padding: 14px 18px;
+        .menu-card p.version { color: #888; margin-bottom: 30px; font-size: 0.75rem; }
+        .menu-card .slogan { color: var(--primary); font-size: 0.85rem; font-weight: 600; letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; }
+
+#studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
+.studio-name { font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255, 255, 255, 0.5); }
+.studio-name b { color: var(--primary); font-weight: 800; }
+        .tight-cookie { display: inline-block; margin-left: -5px; margin-right: -4px; transform: translateY(1px); }
+
+        .input-group { margin-bottom: 20px; text-align: left; }
+        .input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; font-weight: bold; padding-left: 5px; }
+
+.menu-input {
+            width: 100%; padding: 14px 18px;
             background: rgba(0, 0, 0, 0.3);
             border: 1px solid var(--border);
             border-radius: 12px;
-            color: white;
-            font-size: 1rem;
+            color: white; font-size: 1rem;
             box-sizing: border-box;
             transition: border-color 0.3s, box-shadow 0.3s;
         }
 
-        .menu-input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1);
-        }
+        .menu-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1); }
 
-        .button-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            margin-top: 10px;
-        }
+        .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
 
         .main-btn {
-            padding: 16px;
-            cursor: pointer;
-            border-radius: 12px;
-            border: none;
-            font-weight: 800;
-            font-size: 0.9rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-        }
+            padding: 16px; cursor: pointer; border-radius: 12px; border: none;
+            font-weight: 800; font-size: 0.9rem; text-transform: uppercase;
+            letter-spacing: 1px; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; padding: 14px 18px; background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border); border-radius: 12px; color: white;
+            font-size: 1rem; box-sizing: border-box; margin-bottom: 15px;
+}
 
-        .btn-create { background: var(--primary); color: #111; }
+        .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .main-btn { padding: 16px; cursor: pointer; border-radius: 12px; border: none; font-weight: 800; text-transform: uppercase; transition: all 0.2s; }
+.btn-create { background: var(--primary); color: #111; }
         .btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
-
-        .btn-join { background: var(--secondary); color: white; }
+.btn-join { background: var(--secondary); color: white; }
         .btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
-
         .main-btn:active { transform: scale(0.95); }
 
-        @media (max-width: 480px) {
-            .menu-card { padding: 30px 20px; }
-            .menu-card h1 { font-size: 2.2rem; }
-            .button-row { grid-template-columns: 1fr; }
-            .main-btn { padding: 18px; }
-            #studio-footer { bottom: 20px; }
-        }
-
         /* JOYSTICKS */
-        .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
-        #move-base { left: 40px; }
+.joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
+#move-base { left: 40px; }
         #aim-base { right: 40px; border-color: rgba(255, 71, 87, 0.3); }
         .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.8; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-    </style>
+        #aim-base { right: 40px; }
+        .joy-stick { position: absolute; width: 50px; height: 50px; border-radius: 50%; top: 35px; left: 35px; pointer-events: none; opacity: 0.8; }
+</style>
 </head>
 <body>
+@@ -250,7 +192,6 @@
+<div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+</div>
+<div id="coords">X: 1100 Y: 1100</div>
+        <div id="wave-notification"></div>
+</div>
 
-    <div id="central-hud">
-        <div id="lvl-hud">
-            <div id="lvl-text">Nível 1</div>
-            <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
-        </div>
-        <div id="coords">X: 1100 Y: 1100</div>
-    </div>
+<div id="sidebar-container">
+@@ -261,7 +202,6 @@
+<div id="player-items-container"></div>
+</div>
+</div>
 
-    <div id="sidebar-container">
-        <div id="session-panel" class="side-panel">
-            <button id="btn-session-toggle" class="panel-toggle">👥</button>
-            <div class="panel-content">
-                <div class="panel-title">Sessão Ativa</div>
-                <div id="player-items-container"></div>
-            </div>
-        </div>
-
-        <div id="hive-panel" class="side-panel">
-            <button id="btn-hive-toggle" class="panel-toggle">🏠</button>
-            <div class="panel-content">
-                <div class="panel-title">Colmeias Ativas</div>
-                <div id="hive-items-container"></div>
-            </div>
-        </div>
-    </div>
-
-    <div id="bottom-menu-container">
-        <div id="main-action-menu">
-            <button class="square-btn" title="Abelhas">🐝</button>
-            <button class="square-btn" style="opacity: 0.3;">⚙️</button>
-            <button class="square-btn" style="opacity: 0.3;">🎒</button>
-        </div>
-        <button id="btn-open-menu">☰</button>
-    </div>
+<div id="hive-panel" class="side-panel">
+<button id="btn-hive-toggle" class="panel-toggle">🏠</button>
+<div class="panel-content">
+@@ -271,9 +211,11 @@
+</div>
+</div>
 
     <div id="pollen-hud"><b>CARGA PÓLEN</b><div id="pollen-val">0%</div></div>
-    <div id="death-modal">
-        <h2 class="modal-title">Derrotado</h2>
+
+<div id="bottom-menu-container">
+<div id="main-action-menu">
+            <button class="square-btn" title="Abelhas">🐝</button>
+            <button class="square-btn">🐝</button>
+<button class="square-btn" style="opacity: 0.3;">⚙️</button>
+<button class="square-btn" style="opacity: 0.3;">🎒</button>
+</div>
+@@ -282,50 +224,32 @@
+
+<div id="death-modal">
+<h2 class="modal-title">Derrotado</h2>
         <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
-    </div>
-    <div id="game-over-modal">
-        <h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
-        <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
-    </div>
+        <button class="main-btn btn-create" onclick="respawnPlayer()">RESPAWN</button>
+</div>
     
-    <div id="chat-wrapper">
-        <button id="btn-minimize-chat">💬</button>
-        <div id="chat-display"></div>
+<div id="game-over-modal">
+<h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
+        <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
+        <button class="main-btn btn-create" onclick="location.reload()">RECOMEÇAR</button>
+</div>
+    
+
+<div id="chat-wrapper">
+<button id="btn-minimize-chat">💬</button>
+<div id="chat-display"></div>
         <div id="chat-input-area">
             <input type="text" id="chat-input" placeholder="Falar..." autocomplete="off">
         </div>
-    </div>
+        <div id="chat-input-area"><input type="text" id="chat-input" placeholder="Falar..." autocomplete="off"></div>
+</div>
 
-    <div id="menu">
-        <div class="menu-card">
-            <h1>BEE WORLD</h1>
-            <p>RPG Multiplayer Edition • v1.2</p>
+<div id="menu">
+<div class="menu-card">
+<h1>THE HIVE KINGDOM</h1>
+<div class="slogan">Long live the King. Long live the Hive</div>
+            <p class="version">RPG Multiplayer Edition • v1.2</p>
             
             <div class="input-group">
                 <label>Identidade</label>
@@ -368,92 +264,86 @@
                 <input type="text" id="room-code" class="menu-input" placeholder="Ex: ABC123" maxlength="6">
             </div>
 
-            <div class="button-row">
+            <input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido..." maxlength="12">
+            <input type="text" id="room-code" class="menu-input" placeholder="Código da Sala..." maxlength="6">
+<div class="button-row">
                 <button class="main-btn btn-create" onclick="startSession(true)">
                     <span>🏠</span> Criar Sala
                 </button>
                 <button class="main-btn btn-join" onclick="startSession(false)">
                     <span>🚀</span> Entrar
                 </button>
-            </div>
-        </div>
+                <button class="main-btn btn-create" onclick="startSession(true)">Criar Sala</button>
+                <button class="main-btn btn-join" onclick="startSession(false)">Entrar</button>
+</div>
+</div>
 
         <div id="studio-footer">
             <div class="studio-name"><b>FUN<span class="tight-cookie">🍪</span>COOK STUDIO</b></div>
         </div>
-    </div>
+        <div id="studio-footer"><div class="studio-name"><b>FUNCOOK STUDIO</b></div></div>
+</div>
 
-    <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
-    <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
-    
-    <canvas id="gameCanvas"></canvas>
-
-    <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false });
-        const chatInput = document.getElementById('chat-input');
-        const chatWrapper = document.getElementById('chat-wrapper');
-        const chatMinimizeBtn = document.getElementById('btn-minimize-chat');
-        const sessionPanel = document.getElementById('session-panel');
-        const hivePanel = document.getElementById('hive-panel');
-        const deathModal = document.getElementById('death-modal');
-        const gameOverModal = document.getElementById('game-over-modal');
+<div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
+@@ -343,14 +267,14 @@
+const hivePanel = document.getElementById('hive-panel');
+const deathModal = document.getElementById('death-modal');
+const gameOverModal = document.getElementById('game-over-modal');
         const pollenHud = document.getElementById('pollen-hud');
         const pollenVal = document.getElementById('pollen-val');
-        const moveBase = document.getElementById('move-base');
-        const aimBase = document.getElementById('aim-base');
-        const moveStick = document.getElementById('move-stick');
-        const aimStick = document.getElementById('aim-stick');
-        const playerItemsContainer = document.getElementById('player-items-container');
-        const hiveItemsContainer = document.getElementById('hive-items-container');
+const moveBase = document.getElementById('move-base');
+const aimBase = document.getElementById('aim-base');
+const moveStick = document.getElementById('move-stick');
+const aimStick = document.getElementById('aim-stick');
+const playerItemsContainer = document.getElementById('player-items-container');
+const hiveItemsContainer = document.getElementById('hive-items-container');
+        const waveNotification = document.getElementById('wave-notification');
         
-        const btnOpenMenu = document.getElementById('btn-open-menu');
-        const mainActionMenu = document.getElementById('main-action-menu');
+const btnOpenMenu = document.getElementById('btn-open-menu');
+const mainActionMenu = document.getElementById('main-action-menu');
 
-        const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
-        assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
-        assets.ground.src = 'Grass.png';
-
-        let isHost = false;
-        let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
-        let players = { 
-            me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100 }, 
-            peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1 } 
-        };
-        
-        let projectiles = [], enemies = [], flowers = [], particles = []; 
-        let camera = { x: 0, y: 0 }, peer, conn, keys = {};
-        const TILE_SIZE = 64;
+@@ -368,134 +292,28 @@
+let projectiles = [], enemies = [], flowers = [], particles = []; 
+let camera = { x: 0, y: 0 }, peer, conn, keys = {};
+const TILE_SIZE = 64;
         let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0;
-        let mousePos = { x: 0, y: 0 }, isMouseDown = false;
-        let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
-        let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
+        let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0, lastHeartbeat = 0;
+let mousePos = { x: 0, y: 0 }, isMouseDown = false;
+let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
+let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-        // --- INTERFACE LOGIC ---
+        let currentSeed = 0;
+        function setSeed(roomCode) {
+            let seed = 0;
+            for (let i = 0; i < roomCode.length; i++) {
+                seed = ((seed << 5) - seed) + roomCode.charCodeAt(i);
+                seed |= 0;
+            }
+            currentSeed = Math.abs(seed);
+        }
+
+        function seededRandom(max = 1, min = 0) {
+            currentSeed = (currentSeed * 9301 + 49297) % 233280;
+            const rnd = currentSeed / 233280;
+            return min + rnd * (max - min);
+        }
+
         btnOpenMenu.onclick = () => {
             const isVisible = mainActionMenu.style.display === 'grid';
             mainActionMenu.style.display = isVisible ? 'none' : 'grid';
             btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
         };
 
-        // Função unificada para abrir chat e limpar pulso
         function toggleChat() {
             let currentLeft = window.getComputedStyle(chatWrapper).getPropertyValue('left');
             let isHidden = currentLeft.includes('-') || currentLeft === 'auto';
-            
             chatWrapper.style.left = isHidden ? "0px" : "-240px";
             chatMinimizeBtn.innerHTML = isHidden ? "«" : "💬";
-            
-            if (isHidden) {
-                chatMinimizeBtn.classList.remove('unread-pulse');
-            }
+            if (isHidden) chatMinimizeBtn.classList.remove('unread-pulse');
         }
 
         chatMinimizeBtn.onclick = toggleChat;
-        chatMinimizeBtn.ontouchstart = (e) => {
-            e.preventDefault();
-            toggleChat();
-        };
+        chatMinimizeBtn.ontouchstart = (e) => { e.preventDefault(); toggleChat(); };
 
         document.getElementById('btn-session-toggle').onclick = () => {
             sessionPanel.classList.toggle('active');
@@ -493,8 +383,8 @@
                 
                 if(type === 'pollen') { 
                     vx = (Math.random() - 0.5) * 1.5; 
-                    vy = Math.random() * 1.5; 
-                    decay = 0.015 + Math.random() * 0.015; 
+                    vy = 0.5 + Math.random() * 1.5; 
+                    decay = 0.01 + Math.random() * 0.015; 
                 }
                 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
                 
@@ -503,71 +393,127 @@
         }
 
         function generateFlowers() {
+            flowers = [];
             const types = ["🌸", "🌻", "🌷"];
-            for(let i=0; i<25; i++) {
+            for(let i=0; i<35; i++) {
                 flowers.push({
-                    x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
-                    emoji: types[Math.floor(Math.random() * types.length)],
-                    cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
+                    x: seededRandom(3000, -1000), 
+                    y: seededRandom(3000, -1000),
+                    emoji: types[Math.floor(seededRandom(types.length))],
+                    cooldown: 0, maxCooldown: 300, phase: seededRandom(Math.PI * 2)
                 });
             }
         }
-        generateFlowers();
 
         window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
         window.addEventListener('mousedown', () => isMouseDown = true);
         window.addEventListener('mouseup', () => isMouseDown = false);
         window.addEventListener('keydown', e => {
             if(document.activeElement === chatInput) { 
-                if(e.key === 'Enter') {
-                    e.preventDefault();
-                    sendMsg(); 
-                }
+                if(e.key === 'Enter') { e.preventDefault(); sendMsg(); }
                 return; 
             }
             if(e.key === 'Enter') { e.preventDefault(); chatInput.focus(); }
             keys[e.code] = true;
         });
         window.addEventListener('keyup', e => keys[e.code] = false);
+        // --- P2P AUTHORITY & NETWORKING IMPROVEMENTS ---
 
-        function startSession(host) {
-            const code = document.getElementById('room-code').value.trim();
-            const nick = document.getElementById('player-nick').value.trim();
+function startSession(host) {
+const code = document.getElementById('room-code').value.trim().toUpperCase();
+const nick = document.getElementById('player-nick').value.trim();
             if(!nick || !code) return alert("Preencha o Nickname e o Código!");
-            isHost = host;
-            players.me.nick = nick;
-            players.me.color = host ? "#f1c40f" : "#3498db";
-            players.peer.color = host ? "#3498db" : "#f1c40f";
-            peer = host ? new Peer('bee-' + code) : new Peer();
-            peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-' + code); setupConn(); } });
-            peer.on('connection', c => { conn = c; setupConn(); });
-        }
+            
+            if(!nick || !code) return alert("Preencha Nick e Código!");
+isHost = host;
+            setSeed(code);
+            generateFlowers();
 
-        function setupConn() {
-            conn.on('open', () => { 
-                players.peer.active = true; startGame(); 
-                conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
+players.me.nick = nick;
+players.me.color = host ? "#f1c40f" : "#3498db";
+            players.peer.color = host ? "#3498db" : "#f1c40f";
+
+peer = host ? new Peer('bee-' + code) : new Peer();
+            peer.on('open', () => { if(host) startGame(); else { conn = peer.connect('bee-' + code); setupConn(); } });
+            peer.on('open', () => { 
+                if(host) { generateFlowers(code); startGame(); } 
+                else { conn = peer.connect('bee-' + code); setupConn(); }
             });
-            conn.on('data', data => {
+peer.on('connection', c => { conn = c; setupConn(); });
+            peer.on('error', err => alert("Erro: " + err.type));
+            peer.on('error', () => alert("Erro de conexão. Verifique o código."));
+}
+
+function setupConn() {
+@@ -504,446 +322,209 @@
+conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
+});
+conn.on('data', data => {
                 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
-                else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
-                else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
+                // Snapshot Interpolation for movement
+                if(data.type === 'pos') {
+                    players.peer.tX = data.x; players.peer.tY = data.y;
+                    players.peer.dir = data.dir; players.peer.nick = data.nick;
+                    players.peer.hp = data.hp; players.peer.isDead = data.isDead;
+                    players.peer.pollen = data.pollen; players.peer.lvl = data.lvl;
+                    players.peer.active = true;
+                    lastHeartbeat = Date.now();
+                }
+                else if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
+else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
+else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
                 else if(data.type === 'hit') { 
                     if(data.target === 'me') takeDamage(10); 
                     if(data.target === 'hive') { hive.hp -= 5; createParticles(hive.x, hive.y, "#ff0000", 8); }
                     if(data.target === 'enemy') { 
-                        let en = enemies.find(e => e.id === data.enId);
-                        if(en) { en.hp -= 25; if(en.hp <= 0) createParticles(en.x, en.y, "#000", 10); }
-                    }
+                
+                // Host Authority: Repair & Hits
+                else if(data.type === 'repair' && isHost) {
+                    hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                    broadcast({ type: 'fx', effect: 'repair', x: hive.x, y: hive.y });
                 }
-                else if(data.type === 'sync_world') { 
+                else if(data.type === 'hit' && isHost) {
+                    if(data.target === 'enemy') {
+let en = enemies.find(e => e.id === data.enId);
+                        if(en) { en.hp -= 25; if(en.hp <= 0) createParticles(en.x, en.y, "#000", 10); }
+                        if(en) { 
+                            en.hp -= 25; 
+                            if(en.hp <= 0) {
+                                broadcast({ type: 'fx', effect: 'kill', x: en.x, y: en.y });
+                                conn.send({ type: 'reward_xp', amount: 15 });
+                            }
+                        }
+}
+}
+                
+                // Peer feedback from Host
+                else if(data.type === 'reward_xp') addXp(data.amount);
+                else if(data.type === 'fx') {
+                    if(data.effect === 'repair') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
+                    if(data.effect === 'kill') createParticles(data.x, data.y, "#000", 10);
+                }
+else if(data.type === 'sync_world') { 
                     enemies = data.enemies; 
-                    isWaveActive = data.isWaveActive; 
-                    hive.hp = data.hiveHp; 
+                    // Interpolate enemies
+                    data.enemies.forEach(newEn => {
+                        let localEn = enemies.find(e => e.id === newEn.id);
+                        if(localEn) { localEn.tX = newEn.x; localEn.tY = newEn.y; localEn.hp = newEn.hp; }
+                        else { enemies.push({...newEn, tX: newEn.x, tY: newEn.y}); }
+                    });
+                    enemies = enemies.filter(e => data.enemies.find(ne => ne.id === e.id));
+isWaveActive = data.isWaveActive; 
+hive.hp = data.hiveHp; 
+                    hive.destroyed = data.hiveDestroyed;
+                    waveTimer = data.waveTimer; 
+                    // Sincroniza cooldown das flores para que Peer não colete de flor vazia
+                    if(data.flowers) {
+                        data.flowers.forEach((f, i) => { if(flowers[i]) flowers[i].cooldown = f.cooldown; });
+                    }
                     if(data.event === 'hive_hit') createParticles(hive.x, hive.y, "#ff0000", 5);
                 }
                 else if(data.type === 'repair') { 
                     hive.hp = data.hp; 
+                    hive.destroyed = (hive.hp <= 0);
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
                 else if(data.type === 'pos') { 
@@ -576,9 +522,9 @@
                     players.peer.hp = data.hp; players.peer.isDead = data.isDead;
                     players.peer.pollen = data.pollen; players.peer.lvl = data.lvl;
                     players.peer.active = true;
-                }
-            });
-        }
+}
+});
+}
 
         function takeDamage(amount) {
             if(players.me.isDead) return;
@@ -588,36 +534,66 @@
                 players.me.hp = 0; players.me.isDead = true;
                 deathModal.style.display = 'flex';
                 players.me.pollen = 0;
-            }
-        }
+        function broadcast(msg) { if(conn && conn.open) conn.send(msg); }
+
+        // --- GAME LOGIC ---
+
+        function generateFlowers(seed) {
+            flowers = [];
+            const types = ["🌸", "🌻", "🌷"];
+            for(let i=0; i<30; i++) {
+                flowers.push({
+                    x: Math.random() * 3000 - 500, y: Math.random() * 3000 - 500,
+                    emoji: types[Math.floor(Math.random() * types.length)],
+                    cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2
+                });
+}
+}
 
         function respawnPlayer() {
             players.me.x = 1100; players.me.y = 1100;
             players.me.hp = 100; players.me.isDead = false;
             deathModal.style.display = 'none';
-        }
+        function spawnProjectile(x, y, angle, isMe) {
+            projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
+}
 
-        function fire(angle) {
-            if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
+function fire(angle) {
+if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
             const deg = angle * (180 / Math.PI);
             if (deg >= -45 && deg <= 45) players.me.dir = 'Right';
             else if (deg > 45 && deg <= 135) players.me.dir = 'Down';
             else if (deg < -45 && deg >= -135) players.me.dir = 'Up';
             else players.me.dir = 'Left';
 
-            spawnProjectile(players.me.x, players.me.y, angle, true);
+spawnProjectile(players.me.x, players.me.y, angle, true);
             if(conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
-            lastShootTime = Date.now();
-        }
+            broadcast({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
+lastShootTime = Date.now();
+}
 
         function spawnProjectile(x, y, angle, isMe) {
             projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
-        }
+        function takeDamage(amount) {
+            players.me.hp -= amount;
+            if(players.me.hp <= 0) { players.me.hp = 0; players.me.isDead = true; deathModal.style.display = 'flex'; }
+}
 
-        function runWaveLogic() {
-            if (!isHost) return; 
-            waveTimer -= 1/60;
+        // --- LÓGICA DE ONDA: APENAS HOST PROCESSA ---
+function runWaveLogic() {
+if (!isHost) return; 
+            
+waveTimer -= 1/60;
             if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
+
+            if (waveTimer <= 0 && !isWaveActive) { 
+                isWaveActive = true; 
+                enemiesSpawnedInWave = 0; 
+                waveTimer = 180; 
+            if (isWaveActive && enemiesSpawnedInWave < 15 && Date.now() - lastEnemySpawnTime > 3000) {
+                enemies.push({ id: Math.random().toString(36).substr(2, 9), x: hive.x + 800, y: hive.y + 800, hp: 100 });
+                enemiesSpawnedInWave++; lastEnemySpawnTime = Date.now();
+}
             
             if (isWaveActive) {
                 let now = Date.now();
@@ -636,107 +612,182 @@
 
             let syncEvent = null;
             enemies.forEach((en) => {
-                const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
-                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
+                let targetX, targetY;
                 
-                if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-                    if(performance.now() % 60 < 2) {
-                        hive.hp -= 2;
-                        syncEvent = 'hive_hit';
+                if (hive.hp > 0) {
+                    targetX = hive.x;
+                    targetY = hive.y;
+                    
+                    if (Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
+                        if(performance.now() % 60 < 2) { 
+                            hive.hp -= 2; 
+                            syncEvent = 'hive_hit'; 
+                            if(hive.hp <= 0) {
+                                hive.hp = 0;
+                                hive.destroyed = true;
+                                addMsg("SISTEMA", "A colmeia caiu! Defendam-se!", "msg-sys");
+                            }
+                        }
+                    }
+                } else {
+                    let distMe = Math.hypot(en.x - players.me.x, en.y - players.me.y);
+                    let distPeer = players.peer.active ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : 99999;
+                    
+                    if (distMe < distPeer) {
+                        targetX = players.me.x; targetY = players.me.y;
+                    } else {
+                        targetX = players.peer.x; targetY = players.peer.y;
                     }
                 }
-                if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-                if (players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30) {
-                    if(performance.now() % 60 < 2) conn.send({type: 'hit', target: 'me'});
+
+                const angle = Math.atan2(targetY - en.y, targetX - en.x);
+                en.x += Math.cos(angle) * 2.0; en.y += Math.sin(angle) * 2.0;
+
+                // Dano no Host
+            enemies.forEach(en => {
+                const angle = Math.atan2(hive.y - en.y, hive.x - en.x);
+                en.x += Math.cos(angle) * 1.5; en.y += Math.sin(angle) * 1.5;
+if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(5);
+                // Dano no Peer (Host calcula e envia comando via hit se colidir)
+                if (players.peer.active && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
+                     conn.send({ type: 'hit', target: 'me' });
                 }
-            });
+});
 
             enemies = enemies.filter(en => en.hp > 0);
 
-            if (hive.hp <= 0 && !hive.destroyed) { 
-                hive.hp = 0; hive.destroyed = true; 
-                setTimeout(() => gameOverModal.style.display = 'flex', 1500); 
-            }
-
-            if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
+            // Host envia o estado do mundo para o Peer
+if (conn && conn.open && performance.now() - lastNetUpdate > 50) {
                 conn.send({ 
                     type: 'sync_world', 
                     enemies: enemies, 
                     isWaveActive: isWaveActive, 
-                    hiveHp: hive.hp,
-                    event: syncEvent
+                    hiveHp: hive.hp, 
+                    hiveDestroyed: hive.destroyed,
+                    waveTimer: waveTimer,
+                    flowers: flowers.map(f => ({ cooldown: f.cooldown })),
+                    event: syncEvent 
                 });
-                lastNetUpdate = performance.now();
-            }
-        }
+                conn.send({ type: 'sync_world', enemies: enemies, isWaveActive: isWaveActive, hiveHp: hive.hp });
+lastNetUpdate = performance.now();
+}
+}
 
-        function updateMechanics() {
-            flowers.forEach(f => {
-                if(f.cooldown > 0) f.cooldown -= 1/60;
-                else {
+function updateMechanics() {
+            // UI Notificação
+            if(isWaveActive) {
+                waveNotification.style.display = 'block';
+                waveNotification.innerText = `FORMIGAS VIVAS: ${enemies.length}`;
+            } else if (waveTimer <= 60) {
+                waveNotification.style.display = 'block';
+                waveNotification.innerText = `ATAQUE EM: ${Math.floor(waveTimer)}s`;
+            } else {
+                waveNotification.style.display = 'none';
+            // SNAPSHOT INTERPOLATION for Peer and Enemies
+            if(players.peer.active) {
+                players.peer.x += (players.peer.tX - players.peer.x) * 0.15;
+                players.peer.y += (players.peer.tY - players.peer.y) * 0.15;
+            }
+            if(!isHost) {
+                enemies.forEach(en => {
+                    en.x += (en.tX - en.x) * 0.15;
+                    en.y += (en.tY - en.y) * 0.15;
+                });
+}
+
+            // Cooldown de flores: Apenas host processa a passagem do tempo
+flowers.forEach(f => {
+                if(isHost && f.cooldown > 0) f.cooldown -= 1/60;
+                
+                // Ambos podem coletar se a flor estiver disponível (Host valida o cooldown via sync)
+                if(f.cooldown <= 0) {
                     if (Math.random() < 0.04) createParticles(f.x, f.y, "#fffa65", 1, 'pollen');
                     if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-                        players.me.pollen += 0.4;
-                        addXp(0.1);
-                        if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
+                        players.me.pollen += 0.4; addXp(0.1);
+                        if(players.me.pollen >= 100) { 
+                            players.me.pollen = 100; 
+                            if(isHost) f.cooldown = f.maxCooldown; // Se for o peer, o host vai sincronizar o cooldown em breve
+                        }
                     }
-                }
-            });
+                if(f.cooldown > 0) f.cooldown -= 1/60;
+                else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+                    players.me.pollen += 0.5; addXp(0.1);
+                    if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; }
+}
+});
 
-            if(!players.me.isDead && players.me.pollen > 0) {
-                if(Math.random() < 0.1) {
-                    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-                }
+            // Partículas de pólen visual
+            if (!players.me.isDead && players.me.pollen > 0) {
+                if (Math.random() < (players.me.pollen / 100) * 0.4) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
             }
-            if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-                if(Math.random() < 0.1) {
-                    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-                }
+            if (players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+                if (Math.random() < (players.peer.pollen / 100) * 0.4) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
             }
 
-            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
+            // Conserto Colmeia
+            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
                 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
                     players.me.pollen = 0; 
-                    if(isHost) { hive.hp = Math.min(hive.maxHp, hive.hp + 50); }
-                    else { conn.send({ type: 'repair' }); }
-                    addXp(25);
+                    let heal = 50;
+                    if(isHost) {
+                        hive.hp = Math.min(hive.maxHp, hive.hp + heal);
+                        if(hive.hp > 0) hive.destroyed = false;
+                    } else {
+                        conn.send({ type: 'repair', hp: Math.min(hive.maxHp, hive.hp + heal) });
+                    }
+                    addXp(25); 
                     createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
                 }
-            }
+            if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && players.me.pollen >= 100) {
+                players.me.pollen = 0;
+                if(isHost) { hive.hp = Math.min(hive.maxHp, hive.hp + 50); createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart'); }
+                else broadcast({ type: 'repair' });
+}
 
+            // Colisões de Projéteis: APENAS HOST VALIDA DANO REAL
             projectiles.forEach((p, pIdx) => {
                 enemies.forEach((en) => {
                     if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
                         if(isHost) {
                             en.hp -= 25;
                             if(en.hp <= 0) { 
-                                createParticles(en.x, en.y, "#000", 10);
+                                createParticles(en.x, en.y, "#000", 10); 
                                 if(p.owner === 'me') addXp(15); 
                             }
                         } else if(p.owner === 'me') {
                             conn.send({ type: 'hit', target: 'enemy', enId: en.id });
                             addXp(15);
-                        }
+            projectiles.forEach((p, idx) => {
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if(isHost) {
+                    enemies.forEach(en => {
+                        if(Math.hypot(p.x - en.x, p.y - en.y) < 30) {
+                            en.hp -= 25; projectiles.splice(idx, 1);
+                            if(en.hp <= 0) { createParticles(en.x, en.y, "#000", 10); if(p.owner === 'me') addXp(15); else conn.send({type:'reward_xp', amount: 15}); }
+}
                         projectiles.splice(pIdx, 1);
                     }
                 });
-            });
+                    });
+                }
+                if(p.life <= 0) projectiles.splice(idx, 1);
+});
 
+            // Partículas ambiente
             particles.forEach((p, i) => {
                 p.x += p.vx; p.y += p.vy; p.life -= p.decay;
                 if(p.life <= 0) particles.splice(i, 1);
             });
-        }
+            particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) particles.splice(i, 1); });
+}
 
         function drawIndicators() {
             if (players.peer.active && !players.peer.isDead) {
                 const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
                 if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
             }
-            if(!hive.destroyed) {
-                const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
-                if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
-            }
+            const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
+            if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
         }
 
         function drawArrow(dx, dy, color, radius = 70) {
@@ -750,11 +801,8 @@
             const text = chatInput.value.trim();
             if(!text) return;
             addMsg(players.me.nick, text, "me");
-            if(conn && conn.open) {
-                conn.send({ type: 'chat', msg: text });
-            }
-            chatInput.value = ""; 
-            chatInput.blur();
+            if(conn && conn.open) conn.send({ type: 'chat', msg: text });
+            chatInput.value = ""; chatInput.blur();
         }
 
         function addMsg(author, text, senderType) {
@@ -762,18 +810,11 @@
             const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
             d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
             const display = document.getElementById('chat-display');
-            display.appendChild(d); 
-            display.scrollTop = display.scrollHeight;
-
-            // LÓGICA DE PULSAR REVISADA PARA MOBILE
+            display.appendChild(d); display.scrollTop = display.scrollHeight;
             const style = window.getComputedStyle(chatWrapper);
             const currentLeft = style.getPropertyValue('left');
-            // No mobile, verificamos se o valor é negativo ou se o elemento está fora da viewport
             const isHidden = currentLeft.includes('-') || currentLeft === 'auto';
-
-            if (isHidden && senderType !== "msg-sys") {
-                chatMinimizeBtn.classList.add('unread-pulse');
-            }
+            if (isHidden && senderType !== "msg-sys") chatMinimizeBtn.classList.add('unread-pulse');
         }
 
         function startGame() {
@@ -831,29 +872,37 @@
         function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
         window.addEventListener('resize', resize);
 
-        function update() {
-            if(!players.me.isDead) {
-                let dx = joyMove.dx, dy = joyMove.dy;
+function update() {
+            // Movimento Local
+if(!players.me.isDead) {
+let dx = joyMove.dx, dy = joyMove.dy;
                 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
                 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
-                if (dx !== 0 || dy !== 0) {
-                    const m = Math.sqrt(dx*dx + dy*dy);
-                    players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+                if (keys['KeyW']) dy = -1; if (keys['KeyS']) dy = 1;
+                if (keys['KeyA']) dx = -1; if (keys['KeyD']) dx = 1;
+if (dx !== 0 || dy !== 0) {
+const m = Math.sqrt(dx*dx + dy*dy);
+players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
                     if (!isMouseDown && !joyAim.active) {
                         if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
                         else players.me.dir = dy > 0 ? 'Down' : 'Up';
                     }
-                }
+                    players.me.dir = Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? 'Right' : 'Left') : (dy > 0 ? 'Down' : 'Up');
+}
                 if(joyAim.active) fire(joyAim.angle);
                 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
             }
 
-            runWaveLogic(); updateMechanics();
+            // Processamento Centralizado
+            runWaveLogic(); 
+            updateMechanics();
 
+            // Sincronização de Posição do Player
             if(performance.now() - lastNetUpdate > 30) { 
                 if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); 
             }
 
+            // Atualização da UI da lista de players
             let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
             if(players.peer.active) { 
                 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
@@ -863,35 +912,41 @@
             }
             playerItemsContainer.innerHTML = playerListHtml;
 
+            // Atualização da UI da colmeia
             let hiveListHtml = "";
-            if(!hive.destroyed) {
-                const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-                const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+            const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+            const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+            if(hive.hp > 0) {
                 hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
             } else {
-                hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`;
-            }
+                hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>⚠️ COLMEIA CAÍDA! (${dist}m)</span></div>`;
+                if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
+}
             hiveItemsContainer.innerHTML = hiveListHtml;
 
+            // Movimento de Projéteis
             projectiles.forEach((p, i) => { 
                 p.x += p.vx; p.y += p.vy; p.life--; 
                 if(p.life <= 0) projectiles.splice(i, 1); 
             });
 
-            camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+            runWaveLogic(); updateMechanics();
+            if(Date.now() - lastNetUpdate > 30) { broadcast({...players.me, type: 'pos'}); lastNetUpdate = Date.now(); }
+camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+            document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
             pollenHud.style.display = players.me.pollen > 0 ? 'block' : 'none';
             pollenVal.innerText = Math.floor(players.me.pollen) + "%";
-            document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
-        }
+}
 
         function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
             ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
             ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
         }
+        // --- RENDER & UTILS ---
 
-        function draw() {
-            ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.save(); ctx.translate(-camera.x, -camera.y);
+function draw() {
+ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
+ctx.save(); ctx.translate(-camera.x, -camera.y);
             const sX = Math.floor(camera.x/TILE_SIZE)*TILE_SIZE, sY = Math.floor(camera.y/TILE_SIZE)*TILE_SIZE;
             for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE) 
                 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
@@ -905,17 +960,23 @@
             });
             ctx.globalAlpha = 1.0;
 
-            if(!hive.destroyed) {
-                ctx.font = "60px Arial"; ctx.textAlign = "center"; ctx.fillText("🏠", hive.x, hive.y + 20);
-                drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
-            }
+            // Desenhar Colmeia
+            ctx.font = "60px Arial"; ctx.textAlign = "center"; 
+            ctx.globalAlpha = hive.hp > 0 ? 1.0 : 0.4;
+            ctx.fillText("🏠", hive.x, hive.y + 20);
+            ctx.globalAlpha = 1.0;
+            if(hive.hp > 0) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 
             drawIndicators();
             enemies.forEach(en => { 
                 ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); 
                 drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); 
             });
-            projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
+            for(let x=0; x<4000; x+=TILE_SIZE) for(let y=0; y<4000; y+=TILE_SIZE) if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
+            flowers.forEach(f => { ctx.globalAlpha = f.cooldown > 0 ? 0.3 : 1; ctx.fillText(f.emoji, f.x, f.y); });
+            ctx.globalAlpha = 1; ctx.fillText("🏠", hive.x, hive.y);
+            enemies.forEach(en => ctx.fillText("🐜", en.x, en.y));
+projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 
             particles.forEach(p => {
                 ctx.globalAlpha = p.life;
@@ -932,10 +993,32 @@
             };
             drawB(players.me, players.me.color, 1);
             if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
-            ctx.restore();
+            const drawB = (p, c) => { if(assets.bee[p.dir].complete && !p.isDead) ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64); };
+            drawB(players.me, players.me.color); if(players.peer.active) drawB(players.peer, players.peer.color);
+ctx.restore();
+}
+
+        function addMsg(a, t, s) { 
+            const d = document.createElement('div'); d.innerHTML = `<b>${a}:</b> ${t}`; 
+            document.getElementById('chat-display').appendChild(d);
         }
 
-        function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
-    </script>
+        function startGame() { 
+            document.getElementById('menu').style.display = 'none'; 
+            canvas.style.display = 'block'; 
+            document.getElementById('lvl-hud').style.display = 'block';
+            resize(); requestAnimationFrame(gameLoop); 
+        }
+
+        function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+        function createParticles(x, y, color, count, type) { /* Particle Logic here */ }
+        function addXp(amount) { players.me.xp += amount; updateXpHud(); }
+        function updateXpHud() { document.getElementById('xp-bar-fill').style.width = (players.me.xp % 100) + "%"; }
+        
+        btnOpenMenu.onclick = () => mainActionMenu.style.display = mainActionMenu.style.display === 'grid' ? 'none' : 'grid';
+        chatMinimizeBtn.onclick = () => chatWrapper.style.left = chatWrapper.style.left === '0px' ? '-240px' : '0px';
+
+</script>
 </body>
 </html>
