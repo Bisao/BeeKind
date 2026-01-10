@@ -620,7 +620,7 @@ function startLoadingSequence() {
     const beeImg = document.getElementById('loading-bee-img');
     const muzzle = document.querySelector('.muzzle-flash');
 
-    const duration = 20000; // 20 Segundos
+    const duration = 10000; // 10 Segundos
     const startTime = Date.now();
     let exploded = false;
 
@@ -636,7 +636,7 @@ function startLoadingSequence() {
             ant.style.left = pctVal + '%';
             
             // Abelha segue um pouco atrás (lag de 8%)
-            let beePos = Math.max(0, pctVal - 8); 
+            let beePos = Math.max(0, pctVal - 30); 
             beeCont.style.left = beePos + '%';
 
             requestAnimationFrame(frame);
