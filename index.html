@@ -335,15 +335,13 @@ assets.ground.src = 'Grass.png';
 
 let isHost = false;
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
-let lastHiveHp = 500;
 let players = { 
 me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100 }, 
 peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0 } 
 };
 
-// BUFFER DE COMANDOS
+// BUFFER DE COMANDOS (Hits removidos pois agora são Host-Authoritative)
 let networkBuffer = {
-hits: [],
 repairs: []
 };
 
@@ -466,9 +464,7 @@ players.peer.active = true;
 players.peer.lastSeen = Date.now();
 if(isHost) {
 conn.send({ type: 'init_flowers', data: flowers });
-// IMPORTANTE: O Host JÁ está rodando startGame(), não chame novamente!
 } else {
-// O convidado precisa iniciar o jogo agora
 startGame(); 
 }
 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
@@ -508,6 +504,11 @@ if(isHost) {
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
 conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
 conn.send({ type: 'reward_xp', amount: 25 });
+}
+}
+else if(data.type === 'hit') { // Peer recebe aviso que tomou dano do Host
+if(!isHost && data.target === 'me') {
+takeDamage(data.amount); // Executa o dano localmente
 }
 }
 else if(data.type === 'pos') { 
@@ -599,9 +600,8 @@ if(performance.now() % 60 < 2) hive.hp -= 2;
 }
 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
 if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
-players.peer.hp -= 2;
-if(players.peer.hp<=0) players.peer.isDead=true;
-conn.send({type:'hit', target:'me'});
+// FIX: Host apenas manda o aviso, não altera HP localmente (evita conflito com sync)
+conn.send({type:'hit', target:'me', amount: 2}); 
 }
 });
 
