@@ -1053,7 +1053,7 @@ ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI";
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
 // Desenha barra de pólen se estiver coletando e não estiver cheia
-if(p.isCollecting && p.pollen < 100) {
+if(p.isCollecting || p.pollen > 0) {
     drawPollenBar(p.x, p.y, p.pollen);
 }
 };
