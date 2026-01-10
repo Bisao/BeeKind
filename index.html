@@ -881,11 +881,20 @@ const game = {
 
     handlePollenRequest: function(flowerId) {
         const f = this.state.flowers[flowerId];
+        // Verifica se a flor existe, está madura e sem cooldown
         if(f && f.growState === 'mature' && f.cooldown <= 0) {
-            f.cooldown = f.maxCooldown;
-            this.state.peer.pollen += 0.4;
+            // Balanceamento: O Client ganha mais por pacote para compensar latência
+            this.state.peer.pollen += 2.0; 
+            
+            // Só ativa o cooldown da flor se a barra encher
+            if(this.state.peer.pollen >= 100) {
+                this.state.peer.pollen = 100;
+                f.cooldown = f.maxCooldown;
+                Network.send({ type: 'sync_flower_cd', id: flowerId, time: f.maxCooldown });
+            }
+
+            // Envia a quantidade atualizada
             Network.send({ type: 'upd_pollen', amount: this.state.peer.pollen });
-            Network.send({ type: 'sync_flower_cd', id: flowerId, time: f.maxCooldown });
         }
     },
 
@@ -924,7 +933,6 @@ const game = {
     update: function() {
         const me = this.state.me;
         const peer = this.state.peer;
-        const now = Date.now();
         
         // --- 1. PLAYER MOVEMENT & INPUT ---
         if(!me.isDead) {
@@ -949,12 +957,10 @@ const game = {
 
             if(shootAngle !== null) {
                 me.dir = Utils.getDirFromAngle(shootAngle);
-                // CORREÇÃO: Timer independente para tiro
-                if(!this.lastShootTime) this.lastShootTime = 0;
-                if(now - this.lastShootTime > 180) { 
+                if(Date.now() - Network.lastUpdate > 180) { // Shoot Cooldown Reuse variable
                      this.spawnProjectile(me.x, me.y, shootAngle, true);
                      Network.send({ type: 'shoot', x: me.x, y: me.y, angle: shootAngle });
-                     this.lastShootTime = now; 
+                     Network.lastUpdate = Date.now(); // reusing timer var name for shoot cd locally
                 }
             }
         }
@@ -964,7 +970,7 @@ const game = {
             peer.x += (peer.tX - peer.x) * 0.15;
             peer.y += (peer.tY - peer.y) * 0.15;
             // Timeout check
-            if(now - peer.lastSeen > CONFIG.PEER_TIMEOUT) {
+            if(Date.now() - peer.lastSeen > CONFIG.PEER_TIMEOUT) {
                 peer.active = false;
                 ui.addMsg("SISTEMA", `${peer.nick} desconectou (Timeout).`, "msg-sys");
             }
@@ -973,9 +979,9 @@ const game = {
         // --- 3. WAVE LOGIC (HOST ONLY) ---
         if(Network.isHost) {
             // Heartbeat
-            if(now - Network.lastHeartbeat > CONFIG.HEARTBEAT_INTERVAL) {
+            if(Date.now() - Network.lastHeartbeat > CONFIG.HEARTBEAT_INTERVAL) {
                 Network.send({type: 'ping'});
-                Network.lastHeartbeat = now;
+                Network.lastHeartbeat = Date.now();
             }
 
             this.state.wave.timer -= 1/60;
@@ -994,19 +1000,21 @@ const game = {
             }
 
             // Spawning
-            // CORREÇÃO: Timer independente para spawn
-            if(!this.lastSpawnTime) this.lastSpawnTime = 0;
-            if (this.state.wave.active && this.state.wave.spawned < CONFIG.TOTAL_WAVE_ENEMIES && now - this.lastSpawnTime > 2000) { 
-                 const angle = Math.random() * Math.PI * 2;
-                 this.state.enemies.push({
-                     id: Utils.randomId(),
-                     x: this.state.hive.x + Math.cos(angle) * 1000,
-                     y: this.state.hive.y + Math.sin(angle) * 1000,
-                     hp: 100, vx: 0, vy: 0,
-                     behavior: Math.random() < 0.35 ? 'hunter' : 'rusher'
-                 });
-                 this.state.wave.spawned++;
-                 this.lastSpawnTime = now;
+            if (this.state.wave.active && this.state.wave.spawned < CONFIG.TOTAL_WAVE_ENEMIES && Date.now() - Network.lastUpdate > 2000) { // Reuse timer for spawn
+                 // Actually logic needs separate timer
+                 if(!this.lastSpawnTime) this.lastSpawnTime = 0;
+                 if(Date.now() - this.lastSpawnTime > 2000) {
+                     const angle = Math.random() * Math.PI * 2;
+                     this.state.enemies.push({
+                         id: Utils.randomId(),
+                         x: this.state.hive.x + Math.cos(angle) * 1000,
+                         y: this.state.hive.y + Math.sin(angle) * 1000,
+                         hp: 100, vx: 0, vy: 0,
+                         behavior: Math.random() < 0.35 ? 'hunter' : 'rusher'
+                     });
+                     this.state.wave.spawned++;
+                     this.lastSpawnTime = Date.now();
+                 }
             }
 
             // Enemy Logic
@@ -1042,14 +1050,14 @@ const game = {
 
             // Sync World
             if(!this.lastSync) this.lastSync = 0;
-            if(peer.active && now - this.lastSync > 50) {
+            if(peer.active && Date.now() - this.lastSync > 50) {
                 Network.send({ 
                     type: 'sync_world', 
                     enemies: this.state.enemies.map(e => ({id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, hp: e.hp})), 
                     isWaveActive: this.state.wave.active, hiveHp: this.state.hive.hp,
                     waveTimer: this.state.wave.timer, enemiesSpawned: this.state.wave.spawned 
                 });
-                this.lastSync = now;
+                this.lastSync = Date.now();
             }
         } else {
             // CLIENT PREDICTION (Simples)
@@ -1109,6 +1117,7 @@ const game = {
             
             // Grow logic
             let sync = false;
+            const now = Date.now();
             this.state.flowers.forEach(f => {
                 if(f.growState !== 'mature') {
                     const age = now - f.plantTime;
@@ -1131,7 +1140,7 @@ const game = {
                             me.pollen = 100; f.cooldown = f.maxCooldown;
                             if(peer.active) Network.send({ type: 'sync_flower_cd', id: idx, time: f.maxCooldown });
                         }
-                    } else if(Math.random() < 0.1) {
+                    } else if(Math.random() < 0.3) { // Aumentado chance de request do cliente (0.1 -> 0.3)
                         Network.send({ type: 'req_pollen', id: idx });
                     }
                 }
@@ -1154,9 +1163,9 @@ const game = {
 
         // Send Pos
         if(!this.lastPosSync) this.lastPosSync = 0;
-        if(now - this.lastPosSync > 30 && Network.conn && Network.conn.open) {
+        if(Date.now() - this.lastPosSync > 30 && Network.conn && Network.conn.open) {
             Network.send({ ...me, type: 'pos' });
-            this.lastPosSync = now;
+            this.lastPosSync = Date.now();
         }
 
         ui.updateHud();
