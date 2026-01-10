@@ -7,115 +7,127 @@
 <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
 <style>
 :root { 
---primary: #f1c40f; 
---primary-dark: #b7950b;
---secondary: #3498db;
---bg-dark: rgba(18, 18, 18, 0.95); 
---text-main: #ffffff; 
---xp-color: #3498db; 
---border: rgba(255, 255, 255, 0.1); 
---glass: rgba(255, 255, 255, 0.05);
---royal-gold: #ffd700;
---royal-bg: #1a1a1a;
+    --primary: #f1c40f; 
+    --primary-dark: #b7950b;
+    --secondary: #3498db;
+    --bg-dark: rgba(18, 18, 18, 0.95); 
+    --text-main: #ffffff; 
+    --xp-color: #3498db; 
+    --border: rgba(255, 255, 255, 0.1); 
+    --glass: rgba(255, 255, 255, 0.05);
+    --royal-gold: #ffd700;
+    --royal-bg: #1a1a1a;
 }
 
-body { margin: 0; overflow: hidden; background: #0f0f0f; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+/* CORREÇÃO SAFARI: Adicionado html ao seletor e -webkit-user-select */
+html, body { 
+    margin: 0; 
+    overflow: hidden; 
+    background: #0f0f0f; 
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    color: var(--text-main); 
+    touch-action: none; 
+    user-select: none; 
+    -webkit-user-select: none; /* Safari */
+    -webkit-touch-callout: none; /* Safari */
+}
+
 canvas { display: none; image-rendering: pixelated; }
 
 /* --- HUD CENTRAL --- */
 #central-hud {
-position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
-display: flex; flex-direction: column; align-items: center; gap: 8px;
-z-index: 100; pointer-events: none;
+    position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 8px;
+    z-index: 100; pointer-events: none;
 }
 #lvl-hud {
-background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
-text-align: center; min-width: 220px; backdrop-filter: blur(10px);
-border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
+    text-align: center; min-width: 220px; backdrop-filter: blur(10px);
+    border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
 #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
 #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
 #coords { 
-font-family: monospace; color: var(--primary); background: var(--bg-dark); 
-padding: 4px 15px; border-radius: 12px; font-size: 12px; 
-border: 1px solid var(--border); backdrop-filter: blur(5px);
-opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    font-family: monospace; color: var(--primary); background: var(--bg-dark); 
+    padding: 4px 15px; border-radius: 12px; font-size: 12px; 
+    border: 1px solid var(--border); backdrop-filter: blur(5px);
+    opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
 /* --- HUD DA HORDA --- */
 #horde-hud {
-font-family: monospace; font-weight: 800; color: #e74c3c;
-background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
-font-size: 16px; border: 1px solid rgba(231, 76, 60, 0.3);
-backdrop-filter: blur(5px); display: none; margin-top: 5px;
-text-transform: uppercase; letter-spacing: 1px;
-text-align: center; box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
+    font-family: monospace; font-weight: 800; color: #e74c3c;
+    background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
+    font-size: 16px; border: 1px solid rgba(231, 76, 60, 0.3);
+    backdrop-filter: blur(5px); display: none; margin-top: 5px;
+    text-transform: uppercase; letter-spacing: 1px;
+    text-align: center; box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
 }
 
 .warn-pulse { animation: warnPulse 1s infinite alternate; }
 @keyframes warnPulse {
-from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
-to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
+    from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
+    to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
 }
 
 /* --- SIDEBARS --- */
 #sidebar-container {
-position: absolute; left: 0; top: 100px; z-index: 101;
-display: flex; flex-direction: column; pointer-events: none;
+    position: absolute; left: 0; top: 100px; z-index: 101;
+    display: flex; flex-direction: column; pointer-events: none;
 }
 .side-panel {
-position: relative; left: -210px; width: 210px;
-transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-pointer-events: auto;
+    position: relative; left: -210px; width: 210px;
+    transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    pointer-events: auto;
 }
 .side-panel.active { left: 0px; }
 .panel-content { 
-background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
-border-left: 4px solid var(--primary); font-size: 13px; 
-backdrop-filter: blur(10px); border: 1px solid var(--border);
-box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
-overflow: hidden;
+    background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
+    border-left: 4px solid var(--primary); font-size: 13px; 
+    backdrop-filter: blur(10px); border: 1px solid var(--border);
+    box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
+    overflow: hidden;
 }
 .panel-toggle {
-position: absolute; right: -45px; top: 0;
-width: 45px; height: 45px; background: var(--primary);
-border: none; border-radius: 0 8px 8px 0; cursor: pointer;
-font-size: 20px; display: flex; align-items: center; justify-content: center;
-box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
+    position: absolute; right: -45px; top: 0;
+    width: 45px; height: 45px; background: var(--primary);
+    border: none; border-radius: 0 8px 8px 0; cursor: pointer;
+    font-size: 20px; display: flex; align-items: center; justify-content: center;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
 }
 .panel-title { 
-font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
-padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
-text-transform: uppercase;
+    font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
+    padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase;
 }
 .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
 /* --- MENU INFERIOR --- */
 #bottom-menu-container {
-position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-display: flex; flex-direction: column; align-items: center; gap: 15px;
-z-index: 500;
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
+    display: flex; flex-direction: column; align-items: center; gap: 15px;
+    z-index: 500;
 }
 #main-action-menu {
-background: var(--bg-dark); border: 1px solid var(--primary);
-padding: 15px; border-radius: 15px; display: none;
-backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-grid-template-columns: repeat(3, 1fr); gap: 10px;
+    background: var(--bg-dark); border: 1px solid var(--primary);
+    padding: 15px; border-radius: 15px; display: none;
+    backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
+    grid-template-columns: repeat(3, 1fr); gap: 10px;
 }
 .square-btn {
-width: 50px; height: 50px; background: rgba(255,255,255,0.1);
-border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
-cursor: pointer; display: flex; align-items: center; justify-content: center;
-font-size: 24px; transition: all 0.2s;
+    width: 50px; height: 50px; background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; transition: all 0.2s;
 }
 .square-btn:hover { background: var(--primary); transform: scale(1.05); }
 #btn-open-menu {
-width: 60px; height: 60px; background: var(--primary);
-border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
-cursor: pointer; font-size: 28px; display: flex; align-items: center;
-justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
-z-index: 501;
+    width: 60px; height: 60px; background: var(--primary);
+    border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
+    cursor: pointer; font-size: 28px; display: flex; align-items: center;
+    justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+    z-index: 501;
 }
 
 /* --- MODALS --- */
@@ -124,27 +136,27 @@ z-index: 501;
 
 /* --- CHAT --- */
 #chat-wrapper { 
-position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
-display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+    position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
+    display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
 }
 #chat-display { height: 160px; background: var(--bg-dark); border-radius: 0 12px 0 0; padding: 12px; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; border: 1px solid var(--border); backdrop-filter: blur(15px); font-size: 13px; }
 #chat-input-area { display: flex; background: rgba(30, 30, 30, 0.95); padding: 8px; border-radius: 0 0 12px 0; border: 1px solid var(--border); }
 #chat-input { flex: 1; background: transparent; border: none; color: white; padding: 4px; font-size: 14px; outline: none; }
 
 #btn-minimize-chat { 
-position: absolute; right: -45px; bottom: 0; 
-background: var(--primary); color: #111; 
-border: none; border-radius: 0 8px 8px 0; cursor: pointer; 
-width: 45px; height: 45px; 
-font-size: 20px; font-weight: bold; 
-box-shadow: 4px 0 10px rgba(0,0,0,0.3); 
-transition: background 0.3s;
+    position: absolute; right: -45px; bottom: 0; 
+    background: var(--primary); color: #111; 
+    border: none; border-radius: 0 8px 8px 0; cursor: pointer; 
+    width: 45px; height: 45px; 
+    font-size: 20px; font-weight: bold; 
+    box-shadow: 4px 0 10px rgba(0,0,0,0.3); 
+    transition: background 0.3s;
 }
 
 @keyframes pulse {
-0% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
-50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
-100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+    0% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+    50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
+    100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 }
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
@@ -230,220 +242,223 @@ transition: background 0.3s;
 
 /* --- NOVO MENU ESTILIZADO (MEDIEVAL HIVE) --- */
 #menu { 
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-display: flex; flex-direction: column; align-items: center; justify-content: center;
-background: radial-gradient(circle at center, #2c2504 0%, #000000 100%);
-z-index: 3000; padding: 20px; box-sizing: border-box;
-overflow: hidden;
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: radial-gradient(circle at center, #2c2504 0%, #000000 100%);
+    z-index: 3000; padding: 20px; box-sizing: border-box;
+    overflow: hidden;
 }
 
 /* Background animado de favo de mel */
 .hex-bg {
-position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-background-image: 
-radial-gradient(var(--royal-gold) 1px, transparent 1px);
-background-size: 40px 40px;
-opacity: 0.05;
-pointer-events: none;
-animation: panBg 60s linear infinite;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background-image: 
+        radial-gradient(var(--royal-gold) 1px, transparent 1px);
+    background-size: 40px 40px;
+    opacity: 0.05;
+    pointer-events: none;
+    animation: panBg 60s linear infinite;
 }
 
 @keyframes panBg { from { background-position: 0 0; } to { background-position: 40px 40px; } }
 
 /* Partículas flutuantes no menu */
 .pollen-particle {
-position: absolute; background: var(--primary);
-border-radius: 50%; opacity: 0.6;
-animation: floatUp linear infinite;
+    position: absolute; background: var(--primary);
+    border-radius: 50%; opacity: 0.6;
+    animation: floatUp linear infinite;
 }
 
 @keyframes floatUp {
-0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
-50% { opacity: 0.8; }
-100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
+    0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+    50% { opacity: 0.8; }
+    100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
 }
 
 .menu-card {
-position: relative;
-background: rgba(10, 10, 10, 0.9);
-border: 2px solid var(--royal-gold);
-border-radius: 16px;
-padding: 40px 30px;
-width: 100%; max-width: 500px;
-box-shadow: 0 0 30px rgba(241, 196, 15, 0.15), inset 0 0 50px rgba(0,0,0,0.8);
-text-align: center;
-backdrop-filter: blur(10px);
-z-index: 10;
+    position: relative;
+    background: rgba(10, 10, 10, 0.9);
+    border: 2px solid var(--royal-gold);
+    border-radius: 16px;
+    padding: 40px 30px;
+    width: 100%; max-width: 500px;
+    box-shadow: 0 0 30px rgba(241, 196, 15, 0.15), inset 0 0 50px rgba(0,0,0,0.8);
+    text-align: center;
+    backdrop-filter: blur(10px);
+    z-index: 10;
 }
 
 /* ESTILOS ESPECÍFICOS DO TITULO (COROA E ABELHAS) */
 .title-box {
-display: flex;
-align-items: center;
-justify-content: center;
-gap: 15px;
-margin-bottom: 10px;
-padding-bottom: 15px;
-border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 10px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(241, 196, 15, 0.3);
 }
 
 .bee-flank {
-width: 50px; height: 50px;
-animation: swayBee 2s infinite ease-in-out alternate;
-image-rendering: pixelated;
-flex-shrink: 0;
+    width: 50px; height: 50px;
+    animation: swayBee 2s infinite ease-in-out alternate;
+    image-rendering: pixelated;
+    flex-shrink: 0;
 }
 
 .bee-left { animation-delay: 0s; }
 .bee-right { animation-delay: 1s; }
 
 @keyframes swayBee {
-from { transform: translateY(0) rotate(-10deg); }
-to { transform: translateY(-8px) rotate(10deg); }
+    from { transform: translateY(0) rotate(-10deg); }
+    to { transform: translateY(-8px) rotate(10deg); }
 }
 
 /* Título Épico */
 .menu-card h1 {
-font-family: 'Times New Roman', serif;
-font-size: 2.2rem; margin: 0;
-color: var(--royal-gold);
-text-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
-text-transform: uppercase;
-letter-spacing: 2px;
-white-space: nowrap; /* Não quebrar a palavra */
+    font-family: 'Times New Roman', serif;
+    font-size: 2.2rem; margin: 0;
+    color: var(--royal-gold);
+    text-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    white-space: nowrap; /* Não quebrar a palavra */
 }
 
 /* G com Coroa */
 .crown-g {
-position: relative;
-display: inline-block;
+    position: relative;
+    display: inline-block;
 }
 
 .crown-g::before {
-content: '👑';
-position: absolute;
-top: -28px;
-right: -10px;
-font-size: 2rem;
-transform: rotate(25deg);
-filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));
-pointer-events: none;
+    content: '👑';
+    position: absolute;
+    top: -28px;
+    right: -20px;
+    font-size: 2rem;
+    transform: rotate(25deg);
+    filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));
+    pointer-events: none;
 }
 
 .update-badge {
-display: inline-block;
-background: linear-gradient(45deg, #b7950b, #f1c40f);
-color: #000;
-padding: 6px 14px;
-border-radius: 20px;
-font-size: 0.8rem;
-font-weight: bold;
-text-transform: uppercase;
-margin-bottom: 25px;
-box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
-animation: glowBadge 2s infinite alternate;
+    display: inline-block;
+    background: linear-gradient(45deg, #b7950b, #f1c40f);
+    color: #000;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-bottom: 25px;
+    box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+    animation: glowBadge 2s infinite alternate;
 }
 
 @keyframes glowBadge { from { box-shadow: 0 0 5px var(--primary); } to { box-shadow: 0 0 15px var(--primary); } }
 
 .menu-input {
-width: 100%; padding: 15px;
-background: rgba(0, 0, 0, 0.6);
-border: 1px solid #444;
-border-left: 3px solid var(--primary-dark);
-border-radius: 4px;
-color: #e0e0e0; font-size: 1rem;
-margin-bottom: 5px;
-box-sizing: border-box;
-transition: all 0.3s;
-font-family: monospace;
+    width: 100%; padding: 15px;
+    background: rgba(0, 0, 0, 0.6);
+    border: 1px solid #444;
+    border-left: 3px solid var(--primary-dark);
+    border-radius: 4px;
+    color: #e0e0e0; font-size: 1rem;
+    margin-bottom: 5px;
+    box-sizing: border-box;
+    transition: all 0.3s;
+    font-family: monospace;
+    /* Correção para input funcionar com user-select: none no body */
+    user-select: text;
+    -webkit-user-select: text;
 }
 
 .menu-input:focus {
-outline: none;
-border-color: var(--royal-gold);
-background: rgba(20, 20, 20, 0.9);
-box-shadow: 0 0 15px rgba(241, 196, 15, 0.1);
+    outline: none;
+    border-color: var(--royal-gold);
+    background: rgba(20, 20, 20, 0.9);
+    box-shadow: 0 0 15px rgba(241, 196, 15, 0.1);
 }
 
 .input-group label {
-display: block; text-align: left;
-color: #aaa; font-size: 0.75rem;
-text-transform: uppercase;
-margin-bottom: 6px; margin-top: 15px;
-letter-spacing: 1px;
+    display: block; text-align: left;
+    color: #aaa; font-size: 0.75rem;
+    text-transform: uppercase;
+    margin-bottom: 6px; margin-top: 15px;
+    letter-spacing: 1px;
 }
 
 .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
 
 .main-btn {
-padding: 16px; cursor: pointer; border-radius: 6px; border: none;
-font-weight: 800; font-size: 0.95rem; text-transform: uppercase;
-letter-spacing: 1px; transition: all 0.2s;
-display: flex; align-items: center; justify-content: center; gap: 8px;
-font-family: 'Segoe UI', sans-serif;
-position: relative; overflow: hidden;
+    padding: 16px; cursor: pointer; border-radius: 6px; border: none;
+    font-weight: 800; font-size: 0.95rem; text-transform: uppercase;
+    letter-spacing: 1px; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-family: 'Segoe UI', sans-serif;
+    position: relative; overflow: hidden;
 }
 
 /* Efeito de brilho nos botões */
 .main-btn::after {
-content: ''; position: absolute; top: -50%; left: -50%;
-width: 200%; height: 200%;
-background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
-transform: rotate(45deg) translateY(-100%);
-transition: transform 0.5s;
+    content: ''; position: absolute; top: -50%; left: -50%;
+    width: 200%; height: 200%;
+    background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+    transform: rotate(45deg) translateY(-100%);
+    transition: transform 0.5s;
 }
 .main-btn:hover::after { transform: rotate(45deg) translateY(0%); }
 
 .btn-create { 
-background: linear-gradient(to bottom, #f1c40f, #d4ac0d); 
-color: #121212; border: 1px solid #f39c12;
+    background: linear-gradient(to bottom, #f1c40f, #d4ac0d); 
+    color: #121212; border: 1px solid #f39c12;
 }
 .btn-join { 
-background: linear-gradient(to bottom, #3498db, #2980b9); 
-color: white; border: 1px solid #2980b9;
+    background: linear-gradient(to bottom, #3498db, #2980b9); 
+    color: white; border: 1px solid #2980b9;
 }
 
 #studio-footer { 
-position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
-text-align: center; pointer-events: none; z-index: 10;
-opacity: 0.7; font-size: 0.8rem;
-white-space: nowrap;
+    position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+    text-align: center; pointer-events: none; z-index: 10;
+    opacity: 0.7; font-size: 0.8rem;
+    white-space: nowrap;
 }
 
 /* MEDIA QUERIES PARA MOBILE */
 @media (max-width: 600px) {
-.menu-card {
-padding: 30px 15px;
-width: 95%;
-}
+    .menu-card {
+        padding: 30px 15px;
+        width: 95%;
+    }
+    
+    .title-box {
+        gap: 5px; /* Menor gap para as abelhas ficarem perto */
+    }
 
-.title-box {
-gap: 5px; /* Menor gap para as abelhas ficarem perto */
-}
+    .menu-card h1 {
+        font-size: 1.4rem; /* Reduz fonte para não quebrar */
+    }
 
-.menu-card h1 {
-font-size: 1.4rem; /* Reduz fonte para não quebrar */
-}
+    .bee-flank {
+        width: 35px; height: 35px; /* Abelhas menores */
+    }
 
-.bee-flank {
-width: 35px; height: 35px; /* Abelhas menores */
-}
+    .crown-g::before {
+        font-size: 1.4rem;
+        top: -18px;
+        right: -6px;
+    }
 
-.crown-g::before {
-font-size: 1.4rem;
-top: -18px;
-right: -6px;
-}
-
-.button-row {
-gap: 10px;
-}
-
-.main-btn {
-font-size: 0.8rem;
-padding: 14px 5px;
-}
+    .button-row {
+        gap: 10px;
+    }
+    
+    .main-btn {
+        font-size: 0.8rem;
+        padding: 14px 5px;
+    }
 }
 
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
@@ -455,56 +470,56 @@ padding: 14px 5px;
 <body>
 
 <div id="central-hud">
-<div id="lvl-hud">
-<div id="lvl-text">Nível 1</div>
-<div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
-</div>
-<div id="coords">X: 1100 Y: 1100</div>
-<div id="horde-hud"></div>
+    <div id="lvl-hud">
+        <div id="lvl-text">Nível 1</div>
+        <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
+    </div>
+    <div id="coords">X: 1100 Y: 1100</div>
+    <div id="horde-hud"></div>
 </div>
 
 <div id="sidebar-container">
-<div id="session-panel" class="side-panel">
-<button id="btn-session-toggle" class="panel-toggle">👥</button>
-<div class="panel-content">
-<div class="panel-title">Sessão Ativa</div>
-<div id="player-items-container"></div>
-</div>
-</div>
+    <div id="session-panel" class="side-panel">
+        <button id="btn-session-toggle" class="panel-toggle">👥</button>
+        <div class="panel-content">
+            <div class="panel-title">Sessão Ativa</div>
+            <div id="player-items-container"></div>
+        </div>
+    </div>
 
-<div id="hive-panel" class="side-panel">
-<button id="btn-hive-toggle" class="panel-toggle">🏠</button>
-<div class="panel-content">
-<div class="panel-title">Colmeias Ativas</div>
-<div id="hive-items-container"></div>
-</div>
-</div>
+    <div id="hive-panel" class="side-panel">
+        <button id="btn-hive-toggle" class="panel-toggle">🏠</button>
+        <div class="panel-content">
+            <div class="panel-title">Colmeias Ativas</div>
+            <div id="hive-items-container"></div>
+        </div>
+    </div>
 </div>
 
 <div id="bottom-menu-container">
-<div id="main-action-menu">
-<button class="square-btn" title="Abelhas">🐝</button>
-<button class="square-btn" style="opacity: 0.3;">⚙️</button>
-<button class="square-btn" style="opacity: 0.3;">🎒</button>
-</div>
-<button id="btn-open-menu">☰</button>
+    <div id="main-action-menu">
+        <button class="square-btn" title="Abelhas">🐝</button>
+        <button class="square-btn" style="opacity: 0.3;">⚙️</button>
+        <button class="square-btn" style="opacity: 0.3;">🎒</button>
+    </div>
+    <button id="btn-open-menu">☰</button>
 </div>
 
 <div id="death-modal">
-<h2 class="modal-title">Derrotado</h2>
-<button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
+    <h2 class="modal-title">Derrotado</h2>
+    <button class="main-btn btn-create" onclick="respawnPlayer()" style="width: 200px;">RESPAWN</button>
 </div>
 <div id="game-over-modal">
-<h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
-<button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
+    <h2 class="modal-title">COLMEIA DESTRUÍDA</h2>
+    <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
 </div>
 
 <div id="chat-wrapper">
-<button id="btn-minimize-chat">💬</button>
-<div id="chat-display"></div>
-<div id="chat-input-area">
-<input type="text" id="chat-input" placeholder="Falar..." autocomplete="off">
-</div>
+    <button id="btn-minimize-chat">💬</button>
+    <div id="chat-display"></div>
+    <div id="chat-input-area">
+        <input type="text" id="chat-input" placeholder="Falar..." autocomplete="off">
+    </div>
 </div>
 
 <div id="loading-screen">
@@ -523,44 +538,50 @@ padding: 14px 5px;
 </div>
 
 <div id="menu">
-<div class="hex-bg"></div>
-<div class="menu-card">
+    <div class="hex-bg"></div>
+    
+    <div class="menu-card">
+        
+        <div class="title-box">
+            <img src="BeeLeft.png" class="bee-flank bee-left">
+            <h1>The Hive Kin<span class="crown-g">g</span>dom</h1>
+            <img src="BeeRight.png" class="bee-flank bee-right">
+        </div>
 
-<div class="title-box">
-<img src="BeeLeft.png" class="bee-flank bee-left">
-<h1>The Hive Kin<span class="crown-g">g</span>dom</h1>
-<img src="BeeRight.png" class="bee-flank bee-right">
-</div>
+        <div class="update-badge">Update: Pollen War • v1.4</div>
+        
+        <div class="input-group">
+            <label>Identidade do Guerreiro</label>
+            <input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido..." maxlength="12">
+        </div>
 
-<div class="update-badge">Update: Pollen War • v1.4</div>
+        <div class="input-group">
+            <label>Nome do Reino (ID da Sala)</label>
+            <input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="12">
+        </div>
+        
+        <div class="input-group">
+            <label>Chave do Reino (Senha)</label>
+            <input type="password" id="room-pass" class="menu-input" placeholder="Senha secreta..." maxlength="10">
+        </div>
 
-<div class="input-group">
-<label>Identidade do Guerreiro</label>
-<input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido..." maxlength="12">
-</div>
+        <div class="button-row">
+            <button class="main-btn btn-create" onclick="startSession(true)">
+                <span>👑</span> Criar Reino
+            </button>
+            <button class="main-btn btn-join" onclick="startSession(false)">
+                <span>⚔️</span> Entrar
+            </button>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 0.8rem; color: #666; font-style: italic;">
+            "Proteja a Rainha. Colete o Ouro. Sobreviva."
+        </div>
+    </div>
 
-<div class="input-group">
-<label>Portal do Reino (Código)</label>
-<input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="6">
-</div>
-
-<div class="button-row">
-<button class="main-btn btn-create" onclick="startSession(true)">
-<span>👑</span> Fundar Reino
-</button>
-<button class="main-btn btn-join" onclick="startSession(false)">
-<span>⚔️</span> Juntar-se
-</button>
-</div>
-
-<div style="margin-top: 20px; font-size: 0.8rem; color: #666; font-style: italic;">
-"Proteja a Rainha. Colete o Ouro. Sobreviva."
-</div>
-</div>
-
-<div id="studio-footer">
-FUN🍪COOK STUDIO &copy; 2025
-</div>
+    <div id="studio-footer">
+        FUN🍪COOK STUDIO &copy; 2025
+    </div>
 </div>
 
 <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
@@ -569,37 +590,48 @@ FUN🍪COOK STUDIO &copy; 2025
 <canvas id="gameCanvas"></canvas>
 
 <script>
+// --- BLOQUEIO DE ZOOM NO SAFARI (IOS) ---
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }); 
+document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+
 // --- SCRIPT DE PARTÍCULAS DO MENU ---
 function createMenuParticles() {
-const menu = document.getElementById('menu');
-for(let i=0; i<30; i++) {
-const p = document.createElement('div');
-p.classList.add('pollen-particle');
-p.style.left = Math.random() * 100 + '%';
-p.style.width = (Math.random() * 4 + 2) + 'px';
-p.style.height = p.style.width;
-p.style.animationDuration = (Math.random() * 5 + 5) + 's';
-p.style.animationDelay = (Math.random() * 5) + 's';
-menu.appendChild(p);
-}
+    const menu = document.getElementById('menu');
+    for(let i=0; i<30; i++) {
+        const p = document.createElement('div');
+        p.classList.add('pollen-particle');
+        p.style.left = Math.random() * 100 + '%';
+        p.style.width = (Math.random() * 4 + 2) + 'px';
+        p.style.height = p.style.width;
+        p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+        p.style.animationDelay = (Math.random() * 5) + 's';
+        menu.appendChild(p);
+    }
 }
 createMenuParticles();
 
+// --- CARREGAR DADOS SALVOS DO LOCALSTORAGE ---
+window.onload = function() {
+    if(localStorage.getItem('hive_nick')) document.getElementById('player-nick').value = localStorage.getItem('hive_nick');
+    if(localStorage.getItem('hive_room')) document.getElementById('room-code').value = localStorage.getItem('hive_room');
+    if(localStorage.getItem('hive_pass')) document.getElementById('room-pass').value = localStorage.getItem('hive_pass');
+};
+
 // --- LOGICA DE LOADING ---
 function startLoadingSequence() {
-    // 1. Esconde Menu e Mostra Loading
     document.getElementById('menu').style.display = 'none';
     const loadingScreen = document.getElementById('loading-screen');
     loadingScreen.style.display = 'flex';
 
-    // Elementos
     const bar = document.getElementById('loading-bar-active-fill');
     const ant = document.getElementById('loading-ant');
     const beeCont = document.getElementById('loading-bee-container');
     const beeImg = document.getElementById('loading-bee-img');
     const muzzle = document.querySelector('.muzzle-flash');
 
-    const duration = 20000; // 20 Segundos
+    // TEMPO DE LOADING OTIMIZADO
+    const duration = 5000; 
     const startTime = Date.now();
     let exploded = false;
 
@@ -610,37 +642,23 @@ function startLoadingSequence() {
         const pctVal = pct * 100;
 
         if (pct < 1) {
-            // Atualiza posições
             bar.style.width = pctVal + '%';
             ant.style.left = pctVal + '%';
-            
-            // Abelha segue um pouco atrás (lag de 8%)
-            let beePos = Math.max(0, pctVal - 8); 
+            let beePos = Math.max(0, pctVal - 1); 
             beeCont.style.left = beePos + '%';
-
             requestAnimationFrame(frame);
         } else {
-            // FIM DO CARREGAMENTO
             if(!exploded) {
                 exploded = true;
                 bar.style.width = '100%';
-                
-                // Formiga explode
                 ant.innerText = "💥";
                 ant.classList.add('explosion-text');
-                
-                // Abelha para de atirar
                 muzzle.style.display = 'none';
-                
-                // Abelha atualiza sprite e centraliza
                 beeImg.src = 'BeeDown.png';
-                beeImg.style.animation = 'none'; // Para o balanço de voo
-                
-                // Move abelha para o centro
+                beeImg.style.animation = 'none'; 
                 beeCont.style.transition = 'left 0.5s ease-out';
                 beeCont.style.left = '50%';
 
-                // Aguarda 2 segundos e inicia o jogo
                 setTimeout(() => {
                     loadingScreen.style.display = 'none';
                     if(isHost) {
@@ -649,7 +667,7 @@ function startLoadingSequence() {
                     } else {
                         startGame();
                     }
-                }, 2000);
+                }, 1000);
             }
         }
     }
@@ -680,17 +698,14 @@ assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets
 assets.ground.src = 'Grass.png';
 
 let isHost = false;
+let hostPassword = ""; // Senha do host
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
 let players = { 
 me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100, isCollecting: false }, 
-peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false } 
+peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false, authorized: false } 
 };
 
-// BUFFER DE COMANDOS
-let networkBuffer = {
-repairs: []
-};
-
+let networkBuffer = { repairs: [] };
 let projectiles = [], enemies = [], flowers = [], particles = []; 
 let camera = { x: 0, y: 0 }, peer, conn, keys = {};
 const TILE_SIZE = 64;
@@ -733,7 +748,6 @@ players.me.xp += amount;
 if(players.me.xp >= players.me.nextXp) {
 players.me.xp -= players.me.nextXp;
 players.me.lvl++;
-// ESCALONAMENTO DE XP: Aumento exponencial
 players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
 addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}!`, "msg-sys");
 createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
@@ -764,11 +778,11 @@ flowers = [];
 const types = ["🌸", "🌻", "🌷"];
 for(let i=0; i<25; i++) {
 flowers.push({
-id: i, // ID para sync
+id: i, 
 x: Math.random() * 4000 - 1000, y: Math.random() * 4000 - 1000,
 emoji: types[Math.floor(Math.random() * types.length)],
 cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2,
-growState: 'mature', // Flores iniciais já são maduras
+growState: 'mature', 
 plantTime: 0
 });
 }
@@ -787,105 +801,193 @@ keys[e.code] = true;
 });
 window.addEventListener('keyup', e => keys[e.code] = false);
 
+// --- NOVA FUNÇÃO START SESSION ROBUSTA ---
 function startSession(host) {
-const code = document.getElementById('room-code').value.trim();
-const nick = document.getElementById('player-nick').value.trim();
-if(!nick || !code) return alert("Preencha o Nickname e o Código!");
-isHost = host;
-players.me.nick = nick;
-players.me.color = host ? "#f1c40f" : "#3498db";
-players.peer.color = host ? "#3498db" : "#f1c40f";
-peer = host ? new Peer('bee-' + code) : new Peer();
-peer.on('open', () => { 
-if(host) {
-generateFlowers();
-startGame(); 
-// generateFlowers(); // Removido daqui, vai para o fim do loading
-startLoadingSequence(); 
-} else { 
-conn = peer.connect('bee-' + code); 
-setupConn(); 
-} 
-});
-peer.on('connection', c => { conn = c; setupConn(); });
+    const code = document.getElementById('room-code').value.trim();
+    const nick = document.getElementById('player-nick').value.trim();
+    const pass = document.getElementById('room-pass').value.trim();
+    
+    if(!nick || !code || !pass) return alert("Preencha o Nick, o Nome do Reino e a Senha!");
+
+    // SALVAR DADOS LOCALMENTE
+    localStorage.setItem('hive_nick', nick);
+    localStorage.setItem('hive_room', code);
+    localStorage.setItem('hive_pass', pass);
+
+    isHost = host;
+    hostPassword = pass;
+    players.me.nick = nick;
+    players.me.color = host ? "#f1c40f" : "#3498db";
+    players.peer.color = host ? "#3498db" : "#f1c40f";
+
+    if(peer && !peer.destroyed) peer.destroy();
+
+    // ID UNICO BASEADO NO NOME DO REINO
+    const peerId = host ? 'hive-game-' + code : null; // Host força esse ID. Client é random.
+
+    peer = new Peer(peerId);
+    
+    // Tratamento de Erros de Conexão
+    peer.on('error', (err) => {
+        console.error(err);
+        if(err.type === 'unavailable-id') {
+            alert("Este Nome de Reino já está em uso! Escolha outro.");
+        } else if (err.type === 'peer-unavailable') {
+            alert("Reino não encontrado! Verifique o nome.");
+        } else {
+            alert("Erro na conexão: " + err.type);
+        }
+    });
+
+    peer.on('open', (id) => { 
+        console.log("Peer ID: " + id);
+        if(host) {
+            // HOST: Inicia Loading
+            startLoadingSequence(); 
+        } else { 
+            // CLIENT: Tenta conectar no ID do Host
+            conn = peer.connect('hive-game-' + code); 
+            
+            // Timeout de conexão
+            setTimeout(() => {
+                if(!conn || !conn.open) {
+                    // Se não abriu em 5s, alerta (mas o peer.on('error') costuma pegar antes)
+                    console.log("Tentativa de conexão lenta...");
+                }
+            }, 5000);
+
+            setupConn(); 
+        } 
+    });
+    
+    peer.on('connection', c => { 
+        // Apenas HOST recebe conexões aqui
+        conn = c; 
+        setupConn(); 
+    });
 }
 
 function setupConn() {
-conn.on('open', () => { 
-players.peer.active = true;
-players.peer.lastSeen = Date.now();
-if(isHost) {
-conn.send({ type: 'init_flowers', data: flowers });
-} else {
-startGame(); 
-startLoadingSequence(); 
-}
-conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
-});
-conn.on('data', data => {
-if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
-else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
-else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
-else if(data.type === 'reward_xp') { addXp(data.amount); }
-else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; }
-else if(data.type === 'init_flowers') { flowers = data.data; }
-else if(data.type === 'sync_flowers_list') { flowers = data.data; } // Sincroniza lista completa
-else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; }
-else if(data.type === 'fx') { 
-if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
-if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
-if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
-}
-else if(data.type === 'req_pollen') {
-if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
-flowers[data.id].cooldown = flowers[data.id].maxCooldown;
-players.peer.pollen += 0.4;
-conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
-conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
-}
-}
-else if(data.type === 'wave_clear') { // Peer recebe sinal de vitória
-showWaveClearEffect();
-}
-else if(data.type === 'sync_world') { 
-players.peer.lastSeen = Date.now();
-enemies = data.enemies.map(enNew => {
-let existing = enemies.find(e => e.id === enNew.id);
-return existing ? {...enNew} : enNew;
-});
-isWaveActive = data.isWaveActive; 
-hive.hp = data.hiveHp;
-// SYNC DO TIMER
-waveTimer = data.waveTimer;
-enemiesSpawnedInWave = data.enemiesSpawned;
-}
-else if(data.type === 'repair') { 
-if(isHost) {
-hive.hp = Math.min(hive.maxHp, hive.hp + 50);
-conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-conn.send({ type: 'reward_xp', amount: 15 }); // XP ajustado
-}
-}
-else if(data.type === 'hit') { 
-if(!isHost && data.target === 'me') {
-takeDamage(data.amount); 
-}
-}
-else if(data.type === 'pos') { 
-players.peer.lastSeen = Date.now();
-players.peer.tX = data.x; players.peer.tY = data.y; 
-players.peer.dir = data.dir; players.peer.hp = data.hp; 
-players.peer.isDead = data.isDead; players.peer.pollen = data.pollen; 
-players.peer.lvl = data.lvl; players.peer.active = true;
-}
-else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
-else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
-});
+    conn.on('open', () => { 
+        // CLIENT: Assim que conecta, envia a senha para autenticar
+        if(!isHost) {
+            conn.send({ 
+                type: 'auth', 
+                pass: document.getElementById('room-pass').value.trim(), 
+                nick: players.me.nick,
+                color: players.me.color
+            });
+        }
+    });
+
+    conn.on('data', data => {
+        // --- LOGICA DE AUTENTICAÇÃO (HOST) ---
+        if (isHost && data.type === 'auth') {
+            if (data.pass === hostPassword) {
+                // Senha correta
+                players.peer.nick = data.nick;
+                players.peer.color = data.color;
+                players.peer.authorized = true;
+                players.peer.active = true;
+                players.peer.lastSeen = Date.now();
+                
+                // Envia sucesso e estado inicial
+                conn.send({ type: 'auth_success' });
+                conn.send({ type: 'init_flowers', data: flowers });
+                conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
+                addMsg("SISTEMA", `${data.nick} entrou no reino!`, "msg-sys");
+            } else {
+                // Senha incorreta
+                conn.send({ type: 'auth_fail' });
+                setTimeout(() => { conn.close(); }, 500); // Fecha conexão
+            }
+            return;
+        }
+
+        // --- RESPOSTA DE AUTENTICAÇÃO (CLIENT) ---
+        if (!isHost) {
+            if (data.type === 'auth_success') {
+                startLoadingSequence();
+                return;
+            } else if (data.type === 'auth_fail') {
+                alert("SENHA INCORRETA! Você não pode entrar neste Reino.");
+                peer.destroy();
+                return;
+            }
+        }
+
+        // Se for Host, ignora dados de peer não autorizado
+        if (isHost && !players.peer.authorized) return;
+
+        // --- DADOS DO JOGO (NORMAL) ---
+        if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
+        else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
+        else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
+        else if(data.type === 'reward_xp') { addXp(data.amount); }
+        else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; }
+        else if(data.type === 'init_flowers') { flowers = data.data; }
+        else if(data.type === 'sync_flowers_list') { flowers = data.data; } 
+        else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; }
+        else if(data.type === 'fx') { 
+            if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
+            if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
+            if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
+        }
+        else if(data.type === 'req_pollen') {
+            if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
+                flowers[data.id].cooldown = flowers[data.id].maxCooldown;
+                players.peer.pollen += 0.4;
+                conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
+                conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
+            }
+        }
+        else if(data.type === 'wave_clear') { 
+            showWaveClearEffect();
+        }
+        else if(data.type === 'sync_world') { 
+            players.peer.lastSeen = Date.now();
+            enemies = data.enemies.map(enNew => {
+                let existing = enemies.find(e => e.id === enNew.id);
+                return existing ? {...enNew} : enNew;
+            });
+            isWaveActive = data.isWaveActive; 
+            hive.hp = data.hiveHp;
+            waveTimer = data.waveTimer;
+            enemiesSpawnedInWave = data.enemiesSpawned;
+        }
+        else if(data.type === 'repair') { 
+            if(isHost) {
+                hive.hp = Math.min(hive.maxHp, hive.hp + 50);
+                conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
+                conn.send({ type: 'reward_xp', amount: 15 }); 
+            }
+        }
+        else if(data.type === 'hit') { 
+            if(!isHost && data.target === 'me') {
+                takeDamage(data.amount); 
+            }
+        }
+        else if(data.type === 'pos') { 
+            players.peer.lastSeen = Date.now();
+            players.peer.tX = data.x; players.peer.tY = data.y; 
+            players.peer.dir = data.dir; players.peer.hp = data.hp; 
+            players.peer.isDead = data.isDead; players.peer.pollen = data.pollen; 
+            players.peer.lvl = data.lvl; players.peer.active = true;
+        }
+        else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
+        else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
+    });
+    
+    conn.on('close', () => {
+        players.peer.active = false;
+        players.peer.authorized = false;
+        addMsg("SISTEMA", "Conexão perdida.", "msg-sys");
+    });
 }
 
 function showWaveClearEffect() {
 addMsg("SISTEMA", "HORDA DESTRUÍDA! +3 Minutos de Paz.", "msg-sys");
-createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); // Explosão azul na base
+createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); 
 }
 
 function takeDamage(amount) {
@@ -908,7 +1010,6 @@ deathModal.style.display = 'none';
 function fire(angle) {
 if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
 spawnProjectile(players.me.x, players.me.y, angle, true);
-// Otimização: Só envia se peer ativo
 if(players.peer.active && conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
 lastShootTime = Date.now();
 }
@@ -936,20 +1037,19 @@ while(networkBuffer.repairs.length > 0) {
 networkBuffer.repairs.shift();
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
 if(players.peer.active && conn && conn.open) {
-conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-conn.send({ type: 'reward_xp', amount: 15 }); // XP ajustado
+    conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
+    conn.send({ type: 'reward_xp', amount: 15 }); 
 }
 }
 
 waveTimer -= 1/60;
 if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
 
-// FIM DA HORDA
 if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
-isWaveActive = false;
-waveTimer = 180; // 3 Minutos de paz
-showWaveClearEffect();
-if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
+   isWaveActive = false;
+   waveTimer = 180; 
+   showWaveClearEffect();
+   if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
 }
 
 if (isWaveActive) {
@@ -960,35 +1060,32 @@ enemies.push({
 id: Math.random().toString(36).substr(2, 9),
 x: hive.x + Math.cos(angle) * 1000, y: hive.y + Math.sin(angle) * 1000, 
 hp: 100, vx: 0, vy: 0,
-behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' // 35% de chance de caçar players
+behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' 
 });
 enemiesSpawnedInWave++; lastEnemySpawnTime = now;
 }
 }
 
 enemies.forEach((en) => {
-// LÓGICA DE ALVO (IA)
-let targetX = hive.x;
-let targetY = hive.y;
+    let targetX = hive.x;
+    let targetY = hive.y;
 
-if (en.behavior === 'hunter') {
-// Encontrar player vivo mais próximo
-let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
-let dPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
+    if (en.behavior === 'hunter') {
+        let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
+        let dPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
 
-if (dMe < Infinity || dPeer < Infinity) {
-if (dMe <= dPeer) {
-targetX = players.me.x; targetY = players.me.y;
-} else {
-targetX = players.peer.x; targetY = players.peer.y;
-}
-}
-// Se ambos estiverem mortos, o alvo padrão (hive) permanece
-}
+        if (dMe < Infinity || dPeer < Infinity) {
+            if (dMe <= dPeer) {
+                targetX = players.me.x; targetY = players.me.y;
+            } else {
+                targetX = players.peer.x; targetY = players.peer.y;
+            }
+        }
+    }
 
-const angle = Math.atan2(targetY - en.y, targetX - en.x);
-en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
-en.x += en.vx; en.y += en.vy;
+    const angle = Math.atan2(targetY - en.y, targetX - en.x);
+    en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
+    en.x += en.vx; en.y += en.vy;
 
 if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
 if(performance.now() % 60 < 2) hive.hp -= 2;
@@ -1003,178 +1100,161 @@ enemies = enemies.filter(en => en.hp > 0);
 
 if (hive.hp <= 0 && !hive.destroyed) { hive.hp = 0; hive.destroyed = true; setTimeout(() => gameOverModal.style.display = 'flex', 1500); }
 
-// Otimização: Só manda sync se tiver peer
 if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
 conn.send({ 
 type: 'sync_world', 
 enemies: enemies.map(e => ({id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, hp: e.hp})), 
 isWaveActive: isWaveActive, hiveHp: hive.hp,
-waveTimer: waveTimer, // Enviando Timer
-enemiesSpawned: enemiesSpawnedInWave // Enviando contagem
+waveTimer: waveTimer, 
+enemiesSpawned: enemiesSpawnedInWave 
 });
 lastNetUpdate = performance.now();
 }
 }
 
-// HOST: Cria uma nova flor (Semente)
 function spawnFlower(x, y) {
-const types = ["🌸", "🌻", "🌷"];
-const id = flowers.length; // Simple ID
-flowers.push({
-id: id,
-x: x, 
-y: y,
-emoji: types[Math.floor(Math.random() * types.length)],
-cooldown: 0, 
-maxCooldown: 300, 
-phase: Math.random() * Math.PI * 2,
-growState: 'seed',
-plantTime: Date.now()
-});
-// Sync imediato ao criar
-if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
+    const types = ["🌸", "🌻", "🌷"];
+    const id = flowers.length; 
+    flowers.push({
+        id: id,
+        x: x, 
+        y: y,
+        emoji: types[Math.floor(Math.random() * types.length)],
+        cooldown: 0, 
+        maxCooldown: 300, 
+        phase: Math.random() * Math.PI * 2,
+        growState: 'seed',
+        plantTime: Date.now()
+    });
+    if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 }
 
 function updateMechanics() {
-players.me.isCollecting = false; // Reset state
+players.me.isCollecting = false; 
 
-// LÓGICA DE POLITIZAÇÃO E DROP DE PÓLEN (Apenas Host processa lógica de spawn)
 if(isHost) {
-let needsFlowerSync = false;
-const now = Date.now();
+    let needsFlowerSync = false;
+    const now = Date.now();
 
-// 1. Processar Host (Me)
-if(players.me.pollen > 0 && !players.me.isDead) {
-// Se estiver se movendo
-if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
-// Rastro de polen
-if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-players.me.pollen = Math.max(0, players.me.pollen - 0.05);
+    if(players.me.pollen > 0 && !players.me.isDead) {
+        if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
+             if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+             players.me.pollen = Math.max(0, players.me.pollen - 0.05);
+             if(Math.random() < 0.002) {
+                 spawnFlower(players.me.x, players.me.y);
+             }
+        }
+    }
 
-// Chance de nascer flor (0.2% por tick)
-if(Math.random() < 0.002) {
-spawnFlower(players.me.x, players.me.y);
-}
-}
-}
+    if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+         if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+         if(Math.random() < 0.002) {
+             spawnFlower(players.peer.x, players.peer.y);
+         }
+    }
 
-// 2. Processar Peer (Baseado na ultima posição conhecida)
-if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-// Não temos input direto, usamos 'active' e assumimos movimento se posição mudar (mas aqui simplificamos)
-// Vamos apenas checar se ele tem pólen. Para simplificar, assumimos que ele se move.
-if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+    flowers.forEach(f => {
+        if(f.growState !== 'mature') {
+            const age = now - f.plantTime;
+            if(f.growState === 'seed' && age >= 120000) {
+                f.growState = 'sprout';
+                needsFlowerSync = true;
+            }
+            if(f.growState === 'sprout' && age >= 300000) {
+                f.growState = 'mature';
+                needsFlowerSync = true;
+            }
+        }
+    });
 
-if(Math.random() < 0.002) {
-spawnFlower(players.peer.x, players.peer.y);
-}
-}
-
-// 3. Atualizar crescimento das flores
-flowers.forEach(f => {
-if(f.growState !== 'mature') {
-const age = now - f.plantTime;
-// 2 minutos (120000ms) para virar Broto
-if(f.growState === 'seed' && age >= 120000) {
-f.growState = 'sprout';
-needsFlowerSync = true;
-}
-// 5 minutos (300000ms) para virar Flor
-if(f.growState === 'sprout' && age >= 300000) {
-f.growState = 'mature';
-needsFlowerSync = true;
-}
-}
-});
-
-if(needsFlowerSync && players.peer.active && conn && conn.open) {
-conn.send({ type: 'sync_flowers_list', data: flowers });
-}
+    if(needsFlowerSync && players.peer.active && conn && conn.open) {
+        conn.send({ type: 'sync_flowers_list', data: flowers });
+    }
 }
 
 
 flowers.forEach((f, index) => {
-// Só interage se for madura
 if(f.growState === 'mature') {
-if(f.cooldown > 0) f.cooldown -= 1/60;
-else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-players.me.isCollecting = true; // Actively collecting
-if(isHost) {
-players.me.pollen += 0.4;
-addXp(0.02); // NERF XP DE COLETA
-if(players.me.pollen >= 100) { 
-f.cooldown = f.maxCooldown; 
-players.me.pollen = 100;
-if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: index, time: f.maxCooldown });
-}
-} else {
-if(Math.random() < 0.1) {
-conn.send({ type: 'req_pollen', id: index });
-}
-}
-}
+    if(f.cooldown > 0) f.cooldown -= 1/60;
+    else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+        players.me.isCollecting = true; 
+        if(isHost) {
+            players.me.pollen += 0.4;
+            addXp(0.02); 
+            if(players.me.pollen >= 100) { 
+                f.cooldown = f.maxCooldown; 
+                players.me.pollen = 100;
+                if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: index, time: f.maxCooldown });
+            }
+        } else {
+            if(Math.random() < 0.1) {
+                conn.send({ type: 'req_pollen', id: index });
+            }
+        }
+    }
 }
 });
 
-// Partículas visuais de coleta (mantido para feedback)
 if(!players.me.isDead && players.me.pollen > 0 && Math.random() < 0.1) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0 && Math.random() < 0.1) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
 
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60 && !hive.destroyed) {
 if(players.me.pollen >= 100 && hive.hp < hive.maxHp) {
 players.me.pollen = 0; 
+if(players.me.hp < 100) {
+    players.me.hp = Math.min(100, players.me.hp + 1); 
+    createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
+    addMsg("SISTEMA", "Curado (+1 HP) pelo Pólen.", "msg-sys");
+}
 if(isHost) { 
 hive.hp = Math.min(hive.maxHp, hive.hp + 50); 
 createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-addXp(15); // NERF XP DE REPARO
+addXp(15); 
 } else { conn.send({ type: 'repair' }); }
 }
 }
 
-// CORREÇÃO CRÍTICA: Loop reverso para evitar crash no splice
 for (let i = projectiles.length - 1; i >= 0; i--) {
-let p = projectiles[i];
-let hit = false;
+    let p = projectiles[i];
+    let hit = false;
+    
+    for (let j = 0; j < enemies.length; j++) {
+        let en = enemies[j];
+        if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
+            if(isHost) {
+                en.hp -= 25;
+                createParticles(en.x, en.y, "#ff0000", 5);
+                if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
+                
+                if(en.hp <= 0) { 
+                    createParticles(en.x, en.y, "#000", 10); 
+                    if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
+                    
+                    const totalKillXp = 30;
+                    if(players.peer.active && !players.peer.isDead) {
+                        const splitXp = totalKillXp / 2;
+                        addXp(splitXp); 
+                        if(conn && conn.open) conn.send({ type: 'reward_xp', amount: splitXp }); 
+                    } else {
+                        addXp(totalKillXp); 
+                    }
+                }
+            } 
+            hit = true;
+            break; 
+        }
+    }
 
-// Check collision with enemies
-for (let j = 0; j < enemies.length; j++) {
-let en = enemies[j];
-if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
-if(isHost) {
-en.hp -= 25;
-createParticles(en.x, en.y, "#ff0000", 5);
-if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
+    if(hit) {
+        projectiles.splice(i, 1);
+        continue;
+    }
 
-if(en.hp <= 0) { 
-createParticles(en.x, en.y, "#000", 10); 
-if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
-
-// LÓGICA DE XP COMPARTILHADO (FORMIGAS)
-const totalKillXp = 30;
-if(players.peer.active && !players.peer.isDead) {
-const splitXp = totalKillXp / 2;
-addXp(splitXp); // Host ganha metade
-if(conn && conn.open) conn.send({ type: 'reward_xp', amount: splitXp }); // Peer ganha metade
-} else {
-addXp(totalKillXp); // Solo ganha tudo
-}
-}
-} 
-hit = true;
-break; // Bullet hit something, stop checking other enemies
-}
-}
-
-if(hit) {
-projectiles.splice(i, 1);
-continue;
-}
-
-// Movement & Life decay
-p.x += p.vx; p.y += p.vy; 
-p.life--; 
-if(p.life <= 0) {
-projectiles.splice(i, 1);
-}
+    p.x += p.vx; p.y += p.vy; 
+    p.life--; 
+    if(p.life <= 0) {
+        projectiles.splice(i, 1);
+    }
 }
 
 particles.forEach((p, i) => {
@@ -1183,25 +1263,23 @@ if(p.life <= 0) particles.splice(i, 1);
 });
 }
 
-// NOVA FUNÇÃO: Gerencia o HUD da Horda
 function updateHordeHud() {
-const hud = document.getElementById('horde-hud');
-if (isWaveActive) {
-hud.style.display = 'block';
-hud.style.color = '#ff4757';
-hud.classList.remove('warn-pulse');
-// Calculo de inimigos restantes: (Total - Nascidos) + Vivos na tela
-const remaining = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
-hud.innerText = `⚠️ INVASÃO: ${remaining} ⚠️`;
-} else if (waveTimer <= 60) {
-hud.style.display = 'block';
-hud.style.color = '#e67e22';
-hud.classList.add('warn-pulse');
-hud.innerText = `ALERTA: ${Math.ceil(waveTimer)}s`;
-} else {
-hud.style.display = 'none';
-hud.classList.remove('warn-pulse');
-}
+    const hud = document.getElementById('horde-hud');
+    if (isWaveActive) {
+        hud.style.display = 'block';
+        hud.style.color = '#ff4757';
+        hud.classList.remove('warn-pulse');
+        const remaining = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
+        hud.innerText = `⚠️ INVASÃO: ${remaining} ⚠️`;
+    } else if (waveTimer <= 60) {
+        hud.style.display = 'block';
+        hud.style.color = '#e67e22';
+        hud.classList.add('warn-pulse');
+        hud.innerText = `ALERTA: ${Math.ceil(waveTimer)}s`;
+    } else {
+        hud.style.display = 'none';
+        hud.classList.remove('warn-pulse');
+    }
 }
 
 function drawIndicators() {
@@ -1291,69 +1369,65 @@ window.addEventListener('touchend', handleEnd);
 function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
 window.addEventListener('resize', resize);
 
-// NOVA FUNÇÃO: Calcula direção baseada no ângulo (Prioridade para o Tiro)
 function getDirFromAngle(angle) {
-const deg = angle * (180 / Math.PI);
-if (deg >= -45 && deg <= 45) return 'Right';
-if (deg > 45 && deg < 135) return 'Down';
-if (deg >= 135 || deg <= -135) return 'Left';
-return 'Up';
+    const deg = angle * (180 / Math.PI);
+    if (deg >= -45 && deg <= 45) return 'Right';
+    if (deg > 45 && deg < 135) return 'Down';
+    if (deg >= 135 || deg <= -135) return 'Left';
+    return 'Up';
 }
 
 function update() {
-if(!players.me.isDead) {
-let dx = joyMove.dx, dy = joyMove.dy;
-if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
-if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+    if(!players.me.isDead) {
+        let dx = joyMove.dx, dy = joyMove.dy;
+        if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+        if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
-// Movimento
-if (dx !== 0 || dy !== 0) {
-const m = Math.sqrt(dx*dx + dy*dy);
-players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+        if (dx !== 0 || dy !== 0) {
+            const m = Math.sqrt(dx*dx + dy*dy);
+            players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+            
+            if (!joyAim.active && !isMouseDown) {
+                if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+                else players.me.dir = dy > 0 ? 'Down' : 'Up';
+            }
+        }
 
-// Só atualiza direção baseada no movimento se NÃO estiver mirando/atirando
-if (!joyAim.active && !isMouseDown) {
-if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
-else players.me.dir = dy > 0 ? 'Down' : 'Up';
-}
-}
+        if(joyAim.active) {
+            players.me.dir = getDirFromAngle(joyAim.angle);
+            fire(joyAim.angle);
+        } else if(isMouseDown) {
+            const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
+            players.me.dir = getDirFromAngle(angle);
+            fire(angle);
+        }
+    }
 
-// Lógica de Tiro e Direção da Sprite (Prioritária)
-if(joyAim.active) {
-players.me.dir = getDirFromAngle(joyAim.angle);
-fire(joyAim.angle);
-} else if(isMouseDown) {
-const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
-players.me.dir = getDirFromAngle(angle);
-fire(angle);
-}
-}
+    runWaveLogic(); 
+    updateMechanics();
+    updateHordeHud();
 
-runWaveLogic(); 
-updateMechanics();
-updateHordeHud();
+    if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
 
-if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
+    let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
+    if(players.peer.active) { 
+        players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
+        players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+        const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
+        playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
+    }
+    playerItemsContainer.innerHTML = playerListHtml;
 
-let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
-if(players.peer.active) { 
-players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
-const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
-}
-playerItemsContainer.innerHTML = playerListHtml;
+    let hiveListHtml = "";
+    if(!hive.destroyed) {
+        const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+        const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+        hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
+    } else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`; }
+    hiveItemsContainer.innerHTML = hiveListHtml;
 
-let hiveListHtml = "";
-if(!hive.destroyed) {
-const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
-hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>Nenhuma colmeia ativa</span></div>`; }
-hiveItemsContainer.innerHTML = hiveListHtml;
-
-camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+    camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+    document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
 }
 
 function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
@@ -1361,11 +1435,10 @@ ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
 ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
 }
 
-// NOVA FUNÇÃO: Desenha barra de pólen abaixo da abelha
 function drawPollenBar(x, y, pollen, w = 50, h = 6, offset = -40) {
-ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
-ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
-ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1; ctx.strokeRect(x - w/2, y - offset, w, h);
+    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
+    ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
+    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1; ctx.strokeRect(x - w/2, y - offset, w, h);
 }
 
 function draw() {
@@ -1377,7 +1450,6 @@ for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE)
 if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 
 flowers.forEach(f => {
-// Só desenha se não for semente
 if(f.growState === 'seed') return;
 
 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
@@ -1414,9 +1486,8 @@ ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
-// Desenha barra de pólen se estiver coletando e não estiver cheia
 if(p.isCollecting || p.pollen > 0) {
-drawPollenBar(p.x, p.y, p.pollen);
+    drawPollenBar(p.x, p.y, p.pollen);
 }
 };
 drawB(players.me, players.me.color, 1);
