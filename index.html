@@ -340,7 +340,6 @@ me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead
 peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0 } 
 };
 
-// BUFFER DE COMANDOS (Hits removidos pois agora são Host-Authoritative)
 let networkBuffer = {
 repairs: []
 };
@@ -399,14 +398,24 @@ document.getElementById('xp-bar-fill').style.width = perc + "%";
 document.getElementById('lvl-text').innerText = `Nível ${players.me.lvl}`;
 }
 
+// CORREÇÃO: Remoção de Dead Store (Cálculos inúteis)
 function createParticles(x, y, color, count, type = 'pixel') {
 for(let i=0; i<count; i++) {
-let vx = (Math.random() - 0.5) * 4;
-let vy = (Math.random() - 0.5) * 4;
+let vx, vy, decay;
+if(type === 'pollen') {
+vx = (Math.random() - 0.5) * 1.5;
+vy = Math.random() * 1.5; 
+decay = 0.015 + Math.random() * 0.015;
+} else if (type === 'heart') {
+vx = (Math.random() - 0.5) * 2; // Ajustado para otimizar
+vy = -Math.random(); 
+decay = 0.01;
+} else { // Pixel padrão
+vx = (Math.random() - 0.5) * 4;
+vy = (Math.random() - 0.5) * 4;
+decay = Math.random() * 0.02 + 0.01;
+}
 let life = 1.0;
-let decay = Math.random() * 0.02 + 0.01;
-if(type === 'pollen') { vx = (Math.random() - 0.5) * 1.5; vy = Math.random() * 1.5; decay = 0.015 + Math.random() * 0.015; }
-else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
 particles.push({ x, y, vx, vy, life, decay, color, type });
 }
 }
@@ -506,9 +515,9 @@ conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
 conn.send({ type: 'reward_xp', amount: 25 });
 }
 }
-else if(data.type === 'hit') { // Peer recebe aviso que tomou dano do Host
+else if(data.type === 'hit') { 
 if(!isHost && data.target === 'me') {
-takeDamage(data.amount); // Executa o dano localmente
+takeDamage(data.amount); 
 }
 }
 else if(data.type === 'pos') { 
@@ -600,7 +609,6 @@ if(performance.now() % 60 < 2) hive.hp -= 2;
 }
 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
 if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
-// FIX: Host apenas manda o aviso, não altera HP localmente (evita conflito com sync)
 conn.send({type:'hit', target:'me', amount: 2}); 
 }
 });
@@ -672,10 +680,12 @@ projectiles.splice(pIdx, 1);
 });
 });
 
-particles.forEach((p, i) => {
+// CORREÇÃO: Loop invertido para evitar pular partículas ao remover (splice)
+for (let i = particles.length - 1; i >= 0; i--) {
+let p = particles[i];
 p.x += p.vx; p.y += p.vy; p.life -= p.decay;
 if(p.life <= 0) particles.splice(i, 1);
-});
+}
 }
 
 function drawIndicators() {
