@@ -19,7 +19,19 @@
     --royal-bg: #1a1a1a;
 }
 
-body { margin: 0; overflow: hidden; background: #0f0f0f; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+/* CORREÇÃO SAFARI: Adicionado html ao seletor e -webkit-user-select */
+html, body { 
+    margin: 0; 
+    overflow: hidden; 
+    background: #0f0f0f; 
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+    color: var(--text-main); 
+    touch-action: none; 
+    user-select: none; 
+    -webkit-user-select: none; /* Safari */
+    -webkit-touch-callout: none; /* Safari */
+}
+
 canvas { display: none; image-rendering: pixelated; }
 
 /* --- HUD CENTRAL --- */
@@ -569,6 +581,12 @@ canvas { display: none; image-rendering: pixelated; }
 <canvas id="gameCanvas"></canvas>
 
 <script>
+// --- BLOQUEIO DE ZOOM NO SAFARI (IOS) ---
+// O Safari ignora user-scalable=no, então precisamos bloquear gestos manualmente
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }); 
+document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+
 // --- SCRIPT DE PARTÍCULAS DO MENU ---
 function createMenuParticles() {
     const menu = document.getElementById('menu');
