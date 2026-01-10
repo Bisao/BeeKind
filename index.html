@@ -341,7 +341,7 @@ me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead
 peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0 } 
 };
 
-// BUFFER DE COMANDOS: O Host guarda o que o Peer pediu para processar no frame correto
+// BUFFER DE COMANDOS
 let networkBuffer = {
 hits: [],
 repairs: []
@@ -413,7 +413,6 @@ particles.push({ x, y, vx, vy, life, decay, color, type });
 }
 }
 
-// CORREÇÃO: Geração não é mais imediata
 function generateFlowers() {
 flowers = [];
 const types = ["🌸", "🌻", "🌷"];
@@ -451,7 +450,6 @@ players.peer.color = host ? "#3498db" : "#f1c40f";
 peer = host ? new Peer('bee-' + code) : new Peer();
 peer.on('open', () => { 
 if(host) {
-// CORREÇÃO: Host gera flores e inicia
 generateFlowers();
 startGame(); 
 } else { 
@@ -467,10 +465,12 @@ conn.on('open', () => {
 players.peer.active = true;
 players.peer.lastSeen = Date.now();
 if(isHost) {
-// CORREÇÃO: Host envia o mundo de flores para o Peer
 conn.send({ type: 'init_flowers', data: flowers });
-}
+// IMPORTANTE: O Host JÁ está rodando startGame(), não chame novamente!
+} else {
+// O convidado precisa iniciar o jogo agora
 startGame(); 
+}
 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
 });
 conn.on('data', data => {
@@ -478,15 +478,15 @@ if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
 else if(data.type === 'reward_xp') { addXp(data.amount); }
-else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; } // Sync de polen recebido do host
-else if(data.type === 'init_flowers') { flowers = data.data; } // Peer recebe flores do host
-else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; } // Sync cooldown
+else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; }
+else if(data.type === 'init_flowers') { flowers = data.data; }
+else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; }
 else if(data.type === 'fx') { 
 if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
 if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
 if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
 }
-else if(data.type === 'req_pollen') { // Host recebe pedido de pólen
+else if(data.type === 'req_pollen') {
 if(isHost && flowers[data.id] && flowers[data.id].cooldown <= 0) {
 flowers[data.id].cooldown = flowers[data.id].maxCooldown;
 players.peer.pollen += 0.4;
@@ -552,12 +552,10 @@ projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 6
 
 function runWaveLogic() {
 if (!isHost) {
-// Prediction Local no Peer
 enemies.forEach(en => { en.x += en.vx; en.y += en.vy; });
 return;
 }
 
-// Heartbeat check
 if(Date.now() - lastHeartbeat > 3000) {
 if(conn && conn.open) conn.send({type: 'ping'});
 lastHeartbeat = Date.now();
@@ -567,7 +565,6 @@ players.peer.active = false;
 addMsg("SISTEMA", `${players.peer.nick} desconectou.`, "msg-sys");
 }
 
-// --- PROCESSAR REPAROS ---
 while(networkBuffer.repairs.length > 0) {
 networkBuffer.repairs.shift();
 hive.hp = Math.min(hive.maxHp, hive.hp + 50);
@@ -575,7 +572,6 @@ conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
 conn.send({ type: 'reward_xp', amount: 25 });
 }
 
-// --- ONDAS E MOVIMENTO ---
 waveTimer -= 1/60;
 if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
 
@@ -605,7 +601,7 @@ if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now
 if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
 players.peer.hp -= 2;
 if(players.peer.hp<=0) players.peer.isDead=true;
-conn.send({type:'hit', target:'me'}); // Host avisa Peer que ele tomou dano
+conn.send({type:'hit', target:'me'});
 }
 });
 
@@ -624,11 +620,9 @@ lastNetUpdate = performance.now();
 }
 
 function updateMechanics() {
-// CORREÇÃO: Sync de Cooldown das Flores
 flowers.forEach((f, index) => {
 if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-// Se Host, coleta direto. Se Peer, pede permissão.
 if(isHost) {
 players.me.pollen += 0.4;
 addXp(0.1); 
@@ -638,8 +632,7 @@ players.me.pollen = 100;
 if(conn && conn.open) conn.send({ type: 'sync_flower_cd', id: index, time: f.maxCooldown });
 }
 } else {
-// Peer Logic: Envia request
-if(Math.random() < 0.1) { // Throttle requests
+if(Math.random() < 0.1) {
 conn.send({ type: 'req_pollen', id: index });
 }
 }
@@ -660,22 +653,20 @@ addXp(25);
 }
 }
 
-// CORREÇÃO: Hit Detection Centralizado no Host
 projectiles.forEach((p, pIdx) => {
 enemies.forEach((en) => {
 if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
 if(isHost) {
 en.hp -= 25;
 createParticles(en.x, en.y, "#ff0000", 5);
-conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y }); // FX para o peer ver
+conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
 if(en.hp <= 0) { 
 createParticles(en.x, en.y, "#000", 10); 
-conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y }); // FX para o peer ver
+conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
 if(p.owner === 'me') addXp(15);
-if(p.owner === 'peer') conn.send({ type: 'reward_xp', amount: 15 }); // Recompensa o peer
+if(p.owner === 'peer') conn.send({ type: 'reward_xp', amount: 15 });
 }
 } 
-// Peer não verifica mais colisão nem envia HIT
 projectiles.splice(pIdx, 1);
 }
 });
@@ -791,7 +782,6 @@ if(joyAim.active) fire(joyAim.angle);
 else if(isMouseDown) fire(Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2));
 }
 
-// CORREÇÃO: Removida a duplicidade de chamadas
 runWaveLogic(); 
 updateMechanics();
 
