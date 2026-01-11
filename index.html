@@ -8,19 +8,31 @@
 <style>
 :root { 
 --primary: #f1c40f; 
---primary-dark: #d4ac0d;
+--primary-dark: #b7950b;
 --secondary: #3498db;
---bg-dark: rgba(20, 20, 20, 0.85); 
+--bg-dark: rgba(18, 18, 18, 0.95); 
 --text-main: #ffffff; 
 --xp-color: #3498db; 
 --border: rgba(255, 255, 255, 0.1); 
 --glass: rgba(255, 255, 255, 0.05);
+--royal-gold: #ffd700;
+--royal-bg: #1a1a1a;
 }
 
-body { margin: 0; overflow: hidden; background: #1a1a1a; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: var(--text-main); touch-action: none; user-select: none; }
+html, body { 
+margin: 0; 
+overflow: hidden; 
+background: #0f0f0f; 
+font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
+color: var(--text-main); 
+touch-action: none; 
+user-select: none; 
+-webkit-user-select: none; 
+-webkit-touch-callout: none; 
+}
+
 canvas { display: none; image-rendering: pixelated; }
 
-/* HUD CENTRAL */
 #central-hud {
 position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
 display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -41,7 +53,6 @@ border: 1px solid var(--border); backdrop-filter: blur(5px);
 opacity: 0.9; box-shadow: 0 2px 10px rgba(0,0,0,0.2);
 }
 
-/* HUD DA HORDA */
 #horde-hud {
 font-family: monospace; font-weight: 800; color: #e74c3c;
 background: var(--bg-dark); padding: 5px 20px; border-radius: 12px;
@@ -52,25 +63,21 @@ text-align: center; box-shadow: 0 0 15px rgba(231, 76, 60, 0.2);
 }
 
 .warn-pulse { animation: warnPulse 1s infinite alternate; }
-
 @keyframes warnPulse {
-    from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
-    to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
+from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60, 0.2); }
+to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
 }
 
 #sidebar-container {
 position: absolute; left: 0; top: 100px; z-index: 101;
 display: flex; flex-direction: column; pointer-events: none;
 }
-
 .side-panel {
 position: relative; left: -210px; width: 210px;
 transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 pointer-events: auto;
 }
-
 .side-panel.active { left: 0px; }
-
 .panel-content { 
 background: var(--bg-dark); padding: 15px; border-radius: 0 12px 12px 0; 
 border-left: 4px solid var(--primary); font-size: 13px; 
@@ -78,7 +85,6 @@ backdrop-filter: blur(10px); border: 1px solid var(--border);
 box-shadow: 5px 5px 15px rgba(0,0,0,0.4);
 overflow: hidden;
 }
-
 .panel-toggle {
 position: absolute; right: -45px; top: 0;
 width: 45px; height: 45px; background: var(--primary);
@@ -86,13 +92,11 @@ border: none; border-radius: 0 8px 8px 0; cursor: pointer;
 font-size: 20px; display: flex; align-items: center; justify-content: center;
 box-shadow: 2px 0 10px rgba(0,0,0,0.2); color: #111;
 }
-
 .panel-title { 
 font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid var(--primary); 
 padding-bottom: 5px; color: var(--primary); font-size: 11px; letter-spacing: 1px;
 text-transform: uppercase;
 }
-
 .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
 #bottom-menu-container {
@@ -147,78 +151,271 @@ transition: background 0.3s;
 50% { transform: scale(1.1); box-shadow: 0 0 20px var(--primary); background: #fff176; }
 100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 }
-
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
+
+#loading-screen {
+position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+background: radial-gradient(circle at center, #111 0%, #000 100%);
+z-index: 4000;
+display: none;
+flex-direction: column; align-items: center; justify-content: center;
+}
+
+#loading-scene {
+width: 80%; max-width: 600px;
+height: 100px;
+position: relative;
+margin-bottom: 20px;
+}
+
+#loading-bar-track {
+position: absolute; bottom: 0; left: 0;
+width: 100%; height: 16px;
+background: rgba(255,255,255,0.1);
+border: 2px solid var(--primary);
+border-radius: 8px;
+overflow: hidden;
+}
+
+#loading-bar-active-fill {
+width: 0%; height: 100%;
+background: linear-gradient(90deg, var(--primary), var(--primary-dark));
+box-shadow: 0 0 10px var(--primary);
+}
+
+#loading-ant {
+position: absolute; bottom: 16px;
+left: 0; transform: translateX(-50%);
+font-size: 30px;
+transition: left 0.1s linear;
+}
+
+#loading-bee-container {
+position: absolute; bottom: 30px;
+left: -10%;
+width: 50px; height: 50px;
+transform: translateX(-50%);
+transition: left 0.1s linear, transform 0.3s;
+}
+
+#loading-bee-img {
+width: 100%; height: 100%;
+image-rendering: pixelated;
+animation: flightBob 0.5s infinite alternate;
+}
+
+@keyframes flightBob { from { transform: translateY(0); } to { transform: translateY(-5px); } }
+
+.muzzle-flash {
+position: absolute; right: -10px; top: 25px;
+width: 10px; height: 10px;
+background: #ffeb3b;
+border-radius: 50%;
+opacity: 0;
+box-shadow: 0 0 10px #ffeb3b;
+animation: shootFlash 0.3s infinite;
+}
+
+@keyframes shootFlash { 0% { opacity: 0; } 50% { opacity: 1; transform: scale(1.5); } 100% { opacity: 0; } }
+
+#loading-cookie {
+position: absolute; bottom: 30px; right: 30px;
+font-size: 40px;
+animation: spinCookie 2s linear infinite;
+}
+
+@keyframes spinCookie { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.explosion-text { font-size: 40px !important; animation: explodeScale 0.5s ease-out forwards; }
+@keyframes explodeScale { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.5); } 100% { transform: translateX(-50%) scale(0); opacity: 0; } }
 
 #menu { 
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 display: flex; flex-direction: column; align-items: center; justify-content: center;
-background: linear-gradient(135deg, #121212 0%, #1a1a1a 100%);
+background: radial-gradient(circle at center, #2c2504 0%, #000000 100%);
 z-index: 3000; padding: 20px; box-sizing: border-box;
+overflow: hidden;
+}
+
+.hex-bg {
+position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+background-image: 
+radial-gradient(var(--royal-gold) 1px, transparent 1px);
+background-size: 40px 40px;
+opacity: 0.05;
+pointer-events: none;
+animation: panBg 60s linear infinite;
+}
+
+@keyframes panBg { from { background-position: 0 0; } to { background-position: 40px 40px; } }
+
+.pollen-particle {
+position: absolute; background: var(--primary);
+border-radius: 50%; opacity: 0.6;
+animation: floatUp linear infinite;
+}
+
+@keyframes floatUp {
+0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+50% { opacity: 0.8; }
+100% { transform: translateY(-10vh) scale(1.2); opacity: 0; }
 }
 
 .menu-card {
-background: rgba(40, 40, 40, 0.6);
-backdrop-filter: blur(20px);
-border: 1px solid var(--border);
-border-radius: 24px;
-padding: 40px;
-width: 100%;
-max-width: 500px;
-box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+position: relative;
+background: rgba(10, 10, 10, 0.9);
+border: 2px solid var(--royal-gold);
+border-radius: 16px;
+padding: 40px 30px;
+width: 100%; max-width: 500px;
+box-shadow: 0 0 30px rgba(241, 196, 15, 0.15), inset 0 0 50px rgba(0,0,0,0.8);
 text-align: center;
+backdrop-filter: blur(10px);
+z-index: 10;
+}
+
+.title-box {
+display: flex;
+align-items: center;
+justify-content: center;
+gap: 15px;
+margin-bottom: 10px;
+padding-bottom: 15px;
+border-bottom: 1px solid rgba(241, 196, 15, 0.3);
+}
+
+.bee-flank {
+width: 50px; height: 50px;
+animation: swayBee 2s infinite ease-in-out alternate;
+image-rendering: pixelated;
+flex-shrink: 0;
+}
+
+.bee-left { animation-delay: 0s; }
+.bee-right { animation-delay: 1s; }
+
+@keyframes swayBee {
+from { transform: translateY(0) rotate(-10deg); }
+to { transform: translateY(-8px) rotate(10deg); }
 }
 
 .menu-card h1 {
-font-size: 2.8rem; margin: 0;
-background: linear-gradient(to bottom, #fff, var(--primary));
--webkit-background-clip: text;
--webkit-text-fill-color: transparent;
-letter-spacing: -1px; font-weight: 800;
+font-family: 'Times New Roman', serif;
+font-size: 2.2rem; margin: 0;
+color: var(--royal-gold);
+text-shadow: 0 2px 10px rgba(241, 196, 15, 0.4);
 text-transform: uppercase;
+letter-spacing: 2px;
+white-space: nowrap;
 }
 
-.menu-card .slogan {
-color: var(--primary); font-size: 0.85rem; font-weight: 600;
-letter-spacing: 2px; margin-bottom: 20px; text-transform: uppercase; opacity: 0.9;
+.crown-g {
+position: relative;
+display: inline-block;
 }
 
-.menu-card p.version { color: #888; margin-bottom: 30px; font-size: 0.75rem; }
+.crown-g::before {
+content: '👑';
+position: absolute;
+top: -28px;
+right: -20px;
+font-size: 2rem;
+transform: rotate(25deg);
+filter: drop-shadow(0 2px 2px rgba(0,0,0,0.8));
+pointer-events: none;
+}
 
-#studio-footer { position: absolute; bottom: 30px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; }
-.studio-name { font-size: 14px; text-transform: uppercase; letter-spacing: 4px; color: rgba(255, 255, 255, 0.5); }
-.studio-name b { color: var(--primary); font-weight: 800; }
-.tight-cookie { display: inline-block; margin-left: -5px; margin-right: -4px; transform: translateY(1px); }
+.update-badge {
+display: inline-block;
+background: linear-gradient(45deg, #b7950b, #f1c40f);
+color: #000;
+padding: 6px 14px;
+border-radius: 20px;
+font-size: 0.8rem;
+font-weight: bold;
+text-transform: uppercase;
+margin-bottom: 25px;
+box-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+animation: glowBadge 2s infinite alternate;
+}
 
-.input-group { margin-bottom: 20px; text-align: left; }
-.input-group label { display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--primary); margin-bottom: 8px; font-weight: bold; padding-left: 5px; }
+@keyframes glowBadge { from { box-shadow: 0 0 5px var(--primary); } to { box-shadow: 0 0 15px var(--primary); } }
 
 .menu-input {
-width: 100%; padding: 14px 18px;
-background: rgba(0, 0, 0, 0.3);
-border: 1px solid var(--border);
-border-radius: 12px;
-color: white; font-size: 1rem;
+width: 100%; padding: 15px;
+background: rgba(0, 0, 0, 0.6);
+border: 1px solid #444;
+border-left: 3px solid var(--primary-dark);
+border-radius: 4px;
+color: #e0e0e0; font-size: 1rem;
+margin-bottom: 5px;
 box-sizing: border-box;
-transition: border-color 0.3s, box-shadow 0.3s;
+transition: all 0.3s;
+font-family: monospace;
+user-select: text;
+-webkit-user-select: text;
 }
 
-.menu-input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(241, 196, 15, 0.1); }
+.menu-input:focus {
+outline: none;
+border-color: var(--royal-gold);
+background: rgba(20, 20, 20, 0.9);
+box-shadow: 0 0 15px rgba(241, 196, 15, 0.1);
+}
 
-.button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px; }
+.input-group label {
+display: block; text-align: left;
+color: #aaa; font-size: 0.75rem;
+text-transform: uppercase;
+margin-bottom: 6px; margin-top: 15px;
+letter-spacing: 1px;
+}
+
+.button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 25px; }
 
 .main-btn {
-padding: 16px; cursor: pointer; border-radius: 12px; border: none;
-font-weight: 800; font-size: 0.9rem; text-transform: uppercase;
-letter-spacing: 1px; transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-display: flex; align-items: center; justify-content: center; gap: 10px;
+padding: 16px; cursor: pointer; border-radius: 6px; border: none;
+font-weight: 800; font-size: 0.95rem; text-transform: uppercase;
+letter-spacing: 1px; transition: all 0.2s;
+display: flex; align-items: center; justify-content: center; gap: 8px;
+font-family: 'Segoe UI', sans-serif;
+position: relative; overflow: hidden;
 }
 
-.btn-create { background: var(--primary); color: #111; }
-.btn-create:hover { background: var(--primary-dark); transform: translateY(-2px); }
-.btn-join { background: var(--secondary); color: white; }
-.btn-join:hover { filter: brightness(1.1); transform: translateY(-2px); }
-.main-btn:active { transform: scale(0.95); }
+.main-btn::after {
+content: ''; position: absolute; top: -50%; left: -50%;
+width: 200%; height: 200%;
+background: linear-gradient(to bottom right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.1) 50%, rgba(255,255,255,0) 100%);
+transform: rotate(45deg) translateY(-100%);
+transition: transform 0.5s;
+}
+.main-btn:hover::after { transform: rotate(45deg) translateY(0%); }
+
+.btn-create { 
+background: linear-gradient(to bottom, #f1c40f, #d4ac0d); 
+color: #121212; border: 1px solid #f39c12;
+}
+.btn-join { 
+background: linear-gradient(to bottom, #3498db, #2980b9); 
+color: white; border: 1px solid #2980b9;
+}
+
+#studio-footer { 
+position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); 
+text-align: center; pointer-events: none; z-index: 10;
+opacity: 0.7; font-size: 0.8rem;
+white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+.menu-card { padding: 30px 15px; width: 95%; }
+.title-box { gap: 5px; }
+.menu-card h1 { font-size: 1.4rem; }
+.bee-flank { width: 35px; height: 35px; }
+.crown-g::before { font-size: 1.4rem; top: -18px; right: -6px; }
+.button-row { gap: 10px; }
+.main-btn { font-size: 0.8rem; padding: 14px 5px; }
+}
 
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
 #move-base { left: 40px; }
@@ -281,35 +478,52 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 </div>
 </div>
 
+<div id="loading-screen">
+<div id="loading-scene">
+<div id="loading-bee-container">
+<div class="muzzle-flash"></div>
+<img src="BeeRight.png" id="loading-bee-img">
+</div>
+<div id="loading-ant">🐜</div>
+<div id="loading-bar-track">
+<div id="loading-bar-active-fill"></div>
+</div>
+</div>
+<h3 style="color:var(--primary); letter-spacing: 2px; text-transform: uppercase;">Carregando Mundo...</h3>
+<div id="loading-cookie">🍪</div>
+</div>
+
 <div id="menu">
+<div class="hex-bg"></div>
 <div class="menu-card">
-<h1>THE HIVE KINGDOM</h1>
-<div class="slogan">Long live the King. Long live the Hive</div>
-<p class="version">RPG Multiplayer Edition • v1.3</p>
-
-<div class="input-group">
-<label>Identidade</label>
-<input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido no jogo..." maxlength="12">
+<div class="title-box">
+<img src="BeeLeft.png" class="bee-flank bee-left">
+<h1>The Hive Kin<span class="crown-g">g</span>dom</h1>
+<img src="BeeRight.png" class="bee-flank bee-right">
 </div>
-
+<div class="update-badge">Update: Pollen War • v1.4</div>
 <div class="input-group">
-<label>Portal (Código da Sala)</label>
-<input type="text" id="room-code" class="menu-input" placeholder="Ex: ABC123" maxlength="6">
+<label>Identidade do Guerreiro</label>
+<input type="text" id="player-nick" class="menu-input" placeholder="Seu apelido..." maxlength="12">
 </div>
-
+<div class="input-group">
+<label>Nome do Reino (ID da Sala)</label>
+<input type="text" id="room-code" class="menu-input" placeholder="Ex: KING1" maxlength="12">
+</div>
+<div class="input-group">
+<label>Chave do Reino (Senha)</label>
+<input type="password" id="room-pass" class="menu-input" placeholder="Senha secreta..." maxlength="10">
+</div>
 <div class="button-row">
 <button class="main-btn btn-create" onclick="startSession(true)">
-<span>🏠</span> Criar Sala
+<span>👑</span> Criar Reino
 </button>
 <button class="main-btn btn-join" onclick="startSession(false)">
-<span>🚀</span> Entrar
+<span>⚔️</span> Entrar
 </button>
 </div>
 </div>
-
-<div id="studio-footer">
-<div class="studio-name"><b>FUN<span class="tight-cookie">🍪</span>COOK STUDIO</b></div>
-</div>
+<div id="studio-footer">FUN🍪COOK STUDIO &copy; 2025</div>
 </div>
 
 <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
@@ -318,6 +532,85 @@ display: flex; align-items: center; justify-content: center; gap: 10px;
 <canvas id="gameCanvas"></canvas>
 
 <script>
+document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
+document.addEventListener('gesturechange', function(e) { e.preventDefault(); }); 
+document.addEventListener('gestureend', function(e) { e.preventDefault(); });
+
+function createMenuParticles() {
+const menu = document.getElementById('menu');
+for(let i=0; i<30; i++) {
+const p = document.createElement('div');
+p.classList.add('pollen-particle');
+p.style.left = Math.random() * 100 + '%';
+p.style.width = (Math.random() * 4 + 2) + 'px';
+p.style.height = p.style.width;
+p.style.animationDuration = (Math.random() * 5 + 5) + 's';
+p.style.animationDelay = (Math.random() * 5) + 's';
+menu.appendChild(p);
+}
+}
+createMenuParticles();
+
+window.onload = function() {
+if(localStorage.getItem('hive_nick')) document.getElementById('player-nick').value = localStorage.getItem('hive_nick');
+if(localStorage.getItem('hive_room')) document.getElementById('room-code').value = localStorage.getItem('hive_room');
+if(localStorage.getItem('hive_pass')) document.getElementById('room-pass').value = localStorage.getItem('hive_pass');
+};
+
+function startLoadingSequence() {
+document.getElementById('menu').style.display = 'none';
+const loadingScreen = document.getElementById('loading-screen');
+loadingScreen.style.display = 'flex';
+
+const bar = document.getElementById('loading-bar-active-fill');
+const ant = document.getElementById('loading-ant');
+const beeCont = document.getElementById('loading-bee-container');
+const beeImg = document.getElementById('loading-bee-img');
+const muzzle = document.querySelector('.muzzle-flash');
+
+const duration = 5000; 
+const startTime = Date.now();
+let exploded = false;
+
+function frame() {
+const now = Date.now();
+const elapsed = now - startTime;
+let pct = Math.min(1, elapsed / duration);
+const pctVal = pct * 100;
+
+if (pct < 1) {
+bar.style.width = pctVal + '%';
+ant.style.left = pctVal + '%';
+let beePos = Math.max(0, pctVal - 1); 
+beeCont.style.left = beePos + '%';
+requestAnimationFrame(frame);
+} else {
+if(!exploded) {
+exploded = true;
+bar.style.width = '100%';
+ant.innerText = "💥";
+ant.classList.add('explosion-text');
+muzzle.style.display = 'none';
+beeImg.src = 'BeeDown.png';
+beeImg.style.animation = 'none'; 
+beeCont.style.transition = 'left 0.5s ease-out';
+beeCont.style.left = '50%';
+
+setTimeout(() => {
+loadingScreen.style.display = 'none';
+if(isHost) {
+generateFlowers();
+startGame();
+} else {
+startGame();
+}
+}, 1000);
+}
+}
+}
+requestAnimationFrame(frame);
+}
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d', { alpha: false });
 const chatInput = document.getElementById('chat-input');
@@ -341,16 +634,14 @@ assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets
 assets.ground.src = 'Grass.png';
 
 let isHost = false;
+let hostPassword = "";
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
 let players = { 
 me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100, isCollecting: false }, 
-peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false } 
+peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false, authorized: false } 
 };
 
-let networkBuffer = {
-repairs: []
-};
-
+let networkBuffer = { repairs: [] };
 let projectiles = [], enemies = [], flowers = [], particles = []; 
 let camera = { x: 0, y: 0 }, peer, conn, keys = {};
 const TILE_SIZE = 64;
@@ -449,43 +740,101 @@ window.addEventListener('keyup', e => keys[e.code] = false);
 function startSession(host) {
 const code = document.getElementById('room-code').value.trim();
 const nick = document.getElementById('player-nick').value.trim();
-if(!nick || !code) return alert("Preencha o Nickname e o Código!");
+const pass = document.getElementById('room-pass').value.trim();
+
+if(!nick || !code || !pass) return alert("Preencha o Nick, o Nome do Reino e a Senha!");
+
+localStorage.setItem('hive_nick', nick);
+localStorage.setItem('hive_room', code);
+localStorage.setItem('hive_pass', pass);
+
 isHost = host;
+hostPassword = pass;
 players.me.nick = nick;
 players.me.color = host ? "#f1c40f" : "#3498db";
 players.peer.color = host ? "#3498db" : "#f1c40f";
-peer = host ? new Peer('bee-' + code) : new Peer();
-peer.on('open', () => { 
+
+if(peer && !peer.destroyed) peer.destroy();
+const peerId = host ? 'hive-game-' + code : null;
+peer = new Peer(peerId);
+
+peer.on('error', (err) => {
+console.error(err);
+if(err.type === 'unavailable-id') {
+alert("Este Nome de Reino já está em uso! Escolha outro.");
+} else if (err.type === 'peer-unavailable') {
+alert("Reino não encontrado! Verifique o nome.");
+} else {
+alert("Erro na conexão: " + err.type);
+}
+});
+
+peer.on('open', (id) => { 
 if(host) {
-generateFlowers();
-startGame(); 
+startLoadingSequence(); 
 } else { 
-conn = peer.connect('bee-' + code); 
+conn = peer.connect('hive-game-' + code); 
 setupConn(); 
 } 
 });
-peer.on('connection', c => { conn = c; setupConn(); });
+
+peer.on('connection', c => { 
+conn = c; 
+setupConn(); 
+});
 }
 
 function setupConn() {
 conn.on('open', () => { 
+if(!isHost) {
+conn.send({ 
+type: 'auth', 
+pass: document.getElementById('room-pass').value.trim(), 
+nick: players.me.nick,
+color: players.me.color
+});
+}
+});
+
+conn.on('data', data => {
+if (isHost && data.type === 'auth') {
+if (data.pass === hostPassword) {
+players.peer.nick = data.nick;
+players.peer.color = data.color;
+players.peer.authorized = true;
 players.peer.active = true;
 players.peer.lastSeen = Date.now();
-if(isHost) {
+conn.send({ type: 'auth_success' });
 conn.send({ type: 'init_flowers', data: flowers });
-} else {
-startGame(); 
-}
 conn.send({ type: 'handshake', nick: players.me.nick, color: players.me.color });
-});
-conn.on('data', data => {
+addMsg("SISTEMA", `${data.nick} entrou no reino!`, "msg-sys");
+} else {
+conn.send({ type: 'auth_fail' });
+setTimeout(() => { conn.close(); }, 500);
+}
+return;
+}
+
+if (!isHost) {
+if (data.type === 'auth_success') {
+startLoadingSequence();
+return;
+} else if (data.type === 'auth_fail') {
+alert("SENHA INCORRETA!");
+peer.destroy();
+return;
+}
+}
+
+if (isHost && !players.peer.authorized) return;
+
 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
 else if(data.type === 'reward_xp') { addXp(data.amount); }
 else if(data.type === 'upd_pollen') { players.me.pollen = data.amount; }
 else if(data.type === 'init_flowers') { flowers = data.data; }
-else if(data.type === 'sync_flowers_list') { flowers = data.data; }
+else if(data.type === 'sync_flowers_list') { flowers = data.data; } 
 else if(data.type === 'sync_flower_cd') { if(flowers[data.id]) flowers[data.id].cooldown = data.time; }
 else if(data.type === 'fx') { 
 if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
@@ -500,9 +849,7 @@ conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
 conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
 }
 }
-else if(data.type === 'wave_clear') { 
-showWaveClearEffect();
-}
+else if(data.type === 'wave_clear') { showWaveClearEffect(); }
 else if(data.type === 'sync_world') { 
 players.peer.lastSeen = Date.now();
 enemies = data.enemies.map(enNew => {
@@ -521,14 +868,10 @@ const repairAmount = hive.destroyed ? 25 : 50;
 hive.hp = Math.min(hive.maxHp, hive.hp + repairAmount);
 if(hive.hp > 0) hive.destroyed = false;
 conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-conn.send({ type: 'reward_xp', amount: 15 });
+conn.send({ type: 'reward_xp', amount: 15 }); 
 }
 }
-else if(data.type === 'hit') { 
-if(!isHost && data.target === 'me') {
-takeDamage(data.amount); 
-}
-}
+else if(data.type === 'hit') { if(!isHost && data.target === 'me') takeDamage(data.amount); }
 else if(data.type === 'pos') { 
 players.peer.lastSeen = Date.now();
 players.peer.tX = data.x; players.peer.tY = data.y; 
@@ -539,11 +882,17 @@ players.peer.lvl = data.lvl; players.peer.active = true;
 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
 else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
 });
+
+conn.on('close', () => {
+players.peer.active = false;
+players.peer.authorized = false;
+addMsg("SISTEMA", "Conexão perdida.", "msg-sys");
+});
 }
 
 function showWaveClearEffect() {
 addMsg("SISTEMA", "HORDA DESTRUÍDA! +3 Minutos de Paz.", "msg-sys");
-createParticles(hive.x, hive.y, "#3498db", 30, 'pixel');
+createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); 
 }
 
 function takeDamage(amount) {
@@ -593,10 +942,10 @@ waveTimer -= 1/60;
 if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
 
 if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
-   isWaveActive = false;
-   waveTimer = 180;
-   showWaveClearEffect();
-   if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
+isWaveActive = false;
+waveTimer = 180; 
+showWaveClearEffect();
+if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
 }
 
 if (isWaveActive) {
@@ -607,7 +956,7 @@ enemies.push({
 id: Math.random().toString(36).substr(2, 9),
 x: hive.x + Math.cos(angle) * 1000, y: hive.y + Math.sin(angle) * 1000, 
 hp: 100, vx: 0, vy: 0,
-behavior: Math.random() < 0.35 ? 'hunter' : 'rusher'
+behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' 
 });
 enemiesSpawnedInWave++; lastEnemySpawnTime = now;
 }
@@ -616,38 +965,27 @@ enemiesSpawnedInWave++; lastEnemySpawnTime = now;
 enemies.forEach((en) => {
     let targetX = hive.x;
     let targetY = hive.y;
-
     if (hive.destroyed || en.behavior === 'hunter') {
         let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
         let dPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
-
         if (dMe < Infinity || dPeer < Infinity) {
-            if (dMe <= dPeer) {
-                targetX = players.me.x; targetY = players.me.y;
-            } else {
-                targetX = players.peer.x; targetY = players.peer.y;
-            }
+            if (dMe <= dPeer) { targetX = players.me.x; targetY = players.me.y; } 
+            else { targetX = players.peer.x; targetY = players.peer.y; }
         }
     }
-
     const angle = Math.atan2(targetY - en.y, targetX - en.x);
     en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
     en.x += en.vx; en.y += en.vy;
-
-if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) {
-if(performance.now() % 60 < 2) hive.hp -= 2;
-}
-if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) {
-conn.send({type:'hit', target:'me', amount: 2}); 
-}
+    if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { if(performance.now() % 60 < 2) hive.hp -= 2; }
+    if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
+    if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) { conn.send({type:'hit', target:'me', amount: 2}); }
 });
 
 enemies = enemies.filter(en => en.hp > 0);
-
 if (hive.hp <= 0 && !hive.destroyed) { 
     hive.hp = 0; 
     hive.destroyed = true; 
+    addMsg("SISTEMA", "REINO CAÍDO! Reconstrua para parar os ataques.", "msg-sys");
 }
 
 if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
@@ -665,17 +1003,12 @@ lastNetUpdate = performance.now();
 
 function spawnFlower(x, y) {
     const types = ["🌸", "🌻", "🌷"];
-    const id = flowers.length;
+    const id = flowers.length; 
     flowers.push({
-        id: id,
-        x: x, 
-        y: y,
+        id: id, x: x, y: y,
         emoji: types[Math.floor(Math.random() * types.length)],
-        cooldown: 0, 
-        maxCooldown: 300, 
-        phase: Math.random() * Math.PI * 2,
-        growState: 'seed',
-        plantTime: Date.now()
+        cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2,
+        growState: 'seed', plantTime: Date.now()
     });
     if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 }
@@ -686,43 +1019,26 @@ players.me.isCollecting = false;
 if(isHost) {
     let needsFlowerSync = false;
     const now = Date.now();
-
     if(players.me.pollen > 0 && !players.me.isDead) {
         if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
              if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
              players.me.pollen = Math.max(0, players.me.pollen - 0.05);
-             if(Math.random() < 0.002) {
-                 spawnFlower(players.me.x, players.me.y);
-             }
+             if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
         }
     }
-
     if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
          if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-         if(Math.random() < 0.002) {
-             spawnFlower(players.peer.x, players.peer.y);
-         }
+         if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
     }
-
     flowers.forEach(f => {
         if(f.growState !== 'mature') {
             const age = now - f.plantTime;
-            if(f.growState === 'seed' && age >= 120000) {
-                f.growState = 'sprout';
-                needsFlowerSync = true;
-            }
-            if(f.growState === 'sprout' && age >= 300000) {
-                f.growState = 'mature';
-                needsFlowerSync = true;
-            }
+            if(f.growState === 'seed' && age >= 120000) { f.growState = 'sprout'; needsFlowerSync = true; }
+            if(f.growState === 'sprout' && age >= 300000) { f.growState = 'mature'; needsFlowerSync = true; }
         }
     });
-
-    if(needsFlowerSync && players.peer.active && conn && conn.open) {
-        conn.send({ type: 'sync_flowers_list', data: flowers });
-    }
+    if(needsFlowerSync && players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 }
-
 
 flowers.forEach((f, index) => {
 if(f.growState === 'mature') {
@@ -730,115 +1046,86 @@ if(f.growState === 'mature') {
     else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
         players.me.isCollecting = true; 
         if(isHost) {
-            players.me.pollen += 0.4;
-            addXp(0.02); 
+            players.me.pollen += 0.4; addXp(0.02); 
             if(players.me.pollen >= 100) { 
-                f.cooldown = f.maxCooldown; 
-                players.me.pollen = 100;
+                f.cooldown = f.maxCooldown; players.me.pollen = 100;
                 if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: index, time: f.maxCooldown });
             }
-        } else {
-            if(Math.random() < 0.1) {
-                conn.send({ type: 'req_pollen', id: index });
-            }
-        }
+        } else { if(Math.random() < 0.1) conn.send({ type: 'req_pollen', id: index }); }
     }
 }
 });
 
-if(!players.me.isDead && players.me.pollen > 0 && Math.random() < 0.1) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-
-// REPARO DA COLMEIA - Funciona mesmo destruída
+// CORREÇÃO: Reparo da Colmeia (Mesmo se destruída)
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 70) {
     if(players.me.pollen >= 100) {
         players.me.pollen = 0; 
-        
-        // Cura o jogador
         if(players.me.hp < 100) {
             players.me.hp = Math.min(100, players.me.hp + 20);
             createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
             addMsg("SISTEMA", "Curado (+20 HP) por ajudar o Reino.", "msg-sys");
         }
-
         if(isHost) { 
-            const repairAmount = hive.destroyed ? 25 : 50;
+            const repairAmount = hive.destroyed ? 50 : 100;
             hive.hp = Math.min(hive.maxHp, hive.hp + repairAmount); 
             if(hive.hp > 0) {
                 if(hive.destroyed) addMsg("SISTEMA", "REINO RECONSTRUÍDO!", "msg-sys");
                 hive.destroyed = false;
             }
             createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart');
-            addXp(15); 
+            addXp(25); 
         } else { conn.send({ type: 'repair' }); }
     }
+    if(!players.me.isDead && players.me.pollen > 0 && Math.random() < 0.1) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
 }
 
 for (let i = projectiles.length - 1; i >= 0; i--) {
-    let p = projectiles[i];
-    let hit = false;
-    
+    let p = projectiles[i]; let hit = false;
     for (let j = 0; j < enemies.length; j++) {
         let en = enemies[j];
         if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
             if(isHost) {
-                en.hp -= 25;
-                createParticles(en.x, en.y, "#ff0000", 5);
+                en.hp -= 25; createParticles(en.x, en.y, "#ff0000", 5);
                 if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
-                
                 if(en.hp <= 0) { 
                     createParticles(en.x, en.y, "#000", 10); 
                     if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'death', x: en.x, y: en.y });
-                    
                     const totalKillXp = 30;
                     if(players.peer.active && !players.peer.isDead) {
                         const splitXp = totalKillXp / 2;
                         addXp(splitXp); 
                         if(conn && conn.open) conn.send({ type: 'reward_xp', amount: splitXp }); 
-                    } else {
-                        addXp(totalKillXp); 
-                    }
+                    } else { addXp(totalKillXp); }
                 }
             } 
-            hit = true;
-            break; 
+            hit = true; break; 
         }
     }
-
-    if(hit) {
-        projectiles.splice(i, 1);
-        continue;
-    }
-
-    p.x += p.vx; p.y += p.vy; 
-    p.life--; 
-    if(p.life <= 0) {
-        projectiles.splice(i, 1);
-    }
+    if(hit) { projectiles.splice(i, 1); continue; }
+    p.x += p.vx; p.y += p.vy; p.life--; 
+    if(p.life <= 0) projectiles.splice(i, 1);
 }
 
-particles.forEach((p, i) => {
-p.x += p.vx; p.y += p.vy; p.life -= p.decay;
-if(p.life <= 0) particles.splice(i, 1);
-});
+particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) particles.splice(i, 1); });
 }
 
 function updateHordeHud() {
-    const hud = document.getElementById('horde-hud');
-    if (isWaveActive) {
-        hud.style.display = 'block';
-        hud.style.color = '#ff4757';
-        hud.classList.remove('warn-pulse');
-        const remaining = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
-        hud.innerText = `⚠️ INVASÃO: ${remaining} ⚠️`;
-    } else if (waveTimer <= 60) {
-        hud.style.display = 'block';
-        hud.style.color = '#e67e22';
-        hud.classList.add('warn-pulse');
-        hud.innerText = `ALERTA: ${Math.ceil(waveTimer)}s`;
-    } else {
-        hud.style.display = 'none';
-        hud.classList.remove('warn-pulse');
-    }
+const hud = document.getElementById('horde-hud');
+if (isWaveActive) {
+hud.style.display = 'block';
+hud.style.color = '#ff4757';
+hud.classList.remove('warn-pulse');
+const remaining = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
+hud.innerText = `⚠️ INVASÃO: ${remaining} ⚠️`;
+} else if (waveTimer <= 60) {
+hud.style.display = 'block';
+hud.style.color = '#e67e22';
+hud.classList.add('warn-pulse');
+hud.innerText = `ALERTA: ${Math.ceil(waveTimer)}s`;
+} else {
+hud.style.display = 'none';
+hud.classList.remove('warn-pulse');
+}
 }
 
 function drawIndicators() {
@@ -927,64 +1214,52 @@ function resize() { canvas.width = window.innerWidth; canvas.height = window.inn
 window.addEventListener('resize', resize);
 
 function getDirFromAngle(angle) {
-    const deg = angle * (180 / Math.PI);
-    if (deg >= -45 && deg <= 45) return 'Right';
-    if (deg > 45 && deg < 135) return 'Down';
-    if (deg >= 135 || deg <= -135) return 'Left';
-    return 'Up';
+const deg = angle * (180 / Math.PI);
+if (deg >= -45 && deg <= 45) return 'Right';
+if (deg > 45 && deg < 135) return 'Down';
+if (deg >= 135 || deg <= -135) return 'Left';
+return 'Up';
 }
 
 function update() {
-    if(!players.me.isDead) {
-        let dx = joyMove.dx, dy = joyMove.dy;
-        if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
-        if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+if(!players.me.isDead) {
+let dx = joyMove.dx, dy = joyMove.dy;
+if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+if (dx !== 0 || dy !== 0) {
+const m = Math.sqrt(dx*dx + dy*dy);
+players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+if (!joyAim.active && !isMouseDown) {
+if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+else players.me.dir = dy > 0 ? 'Down' : 'Up';
+}
+}
+if(joyAim.active) { players.me.dir = getDirFromAngle(joyAim.angle); fire(joyAim.angle); } 
+else if(isMouseDown) { const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2); players.me.dir = getDirFromAngle(angle); fire(angle); }
+}
+runWaveLogic(); 
+updateMechanics();
+updateHordeHud();
 
-        if (dx !== 0 || dy !== 0) {
-            const m = Math.sqrt(dx*dx + dy*dy);
-            players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
-            
-            if (!joyAim.active && !isMouseDown) {
-                if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
-                else players.me.dir = dy > 0 ? 'Down' : 'Up';
-            }
-        }
+if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
 
-        if(joyAim.active) {
-            players.me.dir = getDirFromAngle(joyAim.angle);
-            fire(joyAim.angle);
-        } else if(isMouseDown) {
-            const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2);
-            players.me.dir = getDirFromAngle(angle);
-            fire(angle);
-        }
-    }
+let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
+if(players.peer.active) { 
+players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10)}m</span></div>`;
+}
+playerItemsContainer.innerHTML = playerListHtml;
 
-    runWaveLogic(); 
-    updateMechanics();
-    updateHordeHud();
+let hiveListHtml = "";
+const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+if(!hive.destroyed) {
+    hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
+} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída (Restaure!)</span></div>`; }
+hiveItemsContainer.innerHTML = hiveListHtml;
 
-    if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
-
-    let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
-    if(players.peer.active) { 
-        players.peer.x += (players.peer.tX - players.peer.x) * 0.15; 
-        players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
-        const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-        playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
-    }
-    playerItemsContainer.innerHTML = playerListHtml;
-
-    let hiveListHtml = "";
-    if(!hive.destroyed) {
-        const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-        const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
-        hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-    } else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída (Reconstrua!)</span></div>`; }
-    hiveItemsContainer.innerHTML = hiveListHtml;
-
-    camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-    document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
+camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
 }
 
 function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
@@ -993,9 +1268,9 @@ ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, 
 }
 
 function drawPollenBar(x, y, pollen, w = 50, h = 6, offset = -40) {
-    ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
-    ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
-    ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1; ctx.strokeRect(x - w/2, y - offset, w, h);
+ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
+ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
+ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1; ctx.strokeRect(x - w/2, y - offset, w, h);
 }
 
 function draw() {
@@ -1008,15 +1283,10 @@ if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SI
 
 flowers.forEach(f => {
 if(f.growState === 'seed') return;
-
 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
 ctx.font = "28px Arial"; ctx.textAlign = "center";
 ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
-
-let emoji = f.emoji;
-if(f.growState === 'sprout') emoji = "🌱";
-
-ctx.fillText(emoji, f.x + sway, f.y);
+ctx.fillText(f.growState === 'sprout' ? "🌱" : f.emoji, f.x + sway, f.y);
 });
 ctx.globalAlpha = 1.0;
 
@@ -1026,7 +1296,9 @@ ctx.fillText("🏠", hive.x, hive.y + 20);
 ctx.globalAlpha = 1.0;
 
 if(!hive.destroyed || hive.hp > 0) {
-    drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
+drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
+} else {
+ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50);
 }
 
 drawIndicators();
@@ -1047,9 +1319,8 @@ ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; 
 ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
 drawHealthBar(p.x, p.y, p.hp);
-if(p.pollen > 0) {
-    drawPollenBar(p.x, p.y, p.pollen);
-}
+// CORREÇÃO: Barra de pólen agora visível para o convidado também
+if(p.pollen > 0) { drawPollenBar(p.x, p.y, p.pollen); }
 };
 drawB(players.me, players.me.color, 1);
 if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
