@@ -119,7 +119,6 @@ position: relative;
 }
 .square-btn:hover { background: var(--primary); transform: scale(1.05); }
 
-/* Indicador de pontos pendentes */
 .point-notify {
     position: absolute; top: -5px; right: -5px;
     background: #e74c3c; color: white; border-radius: 50%;
@@ -164,7 +163,6 @@ transition: background 0.3s;
 }
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
-/* --- SISTEMA DE ATRIBUTOS E HABILIDADES (MODAL) --- */
 #progression-modal {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     background: rgba(0,0,0,0.9); z-index: 2000;
@@ -222,8 +220,6 @@ transition: background 0.3s;
     border-radius: 6px; color: white; cursor: pointer; font-size: 11px;
 }
 .btn-unlock:disabled { background: #555; opacity: 0.5; }
-
-/* --- FIM PROGRESSION STYLES --- */
 
 #loading-screen {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -782,7 +778,6 @@ let isHost = false;
 let hostPassword = ""; 
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
 
-// --- JOGADOR EXTENDIDO ---
 let players = { 
 me: { 
     x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", 
@@ -790,7 +785,8 @@ me: {
     lvl: 1, xp: 0, nextXp: 100, isCollecting: false,
     statPoints: 0,
     stats: { str: 0, agi: 0, vit: 0 },
-    skills: { double: false, regen: false, pollen: false }
+    skills: { double: false, regen: false, pollen: false },
+    aimAngle: 0 // Nova variável para rastrear mira
 }, 
 peer: { 
     x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", 
@@ -814,7 +810,6 @@ mainActionMenu.style.display = isVisible ? 'none' : 'grid';
 btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
 };
 
-// --- LOGICA DE PROGRESSÃO ---
 function toggleProgression() {
     const modal = document.getElementById('progression-modal');
     const isVisible = modal.style.display === 'flex';
@@ -829,15 +824,9 @@ function updateProgressionUI() {
     document.getElementById('val-str').innerText = players.me.stats.str;
     document.getElementById('val-agi').innerText = players.me.stats.agi;
     document.getElementById('val-vit').innerText = players.me.stats.vit;
-
-    // Notificação de pontos
     document.getElementById('attr-notify').style.display = players.me.statPoints > 0 ? 'flex' : 'none';
-
-    // Botões de upgrade
     const btns = document.querySelectorAll('.btn-plus');
     btns.forEach(b => b.disabled = players.me.statPoints <= 0);
-
-    // Habilidades
     updateSkillUI('double', 2);
     updateSkillUI('regen', 3);
     updateSkillUI('pollen', 2);
@@ -859,13 +848,10 @@ function upgradeStat(type) {
     if(players.me.statPoints > 0) {
         players.me.stats[type]++;
         players.me.statPoints--;
-        
-        // Aplica bônus imediato de vitalidade
         if(type === 'vit') {
             players.me.maxHp = 100 + (players.me.stats.vit * 20);
             players.me.hp += 20;
         }
-        
         updateProgressionUI();
     }
 }
@@ -908,7 +894,7 @@ players.me.xp += amount;
 if(players.me.xp >= players.me.nextXp) {
 players.me.xp -= players.me.nextXp;
 players.me.lvl++;
-players.me.statPoints += 2; // Ganha 2 pontos por nível
+players.me.statPoints += 2;
 players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
 addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}! (+2 pontos)`, "msg-sys");
 createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
@@ -964,32 +950,26 @@ const code = document.getElementById('room-code').value.trim();
 const nick = document.getElementById('player-nick').value.trim();
 const pass = document.getElementById('room-pass').value.trim();
 if(!nick || !code || !pass) return alert("Preencha o Nick, o Nome do Reino e a Senha!");
-
 localStorage.setItem('hive_nick', nick);
 localStorage.setItem('hive_room', code);
 localStorage.setItem('hive_pass', pass);
-
 isHost = host;
 hostPassword = pass;
 players.me.nick = nick;
 players.me.color = host ? "#f1c40f" : "#3498db";
 players.peer.color = host ? "#3498db" : "#f1c40f";
-
 if(peer && !peer.destroyed) peer.destroy();
 const peerId = host ? 'hive-game-' + code : null;
 peer = new Peer(peerId);
-
 peer.on('error', (err) => {
 if(err.type === 'unavailable-id') alert("Este Nome de Reino já está em uso! Escolha outro.");
 else if (err.type === 'peer-unavailable') alert("Reino não encontrado! Verifique o nome.");
 else alert("Erro na conexão: " + err.type);
 });
-
 peer.on('open', (id) => { 
 if(host) { startLoadingSequence(); } 
 else { conn = peer.connect('hive-game-' + code); setupConn(); } 
 });
-
 peer.on('connection', c => { conn = c; setupConn(); });
 }
 
@@ -997,7 +977,6 @@ function setupConn() {
 conn.on('open', () => { 
 if(!isHost) conn.send({ type: 'auth', pass: document.getElementById('room-pass').value.trim(), nick: players.me.nick, color: players.me.color });
 });
-
 conn.on('data', data => {
 if (isHost && data.type === 'auth') {
 if (data.pass === hostPassword) {
@@ -1014,14 +993,11 @@ setTimeout(() => { conn.close(); }, 500);
 }
 return;
 }
-
 if (!isHost) {
 if (data.type === 'auth_success') { startLoadingSequence(); return; }
 else if (data.type === 'auth_fail') { alert("SENHA INCORRETA!"); peer.destroy(); return; }
 }
-
 if (isHost && !players.peer.authorized) return;
-
 if(data.type === 'chat') addMsg(players.peer.nick, data.msg, "peer");
 else if(data.type === 'shoot') spawnProjectile(data.x, data.y, data.angle, false);
 else if(data.type === 'handshake') { players.peer.nick = data.nick; players.peer.color = data.color; }
@@ -1069,7 +1045,6 @@ players.peer.isCollecting = data.isCollecting;
 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
 else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
 });
-
 conn.on('close', () => { players.peer.active = false; players.peer.authorized = false; addMsg("SISTEMA", "Conexão perdida.", "msg-sys"); });
 }
 
@@ -1086,37 +1061,29 @@ function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.
 
 function fire(angle) {
 if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
-
-// Lógica de disparo duplo
 spawnProjectile(players.me.x, players.me.y, angle, true);
 if(players.me.skills.double && Math.random() < 0.3) {
     spawnProjectile(players.me.x, players.me.y, angle + 0.1, true);
 }
-
 if(players.peer.active && conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
 lastShootTime = Date.now();
 }
 
 function spawnProjectile(x, y, angle, isMe) {
-    // Força aumenta o tempo de vida/velocidade do projétil
     const bonusVel = isMe ? (players.me.stats.str * 0.5) : 0;
     projectiles.push({ x, y, vx: Math.cos(angle)*(12+bonusVel), vy: Math.sin(angle)*(12+bonusVel), life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
 }
 
 function runWaveLogic() {
 if (!isHost) { enemies.forEach(en => { en.x += en.vx; en.y += en.vy; }); return; }
-
 if(Date.now() - lastHeartbeat > 3000) { if(conn && conn.open) conn.send({type: 'ping'}); lastHeartbeat = Date.now(); }
 if(players.peer.active && Date.now() - players.peer.lastSeen > 10000) { players.peer.active = false; addMsg("SISTEMA", `${players.peer.nick} desconectou.`, "msg-sys"); }
-
 waveTimer -= 1/60;
 if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
-
 if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
 isWaveActive = false; waveTimer = 180; showWaveClearEffect();
 if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
 }
-
 if (isWaveActive) {
 let now = Date.now();
 if (enemiesSpawnedInWave < TOTAL_WAVE_ENEMIES && now - lastEnemySpawnTime > 2000) {
@@ -1129,7 +1096,6 @@ hp: 100, vx: 0, vy: 0, behavior: Math.random() < 0.35 ? 'hunter' : 'rusher'
 enemiesSpawnedInWave++; lastEnemySpawnTime = now;
 }
 }
-
 enemies.forEach((en) => {
 let tx = hive.x, ty = hive.y;
 if (hive.destroyed || en.behavior === 'hunter') {
@@ -1144,13 +1110,11 @@ if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { if(perfo
 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
 if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) { conn.send({type:'hit', target:'me', amount: 2}); }
 });
-
 enemies = enemies.filter(en => en.hp > 0);
 if (hive.hp <= 0 && !hive.destroyed) { 
 hive.hp = 0; hive.destroyed = true; 
 addMsg("SISTEMA", "COLMEIA DESTRUÍDA! Reconstrua para parar os ataques diretos!", "msg-sys");
 }
-
 if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
 conn.send({ 
 type: 'sync_world', 
@@ -1174,12 +1138,9 @@ if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_lis
 
 function updateMechanics() {
 players.me.isCollecting = false; 
-
-// Regen Skill
 if(players.me.skills.regen && !players.me.isDead && performance.now() % 2000 < 20) {
     if(players.me.hp < players.me.maxHp) players.me.hp += 1;
 }
-
 if(isHost) {
 let needsFlowerSync = false; const now = Date.now();
 if(players.me.pollen > 0 && !players.me.isDead) {
@@ -1202,14 +1163,12 @@ if(f.growState === 'sprout' && age >= 300000) { f.growState = 'mature'; needsFlo
 });
 if(needsFlowerSync && players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 }
-
 flowers.forEach((f, idx) => {
 if(f.growState === 'mature') {
 if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
 players.me.isCollecting = true; 
 if(isHost) {
-    // Skill Magneto aumenta coleta
     const collectionRate = players.me.skills.pollen ? 0.8 : 0.4;
     players.me.pollen += collectionRate; addXp(0.02); 
 if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: idx, time: f.maxCooldown }); }
@@ -1217,7 +1176,6 @@ if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 1
 }
 }
 });
-
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
 if(players.me.pollen >= 100) {
 players.me.pollen = 0; 
@@ -1234,14 +1192,12 @@ createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart'); addXp(15);
 } else { conn.send({ type: 'repair' }); }
 }
 }
-
 for (let i = projectiles.length - 1; i >= 0; i--) {
 let p = projectiles[i]; let hit = false;
 for (let j = 0; j < enemies.length; j++) {
 let en = enemies[j];
 if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
 if(isHost) {
-    // Força aumenta dano
     const dmg = p.owner === 'me' ? (25 + players.me.stats.str * 5) : 25;
     en.hp -= dmg; createParticles(en.x, en.y, "#ff0000", 5);
 if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
@@ -1288,6 +1244,32 @@ const angle = Math.atan2(dy, dx);
 ctx.save(); ctx.translate(players.me.x, players.me.y); ctx.rotate(angle);
 ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8); ctx.closePath();
 ctx.fillStyle = color; ctx.fill(); ctx.restore();
+}
+
+// NOVA FUNÇÃO: Desenha a mira (Sight)
+function drawSight() {
+    if(players.me.isDead) return;
+    
+    // Laser da mira
+    ctx.beginPath();
+    ctx.setLineDash([5, 10]);
+    ctx.moveTo(players.me.x, players.me.y);
+    const laserX = players.me.x + Math.cos(players.me.aimAngle) * 150;
+    const laserY = players.me.y + Math.sin(players.me.aimAngle) * 150;
+    ctx.lineTo(laserX, laserY);
+    ctx.strokeStyle = "rgba(255, 71, 87, 0.4)";
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Círculo do retículo
+    ctx.beginPath();
+    ctx.arc(laserX, laserY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff4757";
+    ctx.fill();
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
+    ctx.stroke();
 }
 
 function sendMsg() {
@@ -1337,6 +1319,7 @@ const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
 const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
 joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
 aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
+players.me.aimAngle = joyAim.angle; // Atualiza ângulo de mira
 }
 }
 };
@@ -1364,9 +1347,7 @@ return 'Up';
 
 function update() {
 if(!players.me.isDead) {
-// Agilidade aumenta velocidade base
 const baseSpeed = 5 + (players.me.stats.agi * 0.4);
-
 let dx = joyMove.dx, dy = joyMove.dy;
 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
@@ -1375,13 +1356,22 @@ const m = Math.sqrt(dx*dx + dy*dy);
 players.me.x += (dx/m) * baseSpeed; players.me.y += (dy/m) * baseSpeed;
 if (!joyAim.active && !isMouseDown) { if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up'; }
 }
-if(joyAim.active) { players.me.dir = getDirFromAngle(joyAim.angle); fire(joyAim.angle); } 
-else if(isMouseDown) { const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2); players.me.dir = getDirFromAngle(angle); fire(angle); }
+if(joyAim.active) { 
+    players.me.dir = getDirFromAngle(joyAim.angle); 
+    players.me.aimAngle = joyAim.angle; // Sync mira
+    fire(joyAim.angle); 
+} 
+else if(isMouseDown || !('ontouchstart' in window)) { 
+    const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2); 
+    players.me.aimAngle = angle; // Sync mira
+    if(isMouseDown) {
+        players.me.dir = getDirFromAngle(angle); 
+        fire(angle);
+    }
+}
 }
 runWaveLogic(); updateMechanics(); updateHordeHud();
-
 if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
-
 let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
 if(players.peer.active) { 
 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
@@ -1389,7 +1379,6 @@ const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-play
 playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
 }
 playerItemsContainer.innerHTML = playerListHtml;
-
 let hiveListHtml = "";
 if(!hive.destroyed) {
 const hpP = Math.floor((hive.hp/hive.maxHp)*100);
@@ -1397,7 +1386,6 @@ const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10)
 hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
 } else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída (Reconstrua!)</span></div>`; }
 hiveItemsContainer.innerHTML = hiveListHtml;
-
 camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
 document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
 }
@@ -1420,7 +1408,6 @@ const sX = Math.floor(camera.x/TILE_SIZE)*TILE_SIZE, sY = Math.floor(camera.y/TI
 for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE) 
 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
 if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
-
 flowers.forEach(f => {
 if(f.growState === 'seed') return;
 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
@@ -1428,19 +1415,20 @@ ctx.font = "28px Arial"; ctx.textAlign = "center"; ctx.globalAlpha = f.cooldown 
 ctx.fillText(f.growState === 'sprout' ? "🌱" : f.emoji, f.x + sway, f.y);
 });
 ctx.globalAlpha = 1.0;
-
 ctx.font = "60px Arial"; ctx.textAlign = "center"; 
 if(hive.destroyed) ctx.globalAlpha = 0.4;
 ctx.fillText("🏠", hive.x, hive.y + 20);
 ctx.globalAlpha = 1.0;
 if(!hive.destroyed || hive.hp > 0) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 else { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50); }
-
 drawIndicators();
 enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
 projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); } else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); } });
 ctx.globalAlpha = 1.0;
+
+// Desenha a mira
+drawSight();
 
 const drawB = (p, c, a) => {
 if(!assets.bee[p.dir].complete || p.isDead) return;
