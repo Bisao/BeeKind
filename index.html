@@ -786,11 +786,11 @@ me: {
     statPoints: 0,
     stats: { str: 0, agi: 0, vit: 0 },
     skills: { double: false, regen: false, pollen: false },
-    aimAngle: 0 // Nova variável para rastrear mira
+    aimAngle: 0
 }, 
 peer: { 
     x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", 
-    active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, 
+    active: false, hp: 100, maxHp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, 
     isCollecting: false, authorized: false 
 } 
 };
@@ -1010,6 +1010,7 @@ else if(data.type === 'fx') {
 if(data.effect === 'damage') createParticles(data.x, data.y, "#ff0000", 8);
 if(data.effect === 'death') createParticles(data.x, data.y, "#000", 12);
 if(data.effect === 'heart') createParticles(data.x, data.y, "#ff4d4d", 15, 'heart');
+if(data.effect === 'pollen') createParticles(data.x, data.y, "#fffa65", 1, 'pollen');
 }
 else if(data.type === 'req_pollen') {
 if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
@@ -1038,7 +1039,7 @@ conn.send({ type: 'reward_xp', amount: 15 });
 else if(data.type === 'hit') { if(!isHost && data.target === 'me') takeDamage(data.amount); }
 else if(data.type === 'pos') { 
 players.peer.lastSeen = Date.now(); players.peer.tX = data.x; players.peer.tY = data.y; 
-players.peer.dir = data.dir; players.peer.hp = data.hp; players.peer.isDead = data.isDead; 
+players.peer.dir = data.dir; players.peer.hp = data.hp; players.peer.maxHp = data.maxHp; players.peer.isDead = data.isDead; 
 players.peer.pollen = data.pollen; players.peer.lvl = data.lvl; players.peer.active = true;
 players.peer.isCollecting = data.isCollecting;
 }
@@ -1137,7 +1138,7 @@ if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_lis
 }
 
 function updateMechanics() {
-players.me.isCollecting = false; 
+let amICalling = false;
 if(players.me.skills.regen && !players.me.isDead && performance.now() % 2000 < 20) {
     if(players.me.hp < players.me.maxHp) players.me.hp += 1;
 }
@@ -1145,12 +1146,16 @@ if(isHost) {
 let needsFlowerSync = false; const now = Date.now();
 if(players.me.pollen > 0 && !players.me.isDead) {
 if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
-if(Math.random() < 0.3) createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+if(Math.random() < 0.3) {
+    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+    if(conn && conn.open) conn.send({ type: 'fx', effect: 'pollen', x: players.me.x, y: players.me.y });
+}
 players.me.pollen = Math.max(0, players.me.pollen - 0.05);
 if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
 }
 }
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+    // Nota: Peer host particles are handled via packets
 if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
 if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
 }
@@ -1162,12 +1167,23 @@ if(f.growState === 'sprout' && age >= 300000) { f.growState = 'mature'; needsFlo
 }
 });
 if(needsFlowerSync && players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
+} else {
+    // Peer (Client) pollen trail
+    if(players.me.pollen > 0 && !players.me.isDead) {
+        if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
+             if(Math.random() < 0.3) {
+                createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+                if(conn && conn.open) conn.send({ type: 'fx', effect: 'pollen', x: players.me.x, y: players.me.y });
+             }
+        }
+    }
 }
+
 flowers.forEach((f, idx) => {
 if(f.growState === 'mature') {
 if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-players.me.isCollecting = true; 
+amICalling = true; 
 if(isHost) {
     const collectionRate = players.me.skills.pollen ? 0.8 : 0.4;
     players.me.pollen += collectionRate; addXp(0.02); 
@@ -1176,6 +1192,9 @@ if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 1
 }
 }
 });
+
+players.me.isCollecting = amICalling;
+
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
 if(players.me.pollen >= 100) {
 players.me.pollen = 0; 
@@ -1246,11 +1265,8 @@ ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(
 ctx.fillStyle = color; ctx.fill(); ctx.restore();
 }
 
-// NOVA FUNÇÃO: Desenha a mira (Sight)
 function drawSight() {
     if(players.me.isDead) return;
-    
-    // Laser da mira
     ctx.beginPath();
     ctx.setLineDash([5, 10]);
     ctx.moveTo(players.me.x, players.me.y);
@@ -1261,8 +1277,6 @@ function drawSight() {
     ctx.lineWidth = 2;
     ctx.stroke();
     ctx.setLineDash([]);
-
-    // Círculo do retículo
     ctx.beginPath();
     ctx.arc(laserX, laserY, 4, 0, Math.PI * 2);
     ctx.fillStyle = "#ff4757";
@@ -1319,7 +1333,7 @@ const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
 const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
 joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
 aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
-players.me.aimAngle = joyAim.angle; // Atualiza ângulo de mira
+players.me.aimAngle = joyAim.angle;
 }
 }
 };
@@ -1358,12 +1372,12 @@ if (!joyAim.active && !isMouseDown) { if(Math.abs(dx) > Math.abs(dy)) players.me
 }
 if(joyAim.active) { 
     players.me.dir = getDirFromAngle(joyAim.angle); 
-    players.me.aimAngle = joyAim.angle; // Sync mira
+    players.me.aimAngle = joyAim.angle; 
     fire(joyAim.angle); 
 } 
 else if(isMouseDown || !('ontouchstart' in window)) { 
     const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2); 
-    players.me.aimAngle = angle; // Sync mira
+    players.me.aimAngle = angle; 
     if(isMouseDown) {
         players.me.dir = getDirFromAngle(angle); 
         fire(angle);
@@ -1372,6 +1386,7 @@ else if(isMouseDown || !('ontouchstart' in window)) {
 }
 runWaveLogic(); updateMechanics(); updateHordeHud();
 if(performance.now() - lastNetUpdate > 30) { if(conn && conn.open) conn.send({ ...players.me, type: 'pos' }); }
+
 let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
 if(players.peer.active) { 
 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
@@ -1427,7 +1442,6 @@ projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x
 particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); } else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); } });
 ctx.globalAlpha = 1.0;
 
-// Desenha a mira
 drawSight();
 
 const drawB = (p, c, a) => {
