@@ -854,8 +854,13 @@ const TILE_SIZE = 64;
 let lastNetUpdate = 0, lastShootTime = 0, lastEnemySpawnTime = 0, lastHeartbeat = 0;
 let mousePos = { x: 0, y: 0 }, isMouseDown = false;
 let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
-const TOTAL_WAVE_ENEMIES = 20;
-let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
+
+// SISTEMA DE HORDA ATUALIZADO
+let isWaveActive = false;
+let enemiesSpawnedInWave = 0;
+let enemiesKilledInWave = 0;
+let wavePrepTimer = 0; // Temporizador de 60s entre grupos de 20
+let isWavePrepActive = false;
 
 // SEED SYSTEM (PrNG)
 function seededRandom(seed) {
@@ -887,9 +892,11 @@ function saveGameProgress(isManual = false) {
             plantTime: f.plantTime
         })),
         wave: {
-            timer: waveTimer,
             isActive: isWaveActive,
-            enemiesSpawned: enemiesSpawnedInWave
+            enemiesSpawned: enemiesSpawnedInWave,
+            enemiesKilled: enemiesKilledInWave,
+            prepTimer: wavePrepTimer,
+            isPrepActive: isWavePrepActive
         },
         hostPlayer: {
             lvl: players.me.lvl,
@@ -940,9 +947,11 @@ function loadGameProgress() {
             }
         });
 
-        waveTimer = save.wave.timer;
         isWaveActive = save.wave.isActive;
         enemiesSpawnedInWave = save.wave.enemiesSpawned;
+        enemiesKilledInWave = save.wave.enemiesKilled || 0;
+        wavePrepTimer = save.wave.prepTimer || 0;
+        isWavePrepActive = save.wave.isPrepActive || false;
 
         players.me.lvl = save.hostPlayer.lvl;
         players.me.xp = save.hostPlayer.xp;
@@ -1222,8 +1231,10 @@ else if(data.type === 'sync_world') {
 players.peer.lastSeen = Date.now();
 enemies = data.enemies.map(enNew => { let ex = enemies.find(e => e.id === enNew.id); return ex ? {...enNew} : enNew; });
 isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; hive.destroyed = data.hiveDestroyed;
-waveTimer = data.waveTimer; enemiesSpawnedInWave = data.enemiesSpawned;
 if(data.dayCycle) { dayCycle.time = data.dayCycle.time; dayCycle.day = data.dayCycle.day; }
+// Sincronização de timers da horda
+wavePrepTimer = data.wavePrepTimer;
+isWavePrepActive = data.isWavePrepActive;
 }
 else if(data.type === 'repair') { 
 if(isHost) {
@@ -1284,58 +1295,131 @@ function spawnProjectile(x, y, angle, isMe) {
 }
 
 function runWaveLogic() {
-if (!isHost) { enemies.forEach(en => { en.x += en.vx; en.y += en.vy; }); return; }
-if(Date.now() - lastHeartbeat > 3000) { if(conn && conn.open) conn.send({type: 'ping'}); lastHeartbeat = Date.now(); }
-if(players.peer.active && Date.now() - players.peer.lastSeen > 10000) { players.peer.active = false; addMsg("SISTEMA", `${players.peer.nick} desconectou.`, "msg-sys"); }
-waveTimer -= 1/60;
-if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave = 0; waveTimer = 180; }
-if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
-isWaveActive = false; waveTimer = 180; showWaveClearEffect();
-if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
-saveGameProgress(); 
-}
-if (isWaveActive) {
-let now = Date.now();
-if (enemiesSpawnedInWave < TOTAL_WAVE_ENEMIES && now - lastEnemySpawnTime > 2000) {
-const angle = Math.random() * Math.PI * 2;
-enemies.push({ 
-id: Math.random().toString(36).substr(2, 9),
-x: hive.x + Math.cos(angle) * 1000, y: hive.y + Math.sin(angle) * 1000, 
-hp: 100, vx: 0, vy: 0, behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' 
-});
-enemiesSpawnedInWave++; lastEnemySpawnTime = now;
-}
-}
-enemies.forEach((en) => {
-let tx = hive.x, ty = hive.y;
-if (hive.destroyed || en.behavior === 'hunter') {
-let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
-let dPe = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
-if (dMe < Infinity || dPe < Infinity) { if (dMe <= dPe) { tx = players.me.x; ty = players.me.y; } else { tx = players.peer.x; ty = players.peer.y; } }
-}
-const angle = Math.atan2(ty - en.y, tx - en.x);
-en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
-en.x += en.vx; en.y += en.vy;
-if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { if(performance.now() % 60 < 2) hive.hp -= 1.5; }
-if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
-if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) { conn.send({type:'hit', target:'me', amount: 2}); }
-});
-enemies = enemies.filter(en => en.hp > 0);
-if (hive.hp <= 0 && !hive.destroyed) { 
-hive.hp = 0; hive.destroyed = true; 
-addMsg("SISTEMA", "COLMEIA DESTRUÍDA! Reconstrua para parar os ataques diretos!", "msg-sys");
-saveGameProgress(); 
-}
-if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
-conn.send({ 
-type: 'sync_world', 
-enemies: enemies.map(e => ({id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, hp: e.hp})), 
-isWaveActive: isWaveActive, hiveHp: hive.hp, hiveDestroyed: hive.destroyed,
-waveTimer: waveTimer, enemiesSpawned: enemiesSpawnedInWave,
-dayCycle: { time: dayCycle.time, day: dayCycle.day } 
-});
-lastNetUpdate = performance.now();
-}
+    if (!isHost) { 
+        enemies.forEach(en => { en.x += en.vx; en.y += en.vy; }); 
+        return; 
+    }
+
+    if (Date.now() - lastHeartbeat > 3000) { 
+        if (conn && conn.open) conn.send({type: 'ping'}); 
+        lastHeartbeat = Date.now(); 
+    }
+
+    if (players.peer.active && Date.now() - players.peer.lastSeen > 10000) { 
+        players.peer.active = false; 
+        addMsg("SISTEMA", `${players.peer.nick} desconectou.`, "msg-sys"); 
+    }
+
+    const hour = dayCycle.time / 60;
+    const isHordeDay = (dayCycle.day % 3 === 0);
+    const isHordeTime = (hour >= 22 || hour < 6);
+
+    // Lógica para iniciar ou encerrar a horda por horário
+    if (isHordeDay && isHordeTime) {
+        if (!isWaveActive && !isWavePrepActive) {
+            isWaveActive = true;
+            enemiesSpawnedInWave = 0;
+            enemiesKilledInWave = 0;
+            addMsg("SISTEMA", "A HORDA ESTÁ CHEGANDO!", "msg-sys");
+        }
+    } else {
+        if (isWaveActive || isWavePrepActive) {
+            isWaveActive = false;
+            isWavePrepActive = false;
+            enemies = [];
+            addMsg("SISTEMA", "A horda recuou com o amanhecer.", "msg-sys");
+            saveGameProgress();
+        }
+    }
+
+    // Lógica de preparação entre grupos de 20
+    if (isWavePrepActive) {
+        wavePrepTimer -= 1/60;
+        if (wavePrepTimer <= 0) {
+            isWavePrepActive = false;
+            isWaveActive = true;
+            enemiesSpawnedInWave = 0;
+            addMsg("SISTEMA", "O descanso acabou! Lá vem eles!", "msg-sys");
+        }
+    }
+
+    // Spawn de inimigos durante a horda ativa
+    if (isWaveActive) {
+        let now = Date.now();
+        // Spawna até 20 formigas por vez
+        if (enemiesSpawnedInWave < 20 && now - lastEnemySpawnTime > 1500) {
+            const angle = Math.random() * Math.PI * 2;
+            enemies.push({ 
+                id: Math.random().toString(36).substr(2, 9),
+                x: hive.x + Math.cos(angle) * 1000, 
+                y: hive.y + Math.sin(angle) * 1000, 
+                hp: 100, vx: 0, vy: 0, 
+                behavior: Math.random() < 0.35 ? 'hunter' : 'rusher' 
+            });
+            enemiesSpawnedInWave++; 
+            lastEnemySpawnTime = now;
+        }
+
+        // Se matou 20, entra em preparação
+        if (enemiesKilledInWave >= 20 && enemies.length === 0) {
+            isWaveActive = false;
+            isWavePrepActive = true;
+            wavePrepTimer = 60;
+            enemiesKilledInWave = 0;
+            addMsg("SISTEMA", "Grupo derrotado! 60s para se preparar.", "msg-sys");
+        }
+    }
+
+    // Movimentação e dano
+    enemies.forEach((en) => {
+        let tx = hive.x, ty = hive.y;
+        if (hive.destroyed || en.behavior === 'hunter') {
+            let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
+            let dPe = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
+            if (dMe < Infinity || dPe < Infinity) { 
+                if (dMe <= dPe) { tx = players.me.x; ty = players.me.y; } 
+                else { tx = players.peer.x; ty = players.peer.y; } 
+            }
+        }
+        const angle = Math.atan2(ty - en.y, tx - en.x);
+        en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
+        en.x += en.vx; en.y += en.vy;
+
+        if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { 
+            if(performance.now() % 60 < 2) hive.hp -= 1.5; 
+        }
+        if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
+        if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) { 
+            conn.send({type:'hit', target:'me', amount: 2}); 
+        }
+    });
+
+    // Limpeza de mortos e contagem
+    const aliveEnemies = enemies.filter(en => en.hp > 0);
+    if (aliveEnemies.length < enemies.length) {
+        enemiesKilledInWave += (enemies.length - aliveEnemies.length);
+    }
+    enemies = aliveEnemies;
+
+    if (hive.hp <= 0 && !hive.destroyed) { 
+        hive.hp = 0; hive.destroyed = true; 
+        addMsg("SISTEMA", "COLMEIA DESTRUÍDA!", "msg-sys");
+        saveGameProgress(); 
+    }
+
+    if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
+        conn.send({ 
+            type: 'sync_world', 
+            enemies: enemies.map(e => ({id: e.id, x: e.x, y: e.y, vx: e.vx, vy: e.vy, hp: e.hp})), 
+            isWaveActive: isWaveActive, 
+            hiveHp: hive.hp, 
+            hiveDestroyed: hive.destroyed,
+            dayCycle: { time: dayCycle.time, day: dayCycle.day },
+            wavePrepTimer: wavePrepTimer,
+            isWavePrepActive: isWavePrepActive
+        });
+        lastNetUpdate = performance.now();
+    }
 }
 
 function spawnFlower(x, y) {
@@ -1358,18 +1442,15 @@ function updateDayCycle() {
         }
     }
 
-    // Lógica visual do ciclo
     const hour = dayCycle.time / 60;
     const isNightNow = hour < 6 || hour > 18;
     dayCycle.isNight = isNightNow;
 
-    // Calcula Alpha do overlay (Noite = 0.5, Crepúsculo = transição, Dia = 0)
-    if (hour >= 18 && hour <= 20) dayCycle.overlayAlpha = (hour - 18) / 4; // Escurecendo
-    else if (hour > 20 || hour < 4) dayCycle.overlayAlpha = 0.5; // Noite fechada
-    else if (hour >= 4 && hour <= 6) dayCycle.overlayAlpha = 0.5 - ((hour - 4) / 4); // Amanhecendo
+    if (hour >= 18 && hour <= 20) dayCycle.overlayAlpha = (hour - 18) / 4; 
+    else if (hour > 20 || hour < 4) dayCycle.overlayAlpha = 0.5; 
+    else if (hour >= 4 && hour <= 6) dayCycle.overlayAlpha = 0.5 - ((hour - 4) / 4); 
     else dayCycle.overlayAlpha = 0;
 
-    // Atualiza HUD
     const h = Math.floor(hour).toString().padStart(2, '0');
     const m = Math.floor((hour % 1) * 60).toString().padStart(2, '0');
     const hud = document.getElementById('time-hud');
@@ -1472,16 +1553,13 @@ function updateMechanics() {
 
 function repairHiveAction() {
     if(players.me.isDead || players.me.pollen <= 0) return;
-    
     const amountPollen = players.me.pollen;
     players.me.pollen = 0; 
-
     if(players.me.hp < players.me.maxHp) {
         players.me.hp = Math.min(players.me.maxHp, players.me.hp + 20);
         createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
-        addMsg("SISTEMA", "Curado (+20 HP) por ajudar o Reino.", "msg-sys");
+        addMsg("SISTEMA", "Curado (+20 HP).", "msg-sys");
     }
-
     if(isHost) {
         const hpGain = (amountPollen / 100) * (hive.destroyed ? 50 : 100);
         hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
@@ -1503,15 +1581,20 @@ btnRepairHive.onclick = repairHiveAction;
 btnRepairHive.ontouchstart = (e) => { e.preventDefault(); repairHiveAction(); };
 
 function updateHordeHud() {
-const hud = document.getElementById('horde-hud');
-if (isWaveActive) {
-hud.style.display = 'block'; hud.style.color = '#ff4757'; hud.classList.remove('warn-pulse');
-const rem = (TOTAL_WAVE_ENEMIES - enemiesSpawnedInWave) + enemies.length;
-hud.innerText = `⚠️ INVASÃO: ${rem} ⚠️`;
-} else if (waveTimer <= 60) {
-hud.style.display = 'block'; hud.style.color = '#e67e22'; hud.classList.add('warn-pulse');
-hud.innerText = `ALERTA: ${Math.ceil(waveTimer)}s`;
-} else { hud.style.display = 'none'; hud.classList.remove('warn-pulse'); }
+    const hud = document.getElementById('horde-hud');
+    if (isWaveActive) {
+        hud.style.display = 'block'; 
+        hud.style.color = '#ff4757'; 
+        hud.classList.remove('warn-pulse');
+        hud.innerText = `⚠️ INVASÃO ATIVA! ⚠️`;
+    } else if (isWavePrepActive) {
+        hud.style.display = 'block'; 
+        hud.style.color = '#f1c40f'; 
+        hud.classList.add('warn-pulse');
+        hud.innerText = `PREPARAÇÃO: ${Math.ceil(wavePrepTimer)}s`;
+    } else { 
+        hud.style.display = 'none'; 
+    }
 }
 
 function drawIndicators() {
@@ -1631,18 +1714,13 @@ const baseSpeed = 5 + (players.me.stats.agi * 0.4);
 let dx = joyMove.dx, dy = joyMove.dy;
 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
-
 players.me.moving = (dx !== 0 || dy !== 0);
-
 if (players.me.moving) {
     const m = Math.sqrt(dx*dx + dy*dy);
     let newX = players.me.x + (dx/m) * baseSpeed;
     let newY = players.me.y + (dy/m) * baseSpeed;
-    
-    // FISICA DE COLISÃO COM A COLMEIA (Não passar por cima)
     const distToHive = Math.hypot(newX - hive.x, newY - hive.y);
-    const hiveRadius = 40; // Raio físico da colmeia
-    
+    const hiveRadius = 40; 
     if (distToHive > hiveRadius) {
         players.me.x = newX;
         players.me.y = newY;
@@ -1651,13 +1729,11 @@ if (players.me.moving) {
         players.me.x = hive.x + Math.cos(angleFromHive) * (hiveRadius + 1);
         players.me.y = hive.y + Math.sin(angleFromHive) * (hiveRadius + 1);
     }
-
     if (!joyAim.active && !isMouseDown) { 
         if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
         else players.me.dir = dy > 0 ? 'Down' : 'Up'; 
     }
 }
-
 if(joyAim.active) { 
     players.me.dir = getDirFromAngle(joyAim.angle); 
     players.me.aimAngle = joyAim.angle; 
@@ -1683,7 +1759,6 @@ if(performance.now() - lastNetUpdate > 30) {
     }); 
     lastNetUpdate = performance.now();
 }
-
 let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
 if(players.peer.active) { 
 players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
@@ -1696,7 +1771,7 @@ if(!hive.destroyed) {
 const hpP = Math.floor((hive.hp/hive.maxHp)*100);
 const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
 hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída (Reconstrua!)</span></div>`; }
+} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída</span></div>`; }
 hiveItemsContainer.innerHTML = hiveListHtml;
 camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
 document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
@@ -1733,14 +1808,12 @@ ctx.fillText("🏠", hive.x, hive.y + 20);
 ctx.globalAlpha = 1.0;
 if(!hive.destroyed && hive.hp < hive.maxHp) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 else if(hive.destroyed) { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50); }
-
 drawIndicators();
 enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
 projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); } else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); } });
 ctx.globalAlpha = 1.0;
 drawSight();
-
 const drawB = (p, c, a, isMe) => {
     if(p.isDead) return;
     let sprite;
@@ -1760,14 +1833,11 @@ const drawB = (p, c, a, isMe) => {
 drawB(players.me, players.me.color, 1, true);
 if(players.peer.active) drawB(players.peer, players.peer.color, 0.6, false);
 ctx.restore();
-
-// DESENHO DO OVERLAY DE DIA/NOITE (Fora do translate da câmera)
 if(dayCycle.overlayAlpha > 0) {
     ctx.fillStyle = `rgba(0, 20, 50, ${dayCycle.overlayAlpha})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 }
-
 function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
 </script>
 </body>
