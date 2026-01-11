@@ -535,7 +535,7 @@ white-space: nowrap;
 <button class="square-btn" id="btn-progression" title="Evolução">
     🐝 <div class="point-notify" id="attr-notify">!</div>
 </button>
-<button class="square-btn" style="opacity: 0.3;">⚙️</button>
+<button class="square-btn" id="btn-manual-save" title="Salvar Reino">💾</button>
 <button class="square-btn" style="opacity: 0.3;">🎒</button>
 </div>
 <button id="btn-open-menu">☰</button>
@@ -756,7 +756,13 @@ beeCont.style.left = '50%';
 
 setTimeout(() => {
 loadingScreen.style.display = 'none';
-if(isHost) { generateFlowers(); startGame(); } else { startGame(); }
+if(isHost) { 
+    loadGameProgress(); // Carrega antes de gerar flores se for host
+    generateFlowers(); 
+    startGame(); 
+} else { 
+    startGame(); 
+}
 }, 1000);
 }
 }
@@ -782,6 +788,7 @@ const hiveItemsContainer = document.getElementById('hive-items-container');
 const btnOpenMenu = document.getElementById('btn-open-menu');
 const mainActionMenu = document.getElementById('main-action-menu');
 const btnRepairHive = document.getElementById('btn-repair-hive');
+const btnManualSave = document.getElementById('btn-manual-save');
 
 const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
 assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
@@ -790,6 +797,8 @@ assets.ground.src = 'Grass.png';
 let isHost = false;
 let hostPassword = ""; 
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
+let currentRoomCode = "";
+let lastAutoSaveTime = Date.now();
 
 let players = { 
 me: { 
@@ -816,6 +825,72 @@ let mousePos = { x: 0, y: 0 }, isMouseDown = false;
 let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = { angle: 0, active: false };
 const TOTAL_WAVE_ENEMIES = 20;
 let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
+
+// SISTEMA DE SALVAMENTO
+function saveGameProgress(isManual = false) {
+    if (!isHost) return;
+
+    const saveData = {
+        hive: hive,
+        hostPlayer: {
+            lvl: players.me.lvl,
+            xp: players.me.xp,
+            statPoints: players.me.statPoints,
+            stats: players.me.stats,
+            skills: players.me.skills,
+            x: players.me.x,
+            y: players.me.y
+        },
+        peerPlayer: players.peer.active ? {
+            nick: players.peer.nick,
+            lvl: players.peer.lvl,
+            pollen: players.peer.pollen,
+            hp: players.peer.hp
+        } : (localStorage.getItem(`hive_save_peer_${currentRoomCode}`) ? JSON.parse(localStorage.getItem(`hive_save_peer_${currentRoomCode}`)) : null),
+        timestamp: Date.now()
+    };
+
+    localStorage.setItem(`hive_save_world_${currentRoomCode}`, JSON.stringify(saveData));
+    if (players.peer.active) {
+        localStorage.setItem(`hive_save_peer_${currentRoomCode}`, JSON.stringify(saveData.peerPlayer));
+    }
+
+    if (isManual) {
+        addMsg("SISTEMA", "Progresso do Reino salvo com sucesso!", "msg-sys");
+        createParticles(players.me.x, players.me.y, "#2ecc71", 10);
+    }
+}
+
+function loadGameProgress() {
+    const rawSave = localStorage.getItem(`hive_save_world_${currentRoomCode}`);
+    if (!rawSave) return;
+
+    try {
+        const save = JSON.parse(rawSave);
+        // Restaura Colmeia
+        hive = save.hive;
+        
+        // Restaura Host
+        players.me.lvl = save.hostPlayer.lvl;
+        players.me.xp = save.hostPlayer.xp;
+        players.me.statPoints = save.hostPlayer.statPoints;
+        players.me.stats = save.hostPlayer.stats;
+        players.me.skills = save.hostPlayer.skills;
+        players.me.x = save.hostPlayer.x;
+        players.me.y = save.hostPlayer.y;
+        players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
+        players.me.maxHp = 100 + (players.me.stats.vit * 20);
+        players.me.hp = players.me.maxHp;
+
+        updateXpHud();
+        updateProgressionUI();
+        addMsg("SISTEMA", "Mundo restaurado do último salvamento.", "msg-sys");
+    } catch (e) {
+        console.error("Erro ao carregar save:", e);
+    }
+}
+
+btnManualSave.onclick = () => saveGameProgress(true);
 
 btnOpenMenu.onclick = () => {
 const isVisible = mainActionMenu.style.display === 'grid';
@@ -866,6 +941,7 @@ function upgradeStat(type) {
             players.me.hp += 20;
         }
         updateProgressionUI();
+        saveGameProgress(); // Autosave inteligente ao evoluir
     }
 }
 
@@ -877,6 +953,7 @@ function unlockSkill(id) {
         players.me.statPoints -= cost;
         updateProgressionUI();
         addMsg("SISTEMA", "Habilidade " + id + " desbloqueada!", "msg-sys");
+        saveGameProgress(); // Autosave inteligente ao desbloquear
     }
 }
 
@@ -912,6 +989,7 @@ players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
 addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}! (+2 pontos)`, "msg-sys");
 createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
 updateProgressionUI();
+saveGameProgress(); // Autosave inteligente ao subir nível
 }
 updateXpHud();
 }
@@ -968,6 +1046,7 @@ localStorage.setItem('hive_room', code);
 localStorage.setItem('hive_pass', pass);
 isHost = host;
 hostPassword = pass;
+currentRoomCode = code;
 players.me.nick = nick;
 players.me.color = host ? "#f1c40f" : "#3498db";
 players.peer.color = host ? "#3498db" : "#f1c40f";
@@ -993,6 +1072,17 @@ if(!isHost) conn.send({ type: 'auth', pass: document.getElementById('room-pass')
 conn.on('data', data => {
 if (isHost && data.type === 'auth') {
 if (data.pass === hostPassword) {
+// Tenta carregar dados anteriores do peer se existirem no host
+const peerSave = localStorage.getItem(`hive_save_peer_${currentRoomCode}`);
+if(peerSave) {
+    const pData = JSON.parse(peerSave);
+    if(pData.nick === data.nick) {
+        players.peer.lvl = pData.lvl;
+        players.peer.pollen = pData.pollen;
+        players.peer.hp = pData.hp;
+    }
+}
+
 players.peer.nick = data.nick; players.peer.color = data.color;
 players.peer.authorized = true; players.peer.active = true;
 players.peer.lastSeen = Date.now();
@@ -1045,7 +1135,10 @@ if(isHost) {
     const amountPollen = data.pollen || 100;
     const hpGain = (amountPollen / 100) * (hive.destroyed ? 25 : 50);
     hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
-    if(hive.hp > 0) hive.destroyed = false;
+    if(hive.hp > 0) { 
+        if(hive.destroyed) saveGameProgress(); // Autosave ao reconstruir
+        hive.destroyed = false; 
+    }
     conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
     conn.send({ type: 'reward_xp', amount: Math.floor(amountPollen * 0.15) }); 
 }
@@ -1060,7 +1153,12 @@ players.peer.isCollecting = data.isCollecting;
 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
 else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
 });
-conn.on('close', () => { players.peer.active = false; players.peer.authorized = false; addMsg("SISTEMA", "Conexão perdida.", "msg-sys"); });
+conn.on('close', () => { 
+    if(isHost) saveGameProgress(); // Salva quando peer desconecta
+    players.peer.active = false; 
+    players.peer.authorized = false; 
+    addMsg("SISTEMA", "Conexão perdida.", "msg-sys"); 
+});
 }
 
 function showWaveClearEffect() { addMsg("SISTEMA", "HORDA DESTRUÍDA! +3 Minutos de Paz.", "msg-sys"); createParticles(hive.x, hive.y, "#3498db", 30, 'pixel'); }
@@ -1098,6 +1196,7 @@ if (waveTimer <= 0 && !isWaveActive) { isWaveActive = true; enemiesSpawnedInWave
 if (isWaveActive && enemies.length === 0 && enemiesSpawnedInWave >= TOTAL_WAVE_ENEMIES) {
 isWaveActive = false; waveTimer = 180; showWaveClearEffect();
 if(players.peer.active && conn && conn.open) conn.send({type: 'wave_clear'});
+saveGameProgress(); // Autosave ao vencer horda
 }
 if (isWaveActive) {
 let now = Date.now();
@@ -1129,6 +1228,7 @@ enemies = enemies.filter(en => en.hp > 0);
 if (hive.hp <= 0 && !hive.destroyed) { 
 hive.hp = 0; hive.destroyed = true; 
 addMsg("SISTEMA", "COLMEIA DESTRUÍDA! Reconstrua para parar os ataques diretos!", "msg-sys");
+saveGameProgress(); // Autosave ao ser destruída
 }
 if (players.peer.active && conn && conn.open && performance.now() - lastNetUpdate > 50) {
 conn.send({ 
@@ -1158,6 +1258,12 @@ if(players.me.skills.regen && !players.me.isDead && performance.now() % 2000 < 2
 }
 if(isHost) {
 let needsFlowerSync = false; const now = Date.now();
+// Autosave periódico a cada 60 segundos
+if(Date.now() - lastAutoSaveTime > 60000) {
+    saveGameProgress();
+    lastAutoSaveTime = Date.now();
+}
+
 if(players.me.pollen > 0 && !players.me.isDead) {
 if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
 if(Math.random() < 0.3) {
@@ -1208,7 +1314,6 @@ if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 1
 players.me.isCollecting = amICalling;
 
 const distToHive = Math.hypot(players.me.x - hive.x, players.me.y - hive.y);
-// Modificado: Só mostra o botão se houver pólen E se a colmeia precisar de reparo (HP < maxHP)
 if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead && hive.hp < hive.maxHp) {
     btnRepairHive.style.display = 'flex';
 } else {
@@ -1255,7 +1360,10 @@ function repairHiveAction() {
         const hpGain = (amountPollen / 100) * (hive.destroyed ? 25 : 50);
         hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
         if(hive.hp > 0) { 
-            if(hive.destroyed) addMsg("SISTEMA", "REINO RECONSTRUÍDO!", "msg-sys"); 
+            if(hive.destroyed) {
+                addMsg("SISTEMA", "REINO RECONSTRUÍDO!", "msg-sys"); 
+                saveGameProgress(); // Autosave ao reconstruir
+            }
             hive.destroyed = false; 
         }
         createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart'); 
@@ -1301,17 +1409,14 @@ ctx.fillStyle = color; ctx.fill(); ctx.restore();
 function drawSight() {
     if(players.me.isDead) return;
     
-    // Só renderiza a mira se estiver atirando (segurando botão ou joystick)
     if (!isMouseDown && !joyAim.active) return;
 
     let targetX, targetY;
     
     if (joyAim.active) {
-        // No Mobile, a mira pode ser curta ou longa dependendo do joystick
         targetX = players.me.x + Math.cos(players.me.aimAngle) * 150;
         targetY = players.me.y + Math.sin(players.me.aimAngle) * 150;
     } else {
-        // No PC, a mira segue o mouse mas respeita a distância máxima
         const dx = mousePos.x - canvas.width/2;
         const dy = mousePos.y - canvas.height/2;
         const dist = Math.min(Math.hypot(dx, dy), 150);
@@ -1492,7 +1597,6 @@ ctx.font = "60px Arial"; ctx.textAlign = "center";
 if(hive.destroyed) ctx.globalAlpha = 0.4;
 ctx.fillText("🏠", hive.x, hive.y + 20);
 ctx.globalAlpha = 1.0;
-// Modificado: Só desenha a barra de HP da colmeia se ela perdeu HP
 if(!hive.destroyed && hive.hp < hive.maxHp) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
 else if(hive.destroyed) { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50); }
 
@@ -1508,7 +1612,6 @@ const drawB = (p, c, a) => {
 if(!assets.bee[p.dir].complete || p.isDead) return;
 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-// Modificado: Só desenha a barra de HP do player se ele perdeu HP
 if(p.hp < p.maxHp) drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
 if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
 };
