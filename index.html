@@ -635,7 +635,7 @@ white-space: nowrap;
 <div id="loading-scene">
 <div id="loading-bee-container">
 <div class="muzzle-flash"></div>
-<img src="BeeRight.png" id="loading-bee-img">
+<img src="BeeRightIdle.png" id="loading-bee-img">
 </div>
 <div id="loading-ant">🐜</div>
 <div id="loading-bar-track">
@@ -650,9 +650,9 @@ white-space: nowrap;
 <div class="hex-bg"></div>
 <div class="menu-card">
 <div class="title-box">
-<img src="BeeLeft.png" class="bee-flank bee-left">
+<img src="BeeLeftIdle.png" class="bee-flank bee-left">
 <h1>The Hive Kin<span class="crown-g">g</span>dom</h1>
-<img src="BeeRight.png" class="bee-flank bee-right">
+<img src="BeeRightIdle.png" class="bee-flank bee-right">
 </div>
 <div class="update-badge">Update: Pollen War • v1.4</div>
 <div class="input-group">
@@ -749,7 +749,7 @@ bar.style.width = '100%';
 ant.innerText = "💥";
 ant.classList.add('explosion-text');
 muzzle.style.display = 'none';
-beeImg.src = 'BeeDown.png';
+beeImg.src = 'BeeDownIdle.png';
 beeImg.style.animation = 'none'; 
 beeCont.style.transition = 'left 0.5s ease-out';
 beeCont.style.left = '50%';
@@ -790,8 +790,22 @@ const mainActionMenu = document.getElementById('main-action-menu');
 const btnRepairHive = document.getElementById('btn-repair-hive');
 const btnManualSave = document.getElementById('btn-manual-save');
 
-const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
-assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
+// SISTEMA DE ASSETS ATUALIZADO
+const assets = { 
+    bee: { 
+        Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image(),
+        DownIdle: new Image(), LeftIdle: new Image(), UpIdle: new Image(), RightIdle: new Image()
+    }, 
+    ground: new Image() 
+};
+assets.bee.Down.src = 'BeeDown.png'; 
+assets.bee.Left.src = 'BeeLeft.png'; 
+assets.bee.Up.src = 'BeeUp.png'; 
+assets.bee.Right.src = 'BeeRight.png';
+assets.bee.DownIdle.src = 'BeeDownIdle.png'; 
+assets.bee.LeftIdle.src = 'BeeLeftIdle.png'; 
+assets.bee.UpIdle.src = 'BeeUpIdle.png'; 
+assets.bee.RightIdle.src = 'BeeRightIdle.png';
 assets.ground.src = 'Grass.png';
 
 let isHost = false;
@@ -805,6 +819,7 @@ me: {
     x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", 
     hp: 100, maxHp: 100, isDead: false, pollen: 0, 
     lvl: 1, xp: 0, nextXp: 100, isCollecting: false,
+    moving: false, // Novo estado
     statPoints: 0,
     stats: { str: 0, agi: 0, vit: 0 },
     skills: { double: false, regen: false, pollen: false },
@@ -813,7 +828,7 @@ me: {
 peer: { 
     x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", 
     active: false, hp: 100, maxHp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, 
-    isCollecting: false, authorized: false 
+    isCollecting: false, moving: false, authorized: false 
 } 
 };
 
@@ -897,9 +912,7 @@ function loadGameProgress() {
         const save = JSON.parse(rawSave);
         hive = save.hive;
         
-        // Reconstrói flores baseado na seed primeiro
         generateFlowers(save.seed || currentRoomCode);
-        // Aplica estados salvos às flores (cooldowns e crescimento)
         save.flowers.forEach(savedFlower => {
             let f = flowers.find(fl => fl.id === savedFlower.id);
             if(f) {
@@ -909,12 +922,10 @@ function loadGameProgress() {
             }
         });
 
-        // Horda
         waveTimer = save.wave.timer;
         isWaveActive = save.wave.isActive;
         enemiesSpawnedInWave = save.wave.enemiesSpawned;
 
-        // Host
         players.me.lvl = save.hostPlayer.lvl;
         players.me.xp = save.hostPlayer.xp;
         players.me.pollen = save.hostPlayer.pollen || 0;
@@ -938,25 +949,21 @@ function loadGameProgress() {
     }
 }
 
-// GERAÇÃO DE MAPA POR GRID (SEED-BASED)
 function generateFlowers(seedStr) {
     flowers = [];
     const seed = stringToSeed(seedStr);
     const rng = seededRandom(seed);
     const types = ["🌸", "🌻", "🌷"];
     
-    // Grid Espacial: Evita flores coladas e distribui melhor
-    const gridSize = 400; // Tamanho de cada setor
-    const range = 2400;   // Área total (-1200 a 1200)
+    const gridSize = 400; 
+    const range = 2400;   
 
     for(let gx = -range; gx < range; gx += gridSize) {
         for(let gy = -range; gy < range; gy += gridSize) {
-            // Chance de gerar flor nesse setor do grid
             if(rng() > 0.4) {
                 const fx = gx + (rng() * gridSize);
                 const fy = gy + (rng() * gridSize);
                 
-                // Não gerar em cima da colmeia
                 if(Math.hypot(fx - hive.x, fy - hive.y) < 200) continue;
 
                 flowers.push({
@@ -1218,6 +1225,7 @@ players.peer.lastSeen = Date.now(); players.peer.tX = data.x; players.peer.tY = 
 players.peer.dir = data.dir; players.peer.hp = data.hp; players.peer.maxHp = data.maxHp; players.peer.isDead = data.isDead; 
 players.peer.pollen = data.pollen; players.peer.lvl = data.lvl; players.peer.active = true;
 players.peer.isCollecting = data.isCollecting;
+players.peer.moving = data.moving; // Sincroniza estado de movimento
 }
 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
 else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
@@ -1312,7 +1320,7 @@ lastNetUpdate = performance.now();
 
 function spawnFlower(x, y) {
 const types = ["🌸", "🌻", "🌷"];
-const id = flowers.length + 9000; // Offset para flores plantadas não chocarem IDs
+const id = flowers.length + 9000; 
 flowers.push({
 id: id, x: x, y: y, emoji: types[Math.floor(Math.random() * types.length)],
 cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2, growState: 'seed', plantTime: Date.now()
@@ -1573,11 +1581,19 @@ const baseSpeed = 5 + (players.me.stats.agi * 0.4);
 let dx = joyMove.dx, dy = joyMove.dy;
 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
-if (dx !== 0 || dy !== 0) {
-const m = Math.sqrt(dx*dx + dy*dy);
-players.me.x += (dx/m) * baseSpeed; players.me.y += (dy/m) * baseSpeed;
-if (!joyAim.active && !isMouseDown) { if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up'; }
+
+// Lógica de estado de movimento
+players.me.moving = (dx !== 0 || dy !== 0);
+
+if (players.me.moving) {
+    const m = Math.sqrt(dx*dx + dy*dy);
+    players.me.x += (dx/m) * baseSpeed; players.me.y += (dy/m) * baseSpeed;
+    if (!joyAim.active && !isMouseDown) { 
+        if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+        else players.me.dir = dy > 0 ? 'Down' : 'Up'; 
+    }
 }
+
 if(joyAim.active) { 
     players.me.dir = getDirFromAngle(joyAim.angle); 
     players.me.aimAngle = joyAim.angle; 
@@ -1598,7 +1614,8 @@ if(performance.now() - lastNetUpdate > 30) {
         type: 'pos',
         x: players.me.x, y: players.me.y, dir: players.me.dir,
         hp: players.me.hp, maxHp: players.me.maxHp, isDead: players.me.isDead,
-        pollen: players.me.pollen, lvl: players.me.lvl, isCollecting: players.me.isCollecting
+        pollen: players.me.pollen, lvl: players.me.lvl, isCollecting: players.me.isCollecting,
+        moving: players.me.moving // Envia estado de movimento
     }); 
     lastNetUpdate = performance.now();
 }
@@ -1659,15 +1676,38 @@ projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x
 particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); } else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); } });
 ctx.globalAlpha = 1.0;
 drawSight();
-const drawB = (p, c, a) => {
-if(!assets.bee[p.dir].complete || p.isDead) return;
-ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
-ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-if(p.hp < p.maxHp) drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
-if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
+
+// FUNÇÃO DE DESENHO DA ABELHA COM NOVAS SPRITES
+const drawB = (p, c, a, isMe) => {
+    if(p.isDead) return;
+    
+    // Seleção da sprite baseada em estado
+    let sprite;
+    let isAttacking = isMe ? (isMouseDown || joyAim.active) : false; // O peer não tem estado "attacking" explícito no objeto pos atual, mas podemos inferir
+    
+    // Para o peer, usamos a flag isCollecting ou apenas moving
+    if (p.moving) {
+        sprite = assets.bee[p.dir];
+    } else {
+        sprite = assets.bee[p.dir + "Idle"];
+    }
+
+    if(!sprite || !sprite.complete) return;
+    
+    ctx.globalAlpha = a; 
+    ctx.drawImage(sprite, p.x-32, p.y-32, 64, 64);
+    ctx.globalAlpha = 1; 
+    ctx.font = "bold 14px Segoe UI"; 
+    ctx.fillStyle = c; 
+    ctx.textAlign = "center"; 
+    ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
+    
+    if(p.hp < p.maxHp) drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
+    if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
 };
-drawB(players.me, players.me.color, 1);
-if(players.peer.active) drawB(players.peer, players.peer.color, 0.6);
+
+drawB(players.me, players.me.color, 1, true);
+if(players.peer.active) drawB(players.peer, players.peer.color, 0.6, false);
 ctx.restore();
 }
 
