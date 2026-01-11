@@ -115,8 +115,19 @@ width: 50px; height: 50px; background: rgba(255,255,255,0.1);
 border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
 cursor: pointer; display: flex; align-items: center; justify-content: center;
 font-size: 24px; transition: all 0.2s;
+position: relative;
 }
 .square-btn:hover { background: var(--primary); transform: scale(1.05); }
+
+/* Indicador de pontos pendentes */
+.point-notify {
+    position: absolute; top: -5px; right: -5px;
+    background: #e74c3c; color: white; border-radius: 50%;
+    width: 18px; height: 18px; font-size: 10px;
+    display: none; align-items: center; justify-content: center;
+    border: 2px solid #111;
+}
+
 #btn-open-menu {
 width: 60px; height: 60px; background: var(--primary);
 border: 4px solid rgba(0,0,0,0.2); border-radius: 50%;
@@ -152,6 +163,67 @@ transition: background 0.3s;
 100% { transform: scale(1); box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
 }
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
+
+/* --- SISTEMA DE ATRIBUTOS E HABILIDADES (MODAL) --- */
+#progression-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.9); z-index: 2000;
+    display: none; flex-direction: column; align-items: center; padding: 20px;
+    backdrop-filter: blur(10px); overflow-y: auto;
+}
+.progression-container {
+    width: 100%; max-width: 800px;
+    background: var(--bg-dark); border: 2px solid var(--primary);
+    border-radius: 20px; padding: 20px; box-shadow: 0 0 30px rgba(241, 196, 15, 0.2);
+}
+.progression-header {
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid var(--border); padding-bottom: 15px; margin-bottom: 20px;
+}
+.points-badge {
+    background: var(--primary); color: #000; padding: 5px 15px;
+    border-radius: 20px; font-weight: bold; font-size: 14px;
+}
+.progression-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
+}
+@media (max-width: 600px) { .progression-grid { grid-template-columns: 1fr; } }
+
+.attr-card, .skill-card {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 12px; padding: 15px;
+}
+.attr-row {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 15px; padding: 10px; background: rgba(0,0,0,0.3); border-radius: 8px;
+}
+.attr-info { display: flex; flex-direction: column; }
+.attr-name { font-weight: bold; color: var(--primary); font-size: 14px; }
+.attr-val { font-size: 18px; font-family: monospace; }
+.btn-plus {
+    width: 32px; height: 32px; background: var(--primary); border: none;
+    border-radius: 50%; cursor: pointer; font-weight: bold; font-size: 20px;
+}
+.btn-plus:disabled { opacity: 0.2; cursor: default; }
+
+.skill-tree {
+    display: flex; flex-direction: column; gap: 10px;
+}
+.skill-item {
+    display: flex; align-items: center; gap: 15px;
+    padding: 12px; background: rgba(255,255,255,0.05); border-radius: 10px;
+    transition: all 0.2s; border: 1px solid transparent;
+}
+.skill-item.unlocked { border-color: var(--primary); background: rgba(241, 196, 15, 0.1); }
+.skill-icon { font-size: 24px; width: 40px; text-align: center; }
+.skill-desc { flex: 1; font-size: 12px; color: #ccc; }
+.btn-unlock {
+    padding: 6px 12px; background: var(--secondary); border: none;
+    border-radius: 6px; color: white; cursor: pointer; font-size: 11px;
+}
+.btn-unlock:disabled { background: #555; opacity: 0.5; }
+
+/* --- FIM PROGRESSION STYLES --- */
 
 #loading-screen {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -454,11 +526,86 @@ white-space: nowrap;
 
 <div id="bottom-menu-container">
 <div id="main-action-menu">
-<button class="square-btn" title="Abelhas">🐝</button>
+<button class="square-btn" id="btn-progression" title="Evolução">
+    🐝 <div class="point-notify" id="attr-notify">!</div>
+</button>
 <button class="square-btn" style="opacity: 0.3;">⚙️</button>
 <button class="square-btn" style="opacity: 0.3;">🎒</button>
 </div>
 <button id="btn-open-menu">☰</button>
+</div>
+
+<div id="progression-modal">
+    <div class="progression-container">
+        <div class="progression-header">
+            <h2 style="margin:0; color:var(--primary)">EVOLUÇÃO REAL</h2>
+            <div class="points-badge">Pontos: <span id="stat-points">0</span></div>
+            <button class="main-btn btn-join" onclick="toggleProgression()" style="padding: 10px 20px; font-size: 12px;">FECHAR</button>
+        </div>
+
+        <div class="progression-grid">
+            <div class="attr-card">
+                <h3 style="margin-top:0">Atributos Básicos</h3>
+                <div class="attr-row">
+                    <div class="attr-info">
+                        <span class="attr-name">💪 FORÇA</span>
+                        <small>Dano de ataque</small>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="attr-val" id="val-str">0</span>
+                        <button class="btn-plus" onclick="upgradeStat('str')">+</button>
+                    </div>
+                </div>
+                <div class="attr-row">
+                    <div class="attr-info">
+                        <span class="attr-name">⚡ AGILIDADE</span>
+                        <small>Velocidade de movimento</small>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="attr-val" id="val-agi">0</span>
+                        <button class="btn-plus" onclick="upgradeStat('agi')">+</button>
+                    </div>
+                </div>
+                <div class="attr-row">
+                    <div class="attr-info">
+                        <span class="attr-name">❤️ VITALIDADE</span>
+                        <small>Vida máxima (+HP)</small>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:10px">
+                        <span class="attr-val" id="val-vit">0</span>
+                        <button class="btn-plus" onclick="upgradeStat('vit')">+</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="skill-card">
+                <h3 style="margin-top:0">Árvore Real</h3>
+                <div class="skill-tree">
+                    <div class="skill-item" id="skill-double">
+                        <div class="skill-icon">🏹</div>
+                        <div class="skill-desc">
+                            <strong>Disparo Duplo</strong><br>Chance de atirar 2 projéteis.
+                        </div>
+                        <button class="btn-unlock" onclick="unlockSkill('double')">2 pts</button>
+                    </div>
+                    <div class="skill-item" id="skill-regen">
+                        <div class="skill-icon">🌿</div>
+                        <div class="skill-desc">
+                            <strong>Regeneração</strong><br>Recupera HP lentamente.
+                        </div>
+                        <button class="btn-unlock" onclick="unlockSkill('regen')">3 pts</button>
+                    </div>
+                    <div class="skill-item" id="skill-pollen">
+                        <div class="skill-icon">✨</div>
+                        <div class="skill-desc">
+                            <strong>Pólen Magnético</strong><br>Coleta pólen mais rápido.
+                        </div>
+                        <button class="btn-unlock" onclick="unlockSkill('pollen')">2 pts</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div id="death-modal">
@@ -634,9 +781,22 @@ assets.ground.src = 'Grass.png';
 let isHost = false;
 let hostPassword = ""; 
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
+
+// --- JOGADOR EXTENDIDO ---
 let players = { 
-me: { x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", hp: 100, isDead: false, pollen: 0, lvl: 1, xp: 0, nextXp: 100, isCollecting: false }, 
-peer: { x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, isCollecting: false, authorized: false } 
+me: { 
+    x: 1100, y: 1100, dir: 'Down', nick: "", color: "#f1c40f", 
+    hp: 100, maxHp: 100, isDead: false, pollen: 0, 
+    lvl: 1, xp: 0, nextXp: 100, isCollecting: false,
+    statPoints: 0,
+    stats: { str: 0, agi: 0, vit: 0 },
+    skills: { double: false, regen: false, pollen: false }
+}, 
+peer: { 
+    x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", 
+    active: false, hp: 100, isDead: false, pollen: 0, lvl: 1, lastSeen: 0, 
+    isCollecting: false, authorized: false 
+} 
 };
 
 let projectiles = [], enemies = [], flowers = [], particles = []; 
@@ -653,6 +813,73 @@ const isVisible = mainActionMenu.style.display === 'grid';
 mainActionMenu.style.display = isVisible ? 'none' : 'grid';
 btnOpenMenu.innerHTML = isVisible ? '☰' : '✕';
 };
+
+// --- LOGICA DE PROGRESSÃO ---
+function toggleProgression() {
+    const modal = document.getElementById('progression-modal');
+    const isVisible = modal.style.display === 'flex';
+    modal.style.display = isVisible ? 'none' : 'flex';
+    if(!isVisible) updateProgressionUI();
+}
+
+document.getElementById('btn-progression').onclick = toggleProgression;
+
+function updateProgressionUI() {
+    document.getElementById('stat-points').innerText = players.me.statPoints;
+    document.getElementById('val-str').innerText = players.me.stats.str;
+    document.getElementById('val-agi').innerText = players.me.stats.agi;
+    document.getElementById('val-vit').innerText = players.me.stats.vit;
+
+    // Notificação de pontos
+    document.getElementById('attr-notify').style.display = players.me.statPoints > 0 ? 'flex' : 'none';
+
+    // Botões de upgrade
+    const btns = document.querySelectorAll('.btn-plus');
+    btns.forEach(b => b.disabled = players.me.statPoints <= 0);
+
+    // Habilidades
+    updateSkillUI('double', 2);
+    updateSkillUI('regen', 3);
+    updateSkillUI('pollen', 2);
+}
+
+function updateSkillUI(id, cost) {
+    const item = document.getElementById('skill-' + id);
+    const btn = item.querySelector('.btn-unlock');
+    if(players.me.skills[id]) {
+        item.classList.add('unlocked');
+        btn.innerText = "LIBERADO";
+        btn.disabled = true;
+    } else {
+        btn.disabled = players.me.statPoints < cost;
+    }
+}
+
+function upgradeStat(type) {
+    if(players.me.statPoints > 0) {
+        players.me.stats[type]++;
+        players.me.statPoints--;
+        
+        // Aplica bônus imediato de vitalidade
+        if(type === 'vit') {
+            players.me.maxHp = 100 + (players.me.stats.vit * 20);
+            players.me.hp += 20;
+        }
+        
+        updateProgressionUI();
+    }
+}
+
+function unlockSkill(id) {
+    const costs = { double: 2, regen: 3, pollen: 2 };
+    const cost = costs[id];
+    if(players.me.statPoints >= cost && !players.me.skills[id]) {
+        players.me.skills[id] = true;
+        players.me.statPoints -= cost;
+        updateProgressionUI();
+        addMsg("SISTEMA", "Habilidade " + id + " desbloqueada!", "msg-sys");
+    }
+}
 
 function toggleChat() {
 let currentLeft = window.getComputedStyle(chatWrapper).getPropertyValue('left');
@@ -681,9 +908,11 @@ players.me.xp += amount;
 if(players.me.xp >= players.me.nextXp) {
 players.me.xp -= players.me.nextXp;
 players.me.lvl++;
+players.me.statPoints += 2; // Ganha 2 pontos por nível
 players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
-addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}!`, "msg-sys");
+addMsg("SISTEMA", `LEVEL UP! Nível ${players.me.lvl}! (+2 pontos)`, "msg-sys");
 createParticles(players.me.x, players.me.y, "#f1c40f", 20, 'pixel');
+updateProgressionUI();
 }
 updateXpHud();
 }
@@ -853,17 +1082,25 @@ createParticles(players.me.x, players.me.y, "#ff0000", 5);
 if(players.me.hp <= 0) { players.me.hp = 0; players.me.isDead = true; deathModal.style.display = 'flex'; players.me.pollen = 0; }
 }
 
-function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.hp = 100; players.me.isDead = false; deathModal.style.display = 'none'; }
+function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.hp = players.me.maxHp; players.me.isDead = false; deathModal.style.display = 'none'; }
 
 function fire(angle) {
 if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
+
+// Lógica de disparo duplo
 spawnProjectile(players.me.x, players.me.y, angle, true);
+if(players.me.skills.double && Math.random() < 0.3) {
+    spawnProjectile(players.me.x, players.me.y, angle + 0.1, true);
+}
+
 if(players.peer.active && conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle });
 lastShootTime = Date.now();
 }
 
 function spawnProjectile(x, y, angle, isMe) {
-projectiles.push({ x, y, vx: Math.cos(angle)*12, vy: Math.sin(angle)*12, life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
+    // Força aumenta o tempo de vida/velocidade do projétil
+    const bonusVel = isMe ? (players.me.stats.str * 0.5) : 0;
+    projectiles.push({ x, y, vx: Math.cos(angle)*(12+bonusVel), vy: Math.sin(angle)*(12+bonusVel), life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer' });
 }
 
 function runWaveLogic() {
@@ -938,6 +1175,11 @@ if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_lis
 function updateMechanics() {
 players.me.isCollecting = false; 
 
+// Regen Skill
+if(players.me.skills.regen && !players.me.isDead && performance.now() % 2000 < 20) {
+    if(players.me.hp < players.me.maxHp) players.me.hp += 1;
+}
+
 if(isHost) {
 let needsFlowerSync = false; const now = Date.now();
 if(players.me.pollen > 0 && !players.me.isDead) {
@@ -967,19 +1209,20 @@ if(f.cooldown > 0) f.cooldown -= 1/60;
 else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
 players.me.isCollecting = true; 
 if(isHost) {
-players.me.pollen += 0.4; addXp(0.02); 
+    // Skill Magneto aumenta coleta
+    const collectionRate = players.me.skills.pollen ? 0.8 : 0.4;
+    players.me.pollen += collectionRate; addXp(0.02); 
 if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: idx, time: f.maxCooldown }); }
 } else { if(Math.random() < 0.1) conn.send({ type: 'req_pollen', id: idx }); }
 }
 }
 });
 
-// REPARO DA COLMEIA - CORRIGIDO
 if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
 if(players.me.pollen >= 100) {
 players.me.pollen = 0; 
-if(players.me.hp < 100) {
-players.me.hp = Math.min(100, players.me.hp + 20);
+if(players.me.hp < players.me.maxHp) {
+players.me.hp = Math.min(players.me.maxHp, players.me.hp + 20);
 createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
 addMsg("SISTEMA", "Curado (+20 HP) por ajudar o Reino.", "msg-sys");
 }
@@ -998,7 +1241,9 @@ for (let j = 0; j < enemies.length; j++) {
 let en = enemies[j];
 if(Math.hypot(p.x - en.x, p.y - en.y) < 35) {
 if(isHost) {
-en.hp -= 25; createParticles(en.x, en.y, "#ff0000", 5);
+    // Força aumenta dano
+    const dmg = p.owner === 'me' ? (25 + players.me.stats.str * 5) : 25;
+    en.hp -= dmg; createParticles(en.x, en.y, "#ff0000", 5);
 if(players.peer.active && conn && conn.open) conn.send({ type: 'fx', effect: 'damage', x: en.x, y: en.y });
 if(en.hp <= 0) { 
 createParticles(en.x, en.y, "#000", 10); 
@@ -1119,12 +1364,15 @@ return 'Up';
 
 function update() {
 if(!players.me.isDead) {
+// Agilidade aumenta velocidade base
+const baseSpeed = 5 + (players.me.stats.agi * 0.4);
+
 let dx = joyMove.dx, dy = joyMove.dy;
 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 if (dx !== 0 || dy !== 0) {
 const m = Math.sqrt(dx*dx + dy*dy);
-players.me.x += (dx/m) * 5; players.me.y += (dy/m) * 5;
+players.me.x += (dx/m) * baseSpeed; players.me.y += (dy/m) * baseSpeed;
 if (!joyAim.active && !isMouseDown) { if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; else players.me.dir = dy > 0 ? 'Down' : 'Up'; }
 }
 if(joyAim.active) { players.me.dir = getDirFromAngle(joyAim.angle); fire(joyAim.angle); } 
@@ -1181,7 +1429,6 @@ ctx.fillText(f.growState === 'sprout' ? "🌱" : f.emoji, f.x + sway, f.y);
 });
 ctx.globalAlpha = 1.0;
 
-// Desenhar Colmeia
 ctx.font = "60px Arial"; ctx.textAlign = "center"; 
 if(hive.destroyed) ctx.globalAlpha = 0.4;
 ctx.fillText("🏠", hive.x, hive.y + 20);
@@ -1199,8 +1446,7 @@ const drawB = (p, c, a) => {
 if(!assets.bee[p.dir].complete || p.isDead) return;
 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-drawHealthBar(p.x, p.y, p.hp);
-// CORREÇÃO: Barra de pólen do peer agora aparece se ele estiver coletando ou carregando
+drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
 if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
 };
 drawB(players.me, players.me.color, 1);
