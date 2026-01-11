@@ -694,21 +694,6 @@ document.addEventListener('gesturestart', function(e) { e.preventDefault(); });
 document.addEventListener('gesturechange', function(e) { e.preventDefault(); }); 
 document.addEventListener('gestureend', function(e) { e.preventDefault(); });
 
-// SISTEMA DE SEED E PRNG (Pseudo-Random Number Generator)
-let currentSeed = 0;
-function setSeed(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-        hash = ((hash << 5) - hash) + str.charCodeAt(i);
-        hash |= 0;
-    }
-    currentSeed = hash;
-}
-function seededRandom() {
-    currentSeed = (currentSeed * 9301 + 49297) % 233280;
-    return currentSeed / 233280;
-}
-
 function createMenuParticles() {
 const menu = document.getElementById('menu');
 for(let i=0; i<30; i++) {
@@ -773,7 +758,7 @@ setTimeout(() => {
 loadingScreen.style.display = 'none';
 if(isHost) { 
     const hasSave = loadGameProgress(); 
-    if(!hasSave) generateFlowers(true); // Se não tiver save, gera flores usando a Seed
+    if(!hasSave) generateFlowers(currentRoomCode); 
     startGame(); 
 } else { 
     startGame(); 
@@ -841,14 +826,39 @@ let touchIds = { move: null, aim: null }, joyMove = { dx: 0, dy: 0 }, joyAim = {
 const TOTAL_WAVE_ENEMIES = 20;
 let waveTimer = 180, isWaveActive = false, enemiesSpawnedInWave = 0;
 
-// SISTEMA DE SALVAMENTO ROBUSTO (MUNDO + FLORES + PLAYERS)
+// SEED SYSTEM (PrNG)
+function seededRandom(seed) {
+    let value = seed;
+    return function() {
+        value = (value * 16807) % 2147483647;
+        return (value - 1) / 2147483646;
+    };
+}
+
+function stringToSeed(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) hash = ((hash << 5) - hash) + str.charCodeAt(i) | 0;
+    return Math.abs(hash);
+}
+
+// SISTEMA DE SALVAMENTO ROBUSTO
 function saveGameProgress(isManual = false) {
     if (!isHost) return;
 
     const saveData = {
         seed: currentRoomCode,
         hive: hive,
-        flowers: flowers, // Salva estado de todas as flores (incluindo as plantadas e cooldowns)
+        flowers: flowers.map(f => ({
+            id: f.id, 
+            cooldown: f.cooldown, 
+            growState: f.growState,
+            plantTime: f.plantTime
+        })),
+        wave: {
+            timer: waveTimer,
+            isActive: isWaveActive,
+            enemiesSpawned: enemiesSpawnedInWave
+        },
         hostPlayer: {
             lvl: players.me.lvl,
             xp: players.me.xp,
@@ -856,7 +866,8 @@ function saveGameProgress(isManual = false) {
             stats: players.me.stats,
             skills: players.me.skills,
             x: players.me.x,
-            y: players.me.y
+            y: players.me.y,
+            pollen: players.me.pollen
         },
         peerPlayer: players.peer.active ? {
             nick: players.peer.nick,
@@ -864,11 +875,6 @@ function saveGameProgress(isManual = false) {
             pollen: players.peer.pollen,
             hp: players.peer.hp
         } : (localStorage.getItem(`hive_save_peer_${currentRoomCode}`) ? JSON.parse(localStorage.getItem(`hive_save_peer_${currentRoomCode}`)) : null),
-        waveInfo: {
-            timer: waveTimer,
-            isWaveActive: isWaveActive,
-            spawned: enemiesSpawnedInWave
-        },
         timestamp: Date.now()
     };
 
@@ -878,8 +884,8 @@ function saveGameProgress(isManual = false) {
     }
 
     if (isManual) {
-        addMsg("SISTEMA", "Progresso do Reino salvo com sucesso!", "msg-sys");
-        createParticles(players.me.x, players.me.y, "#2ecc71", 10);
+        addMsg("SISTEMA", "Reino e Mapa salvos com sucesso!", "msg-sys");
+        createParticles(players.me.x, players.me.y, "#2ecc71", 15);
     }
 }
 
@@ -890,35 +896,82 @@ function loadGameProgress() {
     try {
         const save = JSON.parse(rawSave);
         hive = save.hive;
-        flowers = save.flowers || []; // Restaura as flores exatamente como estavam
         
+        // Reconstrói flores baseado na seed primeiro
+        generateFlowers(save.seed || currentRoomCode);
+        // Aplica estados salvos às flores (cooldowns e crescimento)
+        save.flowers.forEach(savedFlower => {
+            let f = flowers.find(fl => fl.id === savedFlower.id);
+            if(f) {
+                f.cooldown = savedFlower.cooldown;
+                f.growState = savedFlower.growState;
+                f.plantTime = savedFlower.plantTime;
+            }
+        });
+
+        // Horda
+        waveTimer = save.wave.timer;
+        isWaveActive = save.wave.isActive;
+        enemiesSpawnedInWave = save.wave.enemiesSpawned;
+
+        // Host
         players.me.lvl = save.hostPlayer.lvl;
         players.me.xp = save.hostPlayer.xp;
+        players.me.pollen = save.hostPlayer.pollen || 0;
         players.me.statPoints = save.hostPlayer.statPoints;
         players.me.stats = save.hostPlayer.stats;
         players.me.skills = save.hostPlayer.skills;
         players.me.x = save.hostPlayer.x;
         players.me.y = save.hostPlayer.y;
         
-        // Sincroniza atributos derivados
         players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
         players.me.maxHp = 100 + (players.me.stats.vit * 20);
         players.me.hp = players.me.maxHp;
 
-        // Restaura Horda
-        if(save.waveInfo) {
-            waveTimer = save.waveInfo.timer;
-            isWaveActive = save.waveInfo.isWaveActive;
-            enemiesSpawnedInWave = save.waveInfo.spawned;
-        }
-
         updateXpHud();
         updateProgressionUI();
-        addMsg("SISTEMA", "Reino carregado do salvamento anterior.", "msg-sys");
+        addMsg("SISTEMA", "Reino restaurado.", "msg-sys");
         return true;
     } catch (e) {
         console.error("Erro ao carregar save:", e);
         return false;
+    }
+}
+
+// GERAÇÃO DE MAPA POR GRID (SEED-BASED)
+function generateFlowers(seedStr) {
+    flowers = [];
+    const seed = stringToSeed(seedStr);
+    const rng = seededRandom(seed);
+    const types = ["🌸", "🌻", "🌷"];
+    
+    // Grid Espacial: Evita flores coladas e distribui melhor
+    const gridSize = 400; // Tamanho de cada setor
+    const range = 2400;   // Área total (-1200 a 1200)
+
+    for(let gx = -range; gx < range; gx += gridSize) {
+        for(let gy = -range; gy < range; gy += gridSize) {
+            // Chance de gerar flor nesse setor do grid
+            if(rng() > 0.4) {
+                const fx = gx + (rng() * gridSize);
+                const fy = gy + (rng() * gridSize);
+                
+                // Não gerar em cima da colmeia
+                if(Math.hypot(fx - hive.x, fy - hive.y) < 200) continue;
+
+                flowers.push({
+                    id: flowers.length,
+                    x: fx, 
+                    y: fy,
+                    emoji: types[Math.floor(rng() * types.length)],
+                    cooldown: 0, 
+                    maxCooldown: 300, 
+                    phase: rng() * Math.PI * 2,
+                    growState: 'mature', 
+                    plantTime: 0
+                });
+            }
+        }
     }
 }
 
@@ -985,7 +1038,7 @@ function unlockSkill(id) {
         players.me.statPoints -= cost;
         updateProgressionUI();
         addMsg("SISTEMA", "Habilidade " + id + " desbloqueada!", "msg-sys");
-        saveGameProgress();
+        saveGameProgress(); 
     }
 }
 
@@ -1042,32 +1095,6 @@ if(type === 'pollen') { vx = (Math.random() - 0.5) * 1.5; vy = Math.random() * 1
 else if (type === 'heart') { vx *= 0.5; vy = -Math.random(); decay = 0.01; }
 particles.push({ x, y, vx, vy, life, decay, color, type });
 }
-}
-
-// GERAÇÃO BASEADA EM SEED
-function generateFlowers(useSeed = true) {
-    flowers = [];
-    const types = ["🌸", "🌻", "🌷"];
-    if(useSeed) setSeed(currentRoomCode); // Usa o código da sala como base para a seed
-
-    for(let i=0; i<25; i++) {
-        let fx, fy;
-        if(useSeed) {
-            fx = seededRandom() * 4000 - 1000;
-            fy = seededRandom() * 4000 - 1000;
-        } else {
-            fx = Math.random() * 4000 - 1000;
-            fy = Math.random() * 4000 - 1000;
-        }
-
-        flowers.push({
-            id: i, 
-            x: fx, y: fy,
-            emoji: types[Math.floor((useSeed ? seededRandom() : Math.random()) * types.length)],
-            cooldown: 0, maxCooldown: 300, phase: (useSeed ? seededRandom() : Math.random()) * Math.PI * 2,
-            growState: 'mature', plantTime: 0
-        });
-    }
 }
 
 window.addEventListener('mousemove', e => { mousePos.x = e.clientX; mousePos.y = e.clientY; });
@@ -1285,13 +1312,12 @@ lastNetUpdate = performance.now();
 
 function spawnFlower(x, y) {
 const types = ["🌸", "🌻", "🌷"];
-const id = flowers.length;
+const id = flowers.length + 9000; // Offset para flores plantadas não chocarem IDs
 flowers.push({
 id: id, x: x, y: y, emoji: types[Math.floor(Math.random() * types.length)],
 cooldown: 0, maxCooldown: 300, phase: Math.random() * Math.PI * 2, growState: 'seed', plantTime: Date.now()
 });
 if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
-saveGameProgress(); // Salva o mapa quando uma nova flor é plantada
 }
 
 function updateMechanics() {
@@ -1347,8 +1373,8 @@ amICalling = true;
 if(isHost) {
     const collectionRate = players.me.skills.pollen ? 0.8 : 0.4;
     players.me.pollen += collectionRate; addXp(0.02); 
-if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: idx, time: f.maxCooldown }); }
-} else { if(Math.random() < 0.1) conn.send({ type: 'req_pollen', id: idx }); }
+if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: f.id, time: f.maxCooldown }); }
+} else { if(Math.random() < 0.1) conn.send({ type: 'req_pollen', id: f.id }); }
 }
 }
 });
@@ -1462,21 +1488,10 @@ function drawSight() {
         targetX = players.me.x + Math.cos(players.me.aimAngle) * dist;
         targetY = players.me.y + Math.sin(players.me.aimAngle) * dist;
     }
-    ctx.beginPath();
-    ctx.setLineDash([5, 10]);
-    ctx.moveTo(players.me.x, players.me.y);
-    ctx.lineTo(targetX, targetY);
-    ctx.strokeStyle = "rgba(255, 71, 87, 0.4)";
-    ctx.lineWidth = 2;
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.beginPath();
-    ctx.arc(targetX, targetY, 4, 0, Math.PI * 2);
-    ctx.fillStyle = "#ff4757";
-    ctx.fill();
-    ctx.strokeStyle = "white";
-    ctx.lineWidth = 1;
-    ctx.stroke();
+    ctx.beginPath(); ctx.setLineDash([5, 10]); ctx.moveTo(players.me.x, players.me.y);
+    ctx.lineTo(targetX, targetY); ctx.strokeStyle = "rgba(255, 71, 87, 0.4)"; ctx.lineWidth = 2;
+    ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(targetX, targetY, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "#ff4757"; ctx.fill(); ctx.strokeStyle = "white"; ctx.lineWidth = 1; ctx.stroke();
 }
 
 function sendMsg() {
@@ -1625,13 +1640,10 @@ for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE)
 for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
 if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
 flowers.forEach(f => {
-if(f.growState === 'seed') {
-    ctx.font = "14px Arial"; ctx.fillText("🌱", f.x, f.y);
-    return;
-}
+if(f.growState === 'seed') return;
 const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
-ctx.font = "28px Arial"; ctx.textAlign = "center"; ctx.globalAlpha = f.cooldown > 0 ? 0.5 : 1.0;
-ctx.fillText(f.growState === 'sprout' ? "🌿" : f.emoji, f.x + sway, f.y);
+ctx.font = "28px Arial"; ctx.textAlign = "center"; ctx.globalAlpha = f.cooldown > 0 ? 0.3 : 1.0;
+ctx.fillText(f.growState === 'sprout' ? "🌱" : f.emoji, f.x + sway, f.y);
 });
 ctx.globalAlpha = 1.0;
 ctx.font = "60px Arial"; ctx.textAlign = "center"; 
@@ -1646,9 +1658,7 @@ enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.f
 projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
 particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); } else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); } });
 ctx.globalAlpha = 1.0;
-
 drawSight();
-
 const drawB = (p, c, a) => {
 if(!assets.bee[p.dir].complete || p.isDead) return;
 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
