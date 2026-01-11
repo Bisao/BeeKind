@@ -135,6 +135,17 @@ justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
 z-index: 501;
 }
 
+/* Novo Botão de Conserto */
+#btn-repair-hive {
+position: absolute; bottom: 180px; right: 40px;
+width: 70px; height: 70px; background: #2ecc71;
+border: 4px solid rgba(255,255,255,0.3); border-radius: 50%;
+cursor: pointer; font-size: 30px; display: none; align-items: center;
+justify-content: center; box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+z-index: 600; transition: transform 0.1s;
+}
+#btn-repair-hive:active { transform: scale(0.9); }
+
 #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
 .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
@@ -672,6 +683,8 @@ white-space: nowrap;
 <div id="studio-footer">FUN🍪COOK STUDIO &copy; 2025</div>
 </div>
 
+<button id="btn-repair-hive">🛠️</button>
+
 <div id="move-base" class="joy-container"><div id="move-stick" class="joy-stick" style="background:var(--primary)"></div></div>
 <div id="aim-base" class="joy-container"><div id="aim-stick" class="joy-stick" style="background:#ff4757"></div></div>
 
@@ -769,6 +782,7 @@ const playerItemsContainer = document.getElementById('player-items-container');
 const hiveItemsContainer = document.getElementById('hive-items-container');
 const btnOpenMenu = document.getElementById('btn-open-menu');
 const mainActionMenu = document.getElementById('main-action-menu');
+const btnRepairHive = document.getElementById('btn-repair-hive');
 
 const assets = { bee: { Down: new Image(), Left: new Image(), Up: new Image(), Right: new Image() }, ground: new Image() };
 assets.bee.Down.src = 'BeeDown.png'; assets.bee.Left.src = 'BeeLeft.png'; assets.bee.Up.src = 'BeeUp.png'; assets.bee.Right.src = 'BeeRight.png';
@@ -1029,11 +1043,13 @@ waveTimer = data.waveTimer; enemiesSpawnedInWave = data.enemiesSpawned;
 }
 else if(data.type === 'repair') { 
 if(isHost) {
-const amt = hive.destroyed ? 25 : 50;
-hive.hp = Math.min(hive.maxHp, hive.hp + amt);
-if(hive.hp > 0) hive.destroyed = false;
-conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
-conn.send({ type: 'reward_xp', amount: 15 }); 
+    // Reparo agora usa a quantidade enviada pelo peer
+    const amountPollen = data.pollen || 100;
+    const hpGain = (amountPollen / 100) * (hive.destroyed ? 25 : 50);
+    hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
+    if(hive.hp > 0) hive.destroyed = false;
+    conn.send({ type: 'fx', effect: 'heart', x: hive.x, y: hive.y });
+    conn.send({ type: 'reward_xp', amount: Math.floor(amountPollen * 0.15) }); 
 }
 }
 else if(data.type === 'hit') { if(!isHost && data.target === 'me') takeDamage(data.amount); }
@@ -1155,7 +1171,6 @@ if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
 }
 }
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-    // Nota: Peer host particles are handled via packets
 if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
 if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
 }
@@ -1168,7 +1183,6 @@ if(f.growState === 'sprout' && age >= 300000) { f.growState = 'mature'; needsFlo
 });
 if(needsFlowerSync && players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
 } else {
-    // Peer (Client) pollen trail
     if(players.me.pollen > 0 && !players.me.isDead) {
         if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
              if(Math.random() < 0.3) {
@@ -1195,22 +1209,14 @@ if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 1
 
 players.me.isCollecting = amICalling;
 
-if(Math.hypot(players.me.x - hive.x, players.me.y - hive.y) < 60) {
-if(players.me.pollen >= 100) {
-players.me.pollen = 0; 
-if(players.me.hp < players.me.maxHp) {
-players.me.hp = Math.min(players.me.maxHp, players.me.hp + 20);
-createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
-addMsg("SISTEMA", "Curado (+20 HP) por ajudar o Reino.", "msg-sys");
+// Logica de proximidade para o Botão de Conserto
+const distToHive = Math.hypot(players.me.x - hive.x, players.me.y - hive.y);
+if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead) {
+    btnRepairHive.style.display = 'flex';
+} else {
+    btnRepairHive.style.display = 'none';
 }
-if(isHost) {
-const amt = hive.destroyed ? 25 : 50;
-hive.hp = Math.min(hive.maxHp, hive.hp + amt);
-if(hive.hp > 0) { if(hive.destroyed) addMsg("SISTEMA", "REINO RECONSTRUÍDO!", "msg-sys"); hive.destroyed = false; }
-createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart'); addXp(15);
-} else { conn.send({ type: 'repair' }); }
-}
-}
+
 for (let i = projectiles.length - 1; i >= 0; i--) {
 let p = projectiles[i]; let hit = false;
 for (let j = 0; j < enemies.length; j++) {
@@ -1234,6 +1240,37 @@ p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1);
 }
 particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) particles.splice(i, 1); });
 }
+
+// Nova Função de Execução de Reparo vinculada ao botão
+function repairHiveAction() {
+    if(players.me.isDead || players.me.pollen <= 0) return;
+    
+    const amountPollen = players.me.pollen;
+    players.me.pollen = 0; 
+
+    // Efeito visual de cura no player
+    if(players.me.hp < players.me.maxHp) {
+        players.me.hp = Math.min(players.me.maxHp, players.me.hp + 20);
+        createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
+        addMsg("SISTEMA", "Curado (+20 HP) por ajudar o Reino.", "msg-sys");
+    }
+
+    if(isHost) {
+        const hpGain = (amountPollen / 100) * (hive.destroyed ? 25 : 50);
+        hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
+        if(hive.hp > 0) { 
+            if(hive.destroyed) addMsg("SISTEMA", "REINO RECONSTRUÍDO!", "msg-sys"); 
+            hive.destroyed = false; 
+        }
+        createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart'); 
+        addXp(Math.floor(amountPollen * 0.15));
+    } else { 
+        conn.send({ type: 'repair', pollen: amountPollen }); 
+    }
+}
+
+btnRepairHive.onclick = repairHiveAction;
+btnRepairHive.ontouchstart = (e) => { e.preventDefault(); repairHiveAction(); };
 
 function updateHordeHud() {
 const hud = document.getElementById('horde-hud');
