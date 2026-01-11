@@ -38,17 +38,23 @@ position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
 display: flex; flex-direction: column; align-items: center; gap: 8px;
 z-index: 100; pointer-events: none;
 }
+
 #lvl-hud {
 background: var(--bg-dark); padding: 10px 25px; border-radius: 25px;
 text-align: center; min-width: 220px; backdrop-filter: blur(10px);
 border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
+
+/* Alterado para lateral esquerda superior */
 #time-hud {
+position: absolute; top: 15px; left: 15px;
 background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 15px;
-font-size: 12px; font-weight: bold; color: #fff; margin-top: 5px;
+font-size: 12px; font-weight: bold; color: #fff;
 border: 1px solid var(--border); backdrop-filter: blur(5px);
 display: none; align-items: center; gap: 8px;
+z-index: 105;
 }
+
 #xp-bar-container { width: 100%; height: 8px; background: rgba(0,0,0,0.5); border-radius: 4px; margin-top: 6px; overflow: hidden; }
 #xp-bar-fill { width: 0%; height: 100%; background: var(--xp-color); transition: width 0.3s; box-shadow: 0 0 8px var(--xp-color); }
 #lvl-text { font-weight: bold; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
@@ -201,7 +207,30 @@ transition: background 0.3s;
 .progression-grid {
     display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
 }
-@media (max-width: 600px) { .progression-grid { grid-template-columns: 1fr; } }
+
+/* MOBILE ADJUSTMENTS */
+@media (max-width: 600px) { 
+    .progression-grid { grid-template-columns: 1fr; } 
+    .menu-card { padding: 30px 15px; width: 95%; }
+    .title-box { gap: 5px; }
+    .menu-card h1 { font-size: 1.4rem; }
+    .bee-flank { width: 35px; height: 35px; }
+    .crown-g::before { font-size: 1.4rem; top: -18px; right: -6px; }
+    .button-row { gap: 10px; }
+    .main-btn { font-size: 0.8rem; padding: 14px 5px; }
+    
+    /* Ajustando XP HUD para não sobrepor o Relógio no mobile */
+    #lvl-hud { 
+        min-width: 120px; 
+        padding: 6px 15px; 
+    }
+    #lvl-text { font-size: 12px; }
+    #xp-bar-container { height: 6px; }
+    #time-hud { 
+        padding: 4px 10px; 
+        font-size: 10px; 
+    }
+}
 
 .attr-card, .skill-card {
     background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -491,16 +520,6 @@ opacity: 0.7; font-size: 0.8rem;
 white-space: nowrap;
 }
 
-@media (max-width: 600px) {
-.menu-card { padding: 30px 15px; width: 95%; }
-.title-box { gap: 5px; }
-.menu-card h1 { font-size: 1.4rem; }
-.bee-flank { width: 35px; height: 35px; }
-.crown-g::before { font-size: 1.4rem; top: -18px; right: -6px; }
-.button-row { gap: 10px; }
-.main-btn { font-size: 0.8rem; padding: 14px 5px; }
-}
-
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
 #move-base { left: 40px; }
 #aim-base { right: 40px; border-color: rgba(255, 71, 87, 0.3); }
@@ -509,12 +528,13 @@ white-space: nowrap;
 </head>
 <body>
 
+<div id="time-hud">☀️ Dia 1 • 08:00</div>
+
 <div id="central-hud">
 <div id="lvl-hud">
 <div id="lvl-text">Nível 1</div>
 <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
 </div>
-<div id="time-hud">☀️ Dia 1 • 08:00</div>
 <div id="coords">X: 1100 Y: 1100</div>
 <div id="horde-hud"></div>
 </div>
