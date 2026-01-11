@@ -1225,7 +1225,7 @@ players.peer.lastSeen = Date.now(); players.peer.tX = data.x; players.peer.tY = 
 players.peer.dir = data.dir; players.peer.hp = data.hp; players.peer.maxHp = data.maxHp; players.peer.isDead = data.isDead; 
 players.peer.pollen = data.pollen; players.peer.lvl = data.lvl; players.peer.active = true;
 players.peer.isCollecting = data.isCollecting;
-players.peer.moving = data.moving; // Sincroniza estado de movimento
+players.peer.moving = data.moving; 
 }
 else if(data.type === 'ping') { if(!isHost) conn.send({type: 'pong'}); }
 else if(data.type === 'pong') { players.peer.lastSeen = Date.now(); }
@@ -1297,7 +1297,7 @@ if (dMe < Infinity || dPe < Infinity) { if (dMe <= dPe) { tx = players.me.x; ty 
 const angle = Math.atan2(ty - en.y, tx - en.x);
 en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
 en.x += en.vx; en.y += en.vy;
-if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { if(performance.now() % 60 < 2) hive.hp -= 2; }
+if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { if(performance.now() % 60 < 2) hive.hp -= 1.5; }
 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
 if(players.peer.active && !players.peer.isDead && Math.hypot(en.x - players.peer.x, en.y - players.peer.y) < 30 && performance.now() % 60 < 2) { conn.send({type:'hit', target:'me', amount: 2}); }
 });
@@ -1390,7 +1390,7 @@ if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 1
 players.me.isCollecting = amICalling;
 
 const distToHive = Math.hypot(players.me.x - hive.x, players.me.y - hive.y);
-if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead && hive.hp < hive.maxHp) {
+if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead) {
     btnRepairHive.style.display = 'flex';
 } else {
     btnRepairHive.style.display = 'none';
@@ -1421,7 +1421,7 @@ particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.
 }
 
 function repairHiveAction() {
-    if(players.me.isDead || players.me.pollen <= 0 || hive.hp >= hive.maxHp) return;
+    if(players.me.isDead || players.me.pollen <= 0) return;
     
     const amountPollen = players.me.pollen;
     players.me.pollen = 0; 
@@ -1433,7 +1433,7 @@ function repairHiveAction() {
     }
 
     if(isHost) {
-        const hpGain = (amountPollen / 100) * (hive.destroyed ? 25 : 50);
+        const hpGain = (amountPollen / 100) * (hive.destroyed ? 50 : 100);
         hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
         if(hive.hp > 0) { 
             if(hive.destroyed) {
@@ -1582,12 +1582,27 @@ let dx = joyMove.dx, dy = joyMove.dy;
 if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
 if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
 
-// Lógica de estado de movimento
 players.me.moving = (dx !== 0 || dy !== 0);
 
 if (players.me.moving) {
     const m = Math.sqrt(dx*dx + dy*dy);
-    players.me.x += (dx/m) * baseSpeed; players.me.y += (dy/m) * baseSpeed;
+    let newX = players.me.x + (dx/m) * baseSpeed;
+    let newY = players.me.y + (dy/m) * baseSpeed;
+    
+    // FISICA DE COLISÃO COM A COLMEIA (Não passar por cima)
+    const distToHive = Math.hypot(newX - hive.x, newY - hive.y);
+    const hiveRadius = 40; // Raio físico da colmeia
+    
+    if (distToHive > hiveRadius) {
+        players.me.x = newX;
+        players.me.y = newY;
+    } else {
+        // Empurra suavemente para fora se tentar entrar na colisão
+        const angleFromHive = Math.atan2(newY - hive.y, newX - hive.x);
+        players.me.x = hive.x + Math.cos(angleFromHive) * (hiveRadius + 1);
+        players.me.y = hive.y + Math.sin(angleFromHive) * (hiveRadius + 1);
+    }
+
     if (!joyAim.active && !isMouseDown) { 
         if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
         else players.me.dir = dy > 0 ? 'Down' : 'Up'; 
@@ -1615,7 +1630,7 @@ if(performance.now() - lastNetUpdate > 30) {
         x: players.me.x, y: players.me.y, dir: players.me.dir,
         hp: players.me.hp, maxHp: players.me.maxHp, isDead: players.me.isDead,
         pollen: players.me.pollen, lvl: players.me.lvl, isCollecting: players.me.isCollecting,
-        moving: players.me.moving // Envia estado de movimento
+        moving: players.me.moving 
     }); 
     lastNetUpdate = performance.now();
 }
@@ -1677,23 +1692,15 @@ particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.
 ctx.globalAlpha = 1.0;
 drawSight();
 
-// FUNÇÃO DE DESENHO DA ABELHA COM NOVAS SPRITES
 const drawB = (p, c, a, isMe) => {
     if(p.isDead) return;
-    
-    // Seleção da sprite baseada em estado
     let sprite;
-    let isAttacking = isMe ? (isMouseDown || joyAim.active) : false; // O peer não tem estado "attacking" explícito no objeto pos atual, mas podemos inferir
-    
-    // Para o peer, usamos a flag isCollecting ou apenas moving
     if (p.moving) {
         sprite = assets.bee[p.dir];
     } else {
         sprite = assets.bee[p.dir + "Idle"];
     }
-
     if(!sprite || !sprite.complete) return;
-    
     ctx.globalAlpha = a; 
     ctx.drawImage(sprite, p.x-32, p.y-32, 64, 64);
     ctx.globalAlpha = 1; 
@@ -1701,11 +1708,9 @@ const drawB = (p, c, a, isMe) => {
     ctx.fillStyle = c; 
     ctx.textAlign = "center"; 
     ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-    
     if(p.hp < p.maxHp) drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
     if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
 };
-
 drawB(players.me, players.me.color, 1, true);
 if(players.peer.active) drawB(players.peer, players.peer.color, 0.6, false);
 ctx.restore();
