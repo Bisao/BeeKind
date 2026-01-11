@@ -1208,7 +1208,8 @@ if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 1
 players.me.isCollecting = amICalling;
 
 const distToHive = Math.hypot(players.me.x - hive.x, players.me.y - hive.y);
-if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead) {
+// Modificado: Só mostra o botão se houver pólen E se a colmeia precisar de reparo (HP < maxHP)
+if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead && hive.hp < hive.maxHp) {
     btnRepairHive.style.display = 'flex';
 } else {
     btnRepairHive.style.display = 'none';
@@ -1239,7 +1240,7 @@ particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.
 }
 
 function repairHiveAction() {
-    if(players.me.isDead || players.me.pollen <= 0) return;
+    if(players.me.isDead || players.me.pollen <= 0 || hive.hp >= hive.maxHp) return;
     
     const amountPollen = players.me.pollen;
     players.me.pollen = 0; 
@@ -1491,8 +1492,10 @@ ctx.font = "60px Arial"; ctx.textAlign = "center";
 if(hive.destroyed) ctx.globalAlpha = 0.4;
 ctx.fillText("🏠", hive.x, hive.y + 20);
 ctx.globalAlpha = 1.0;
-if(!hive.destroyed || hive.hp > 0) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
-else { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50); }
+// Modificado: Só desenha a barra de HP da colmeia se ela perdeu HP
+if(!hive.destroyed && hive.hp < hive.maxHp) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
+else if(hive.destroyed) { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50); }
+
 drawIndicators();
 enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
 projectiles.forEach(p => { ctx.fillStyle = p.color; ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, Math.PI*2); ctx.fill(); });
@@ -1505,8 +1508,8 @@ const drawB = (p, c, a) => {
 if(!assets.bee[p.dir].complete || p.isDead) return;
 ctx.globalAlpha = a; ctx.drawImage(assets.bee[p.dir], p.x-32, p.y-32, 64, 64);
 ctx.globalAlpha = 1; ctx.font = "bold 14px Segoe UI"; ctx.fillStyle = c; ctx.textAlign = "center"; ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
-// Mostra a barra se tiver pólen OU se estiver coletando ativamente
+// Modificado: Só desenha a barra de HP do player se ele perdeu HP
+if(p.hp < p.maxHp) drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
 if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
 };
 drawB(players.me, players.me.color, 1);
