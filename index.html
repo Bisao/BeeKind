@@ -119,7 +119,7 @@ z-index: 500;
 background: var(--bg-dark); border: 1px solid var(--primary);
 padding: 15px; border-radius: 15px; display: none;
 backdrop-filter: blur(10px); box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-grid-template-columns: repeat(3, 1fr); gap: 10px;
+grid-template-columns: repeat(4, 1fr); gap: 10px; /* ALTERADO PARA 4 COLUNAS */
 }
 .square-btn {
 width: 50px; height: 50px; background: rgba(255,255,255,0.1);
@@ -666,6 +666,7 @@ white-space: nowrap;
 </button>
 <button class="square-btn" id="btn-manual-save" title="Salvar Reino">💾</button>
 <button class="square-btn" style="opacity: 0.3;">🎒</button>
+<button class="square-btn" id="btn-exit" title="Sair e Salvar">🚪</button>
 </div>
 <button id="btn-open-menu">☰</button>
 </div>
@@ -1108,6 +1109,7 @@ let hostPassword = "";
 let hive = { x: 1000, y: 1000, hp: 500, maxHp: 500, destroyed: false };
 let currentRoomCode = "";
 let lastAutoSaveTime = Date.now();
+let isGameRunning = false;
 
 let dayCycle = {
 time: 480, 
@@ -1296,6 +1298,41 @@ function generateScouts(seedStr) {
 }
 
 btnManualSave.onclick = () => saveGameProgress(true);
+
+document.getElementById('btn-exit').onclick = () => {
+    if(isHost) {
+        saveGameProgress(true);
+        setTimeout(exitToCharScreen, 500); 
+    } else {
+        exitToCharScreen();
+    }
+};
+
+function exitToCharScreen() {
+    isGameRunning = false;
+    if(peer && !peer.destroyed) peer.destroy();
+    conn = null;
+
+    document.getElementById('lvl-hud').style.display = 'none';
+    document.getElementById('time-hud').style.display = 'none';
+    chatWrapper.style.display = 'none';
+    canvas.style.display = 'none';
+    moveBase.style.display = 'none';
+    aimBase.style.display = 'none';
+    btnRepairHive.style.display = 'none';
+    document.getElementById('horde-hud').style.display = 'none';
+    
+    document.getElementById('session-panel').classList.remove('active');
+    document.getElementById('hive-panel').classList.remove('active');
+    document.getElementById('session-panel').style.display = 'none';
+    document.getElementById('hive-panel').style.display = 'none';
+
+    mainActionMenu.style.display = 'none';
+    btnOpenMenu.innerHTML = '☰';
+
+    document.getElementById('char-selection-screen').style.display = 'flex';
+    generateCharCards();
+}
 
 btnOpenMenu.onclick = () => {
 const isVisible = mainActionMenu.style.display === 'grid';
@@ -1565,7 +1602,7 @@ if(players.me.hp <= 0) { players.me.hp = 0; players.me.isDead = true; deathModal
 function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.hp = players.me.maxHp; players.me.isDead = false; deathModal.style.display = 'none'; }
 
 function fire(angle) {
-if(Date.now() - lastShootTime < 900 || players.me.isDead) return;
+if(Date.now() - lastShootTime < 720 || players.me.isDead) return;
 
 if (players.me.classType === "Guerreiro") {
     spawnMeleeSlash(players.me.x, players.me.y, angle, true);
@@ -2019,6 +2056,7 @@ if (window.getComputedStyle(chatWrapper).left.includes('-') && senderType !== "m
 }
 
 function startGame() {
+isGameRunning = true;
 document.getElementById('menu').style.display = 'none';
 document.getElementById('lvl-hud').style.display = 'block';
 chatWrapper.style.display = 'flex'; sessionPanel.style.display = 'block'; hivePanel.style.display = 'block'; canvas.style.display = 'block';
@@ -2246,7 +2284,13 @@ ctx.fillStyle = `rgba(0, 20, 50, ${dayCycle.overlayAlpha})`;
 ctx.fillRect(0, 0, canvas.width, canvas.height);
 }
 }
-function gameLoop() { update(); draw(); requestAnimationFrame(gameLoop); }
+function gameLoop() { 
+    if(isGameRunning) {
+        update(); 
+        draw(); 
+    }
+    requestAnimationFrame(gameLoop); 
+}
 </script>
 </body>
 </html>
