@@ -1602,7 +1602,19 @@ if(players.me.hp <= 0) { players.me.hp = 0; players.me.isDead = true; deathModal
 function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.hp = players.me.maxHp; players.me.isDead = false; deathModal.style.display = 'none'; }
 
 function fire(angle) {
-if(Date.now() - lastShootTime < 720 || players.me.isDead) return;
+// 1. Defina o tempo de recarga (cooldown) para cada classe aqui
+// Quanto maior o número, mais lento o ataque
+let cooldown = 500; // Valor padrão
+
+if (players.me.classType === "Guerreiro") {
+    cooldown = 800; // Guerreiro ataca bem devagar
+} else if (players.me.classType === "Mago") {
+    cooldown = 600; // Mago velocidade média
+} else if (players.me.classType === "Arqueiro") {
+    cooldown = 400; // Arqueiro ataca rápido
+}
+
+if(Date.now() - lastShootTime < cooldown || players.me.isDead) return;
 
 if (players.me.classType === "Guerreiro") {
     spawnMeleeSlash(players.me.x, players.me.y, angle, true);
@@ -1632,7 +1644,7 @@ function spawnMeleeSlash(x, y, angle, isMe) {
 
 function spawnProjectile(x, y, angle, isMe, type) {
 const bonusVel = isMe ? (players.me.stats.str * 0.5) : 0;
-projectiles.push({ x, y, vx: Math.cos(angle)*(12+bonusVel), vy: Math.sin(angle)*(12+bonusVel), life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer', type: type });
+projectiles.push({ x, y, vx: Math.cos(angle)*(6+bonusVel), vy: Math.sin(angle)*(6+bonusVel), life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer', type: type });
 }
 
 function runWaveLogic() {
@@ -2160,137 +2172,4 @@ if(conn && conn.open) conn.send({
 type: 'pos',
 x: players.me.x, y: players.me.y, dir: players.me.dir,
 hp: players.me.hp, maxHp: players.me.maxHp, isDead: players.me.isDead,
-pollen: players.me.pollen, lvl: players.me.lvl, isCollecting: players.me.isCollecting,
-moving: players.me.moving 
-}); 
-lastNetUpdate = performance.now();
-}
-let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
-if(players.peer.active) { 
-players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
-const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
-playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
-}
-playerItemsContainer.innerHTML = playerListHtml;
-let hiveListHtml = "";
-if(!hive.destroyed) {
-const hpP = Math.floor((hive.hp/hive.maxHp)*100);
-const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
-hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
-} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída</span></div>`; }
-hiveItemsContainer.innerHTML = hiveListHtml;
-camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
-document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
-}
-
-function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
-ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
-ctx.fillStyle = hp > (max * 0.3) ? "#2ecc71" : "#e74c3c"; ctx.fillRect(x - w/2, y - offset, w * (hp/max), h);
-}
-
-function drawPollenBar(x, y, pollen, w = 50, h = 6, offset = -40) {
-ctx.fillStyle = "rgba(0,0,0,0.5)"; ctx.fillRect(x - w/2, y - offset, w, h);
-ctx.fillStyle = "#fffa65"; ctx.fillRect(x - w/2, y - offset, w * (pollen/100), h);
-ctx.strokeStyle = "rgba(0,0,0,0.3)"; ctx.lineWidth = 1; ctx.strokeRect(x - w/2, y - offset, w, h);
-}
-
-function draw() {
-ctx.fillStyle = '#1a1a1a'; ctx.fillRect(0,0,canvas.width,canvas.height);
-ctx.save(); ctx.translate(-camera.x, -camera.y);
-const sX = Math.floor(camera.x/TILE_SIZE)*TILE_SIZE, sY = Math.floor(camera.y/TILE_SIZE)*TILE_SIZE;
-for(let x=sX; x<sX+canvas.width+TILE_SIZE; x+=TILE_SIZE) 
-for(let y=sY; y<sY+canvas.height+TILE_SIZE; y+=TILE_SIZE) 
-if(assets.ground.complete) ctx.drawImage(assets.ground, x, y, TILE_SIZE, TILE_SIZE);
-flowers.forEach(f => {
-if(f.growState === 'seed') return;
-const sway = Math.sin(performance.now() * 0.003 + f.phase) * 5;
-ctx.font = "28px Arial"; ctx.textAlign = "center"; ctx.globalAlpha = f.cooldown > 0 ? 0.3 : 1.0;
-ctx.fillText(f.growState === 'sprout' ? "🌱" : f.emoji, f.x + sway, f.y);
-});
-ctx.globalAlpha = 1.0;
-ctx.font = "60px Arial"; ctx.textAlign = "center"; 
-if(hive.destroyed) ctx.globalAlpha = 0.4;
-ctx.fillText("🏠", hive.x, hive.y + 20);
-ctx.globalAlpha = 1.0;
-if(!hive.destroyed && hive.hp < hive.maxHp) drawHealthBar(hive.x, hive.y, hive.hp, hive.maxHp, 100, 10, 60);
-else if(hive.destroyed) { ctx.fillStyle = "#e74c3c"; ctx.font = "bold 14px Segoe UI"; ctx.fillText("DESTRUÍDA", hive.x, hive.y - 50); }
-drawIndicators();
-enemies.forEach(en => { ctx.font = "30px Arial"; ctx.textAlign = "center"; ctx.fillText("🐜", en.x, en.y); drawHealthBar(en.x, en.y, en.hp, 100, 30, 4, 30); });
-
-// DRAW PROJECTILES
-projectiles.forEach(p => { 
-    ctx.save();
-    ctx.translate(p.x, p.y);
-    if(p.type === 'arrow') {
-        // Arrow effect
-        ctx.rotate(Math.atan2(p.vy, p.vx));
-        ctx.strokeStyle = p.color;
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(-10, 0); ctx.lineTo(10, 0); // Shaft
-        ctx.lineTo(5, -4); ctx.moveTo(10, 0); ctx.lineTo(5, 4); // Head
-        ctx.stroke();
-    } else if (p.type === 'fireball') {
-        // Fireball effect
-        ctx.fillStyle = '#e67e22';
-        ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
-        ctx.fillStyle = '#f1c40f';
-        ctx.beginPath(); ctx.arc(0, 0, 3, 0, Math.PI*2); ctx.fill();
-    } else {
-        // Fallback dot
-        ctx.fillStyle = p.color; 
-        ctx.beginPath(); ctx.arc(0, 0, 4, 0, Math.PI*2); ctx.fill(); 
-    }
-    ctx.restore();
-});
-
-// DRAW MELEE ATTACKS
-meleeAttacks.forEach(m => {
-    ctx.save();
-    ctx.translate(m.x, m.y);
-    ctx.rotate(m.angle);
-    ctx.beginPath();
-    ctx.arc(0, 0, 40, -Math.PI/4, Math.PI/4);
-    ctx.lineWidth = 4 * (m.life/10);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.8)";
-    ctx.stroke();
-    ctx.restore();
-});
-
-particles.forEach(p => { ctx.globalAlpha = p.life; if(p.type === 'heart') { ctx.font = "20px Arial"; ctx.fillText("❤️", p.x, p.y); } else { ctx.fillStyle = p.color; ctx.fillRect(p.x, p.y, 3, 3); } });
-ctx.globalAlpha = 1.0;
-drawSight();
-const drawB = (p, c, a, isMe) => {
-if(p.isDead) return;
-let sprite;
-if (p.moving) sprite = assets.bee[p.dir];
-else sprite = assets.bee[p.dir + "Idle"];
-if(!sprite || !sprite.complete) return;
-ctx.globalAlpha = a; 
-ctx.drawImage(sprite, p.x-32, p.y-32, 64, 64);
-ctx.globalAlpha = 1; 
-ctx.font = "bold 14px Segoe UI"; 
-ctx.fillStyle = c; 
-ctx.textAlign = "center"; 
-ctx.fillText(`${p.nick} (Lvl ${p.lvl})`, p.x, p.y-40);
-if(p.hp < p.maxHp) drawHealthBar(p.x, p.y, p.hp, p.maxHp || 100);
-if(p.pollen > 0 || p.isCollecting) drawPollenBar(p.x, p.y, p.pollen);
-};
-drawB(players.me, players.me.color, 1, true);
-if(players.peer.active) drawB(players.peer, players.peer.color, 0.6, false);
-ctx.restore();
-if(dayCycle.overlayAlpha > 0) {
-ctx.fillStyle = `rgba(0, 20, 50, ${dayCycle.overlayAlpha})`;
-ctx.fillRect(0, 0, canvas.width, canvas.height);
-}
-}
-function gameLoop() { 
-    if(isGameRunning) {
-        update(); 
-        draw(); 
-    }
-    requestAnimationFrame(gameLoop); 
-}
-</script>
-</body>
-</html>
+pollen: players.me.pollen, lvl: players.me.
