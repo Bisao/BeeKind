@@ -1257,7 +1257,7 @@ if(data.effect === 'pollen') createParticles(data.x, data.y, "#fffa65", 1, 'poll
 else if(data.type === 'req_pollen') {
 if(isHost && flowers[data.id] && flowers[data.id].growState === 'mature' && flowers[data.id].cooldown <= 0) {
 flowers[data.id].cooldown = flowers[data.id].maxCooldown;
-players.peer.pollen = Math.min(100, players.peer.pollen + 0.4);
+players.peer.pollen += 0.4;
 conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
 conn.send({ type: 'sync_flower_cd', id: data.id, time: flowers[data.id].maxCooldown });
 }
@@ -1492,87 +1492,80 @@ hud.innerText = `${isNightNow ? '🌙' : '☀️'} Dia ${dayCycle.day} • ${h}:
 function updateMechanics() {
 updateDayCycle();
 let amICalling = false;
-
-// Regeneração para o jogador local
 if(players.me.skills.regen && !players.me.isDead && performance.now() % 2000 < 20) {
-    if(players.me.hp < players.me.maxHp) players.me.hp += 1;
+if(players.me.hp < players.me.maxHp) players.me.hp += 1;
 }
 
-// Emissão de partículas de pólen (Local)
-if(players.me.pollen > 0 && !players.me.isDead && players.me.moving && Math.random() < 0.15) {
-    createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-    if(conn && conn.open) conn.send({ type: 'fx', effect: 'pollen', x: players.me.x, y: players.me.y });
-}
-
-// Consumo de pólen (Local para feedback imediato)
-if(players.me.pollen > 0 && !players.me.isDead && players.me.moving) {
-    players.me.pollen = Math.max(0, players.me.pollen - 0.05);
-}
-
-// Lógica exclusiva do Host
-if(isHost) {
-    if(Date.now() - lastAutoSaveTime > 60000) {
-        saveGameProgress();
-        lastAutoSaveTime = Date.now();
+// Lógica de partículas compartilhada
+if(players.me.pollen > 0 && !players.me.isDead) {
+    if(players.me.moving && Math.random() < 0.15) {
+        createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+        if(conn && conn.open) conn.send({ type: 'fx', effect: 'pollen', x: players.me.x, y: players.me.y });
     }
+}
 
-    // Sincronizar flores e crescimento
-    let needsFlowerSync = false;
-    const now = Date.now();
-    flowers.forEach(f => {
-        if(f.growState !== 'mature') {
-            const age = now - f.plantTime;
-            if(f.growState === 'seed' && age >= 120000) { f.growState = 'sprout'; needsFlowerSync = true; }
-            if(f.growState === 'sprout' && age >= 300000) { f.growState = 'mature'; needsFlowerSync = true; }
-        }
-    });
-    if(needsFlowerSync && players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
+if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+    if(players.peer.moving && Math.random() < 0.15) {
+        createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+    }
+}
 
-    // Host rastreia pólen do peer para o save e validação
-    if(players.peer.active && players.peer.moving && players.peer.pollen > 0) {
+if(isHost) {
+let needsFlowerSync = false; const now = Date.now();
+if(Date.now() - lastAutoSaveTime > 60000) {
+saveGameProgress();
+lastAutoSaveTime = Date.now();
+}
+
+if(players.me.pollen > 0 && !players.me.isDead) {
+    if(players.me.moving) {
+        players.me.pollen = Math.max(0, players.me.pollen - 0.05);
+        if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
+    }
+}
+
+if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+    if(players.peer.moving) {
+        let oldPollen = players.peer.pollen;
         players.peer.pollen = Math.max(0, players.peer.pollen - 0.05);
+        if(oldPollen !== players.peer.pollen && conn && conn.open) {
+            conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
+        }
         if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
     }
-    
-    // Host faz spawn de flores do próprio host
-    if(players.me.moving && players.me.pollen > 0 && Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
 }
 
-// Detecção de flores para coleta (Local)
-flowers.forEach((f) => {
-    if(f.growState === 'mature') {
-        if(f.cooldown > 0) {
-            if(isHost) f.cooldown -= 1/60;
-        } else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
-            amICalling = true; 
-            if(isHost) {
-                const collectionRate = players.me.skills.pollen ? 0.8 : 0.4;
-                players.me.pollen = Math.min(100, players.me.pollen + collectionRate);
-                addXp(0.02); 
-                if(players.me.pollen >= 100) { 
-                    f.cooldown = f.maxCooldown; 
-                    if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: f.id, time: f.maxCooldown }); 
-                }
-            } else { 
-                // Peer pede pólen ao host
-                if(Math.random() < 0.1) conn.send({ type: 'req_pollen', id: f.id }); 
-            }
-        }
-    }
+flowers.forEach(f => {
+if(f.growState !== 'mature') {
+const age = now - f.plantTime;
+if(f.growState === 'seed' && age >= 120000) { f.growState = 'sprout'; needsFlowerSync = true; }
+if(f.growState === 'sprout' && age >= 300000) { f.growState = 'mature'; needsFlowerSync = true; }
+}
+});
+if(needsFlowerSync && players.peer.active && conn && conn.open) conn.send({ type: 'sync_flowers_list', data: flowers });
+}
+
+flowers.forEach((f, idx) => {
+if(f.growState === 'mature') {
+if(f.cooldown > 0) f.cooldown -= 1/60;
+else if(Math.hypot(players.me.x - f.x, players.me.y - f.y) < 50 && players.me.pollen < 100) {
+amICalling = true; 
+if(isHost) {
+const collectionRate = players.me.skills.pollen ? 0.8 : 0.4;
+players.me.pollen += collectionRate; addXp(0.02); 
+if(players.me.pollen >= 100) { f.cooldown = f.maxCooldown; players.me.pollen = 100; if(players.peer.active && conn && conn.open) conn.send({ type: 'sync_flower_cd', id: f.id, time: f.maxCooldown }); }
+} else { if(Math.random() < 0.1) conn.send({ type: 'req_pollen', id: f.id }); }
+}
+}
 });
 
 players.me.isCollecting = amICalling;
 
 const distToHive = Math.hypot(players.me.x - hive.x, players.me.y - hive.y);
 if(distToHive < 120 && players.me.pollen > 0 && !players.me.isDead) {
-    btnRepairHive.style.display = 'flex';
+btnRepairHive.style.display = 'flex';
 } else {
-    btnRepairHive.style.display = 'none';
-}
-
-// Partículas visuais do peer voando (Feedback Visual Local)
-if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0 && players.peer.moving && Math.random() < 0.15) {
-    createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+btnRepairHive.style.display = 'none';
 }
 
 for (let i = projectiles.length - 1; i >= 0; i--) {
