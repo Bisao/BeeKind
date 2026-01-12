@@ -1267,7 +1267,10 @@ else if(data.type === 'sync_world') {
 players.peer.lastSeen = Date.now();
 enemies = data.enemies.map(enNew => { let ex = enemies.find(e => e.id === enNew.id); return ex ? {...enNew} : enNew; });
 isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; hive.destroyed = data.hiveDestroyed;
-if(data.dayCycle) { dayCycle.time = data.dayCycle.time; dayCycle.day = data.dayCycle.day; }
+if(data.dayCycle) { 
+    dayCycle.time = data.dayCycle.time; 
+    dayCycle.day = data.dayCycle.day; 
+}
 wavePrepTimer = data.wavePrepTimer;
 isWavePrepActive = data.isWavePrepActive;
 }
@@ -1507,6 +1510,11 @@ if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
     }
 }
 
+// Consumo de pólen ao voar (processado localmente para o convidado também)
+if(players.me.pollen > 0 && !players.me.isDead && players.me.moving) {
+    players.me.pollen = Math.max(0, players.me.pollen - 0.05);
+}
+
 if(isHost) {
 let needsFlowerSync = false; const now = Date.now();
 if(Date.now() - lastAutoSaveTime > 60000) {
@@ -1514,17 +1522,16 @@ saveGameProgress();
 lastAutoSaveTime = Date.now();
 }
 
-if(players.me.pollen > 0 && !players.me.isDead) {
-    if(players.me.moving) {
-        players.me.pollen = Math.max(0, players.me.pollen - 0.05);
-        if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
-    }
-}
-
+// Host processa o gasto do peer para manter sincronia de autoridade
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
     if(players.peer.moving) {
         players.peer.pollen = Math.max(0, players.peer.pollen - 0.05);
         if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
+        
+        // Host envia atualização constante do estoque de pólen para o peer
+        if(performance.now() % 500 < 20) {
+            conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
+        }
     }
 }
 
