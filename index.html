@@ -1051,7 +1051,10 @@ setTimeout(() => {
 loadingScreen.style.display = 'none';
 if(isHost) { 
 const hasSave = loadGameProgress(); 
-if(!hasSave) generateFlowers(currentRoomCode); 
+if(!hasSave) { 
+    generateFlowers(currentRoomCode); 
+    generateScouts(currentRoomCode);
+}
 startGame(); 
 } else { 
 startGame(); 
@@ -1222,6 +1225,7 @@ f.growState = savedFlower.growState;
 f.plantTime = savedFlower.plantTime;
 }
 });
+generateScouts(save.seed || currentRoomCode);
 
 isWaveActive = save.wave.isActive;
 enemiesSpawnedInWave = save.wave.enemiesSpawned;
@@ -1270,6 +1274,25 @@ plantTime: 0
 }
 }
 }
+}
+
+function generateScouts(seedStr) {
+    const seed = stringToSeed(seedStr);
+    const rng = seededRandom(seed + 9999); 
+    for(let i=0; i<30; i++) {
+        const angle = rng() * Math.PI * 2;
+        const dist = 300 + rng() * 1500;
+        enemies.push({
+            id: 'scout_' + i,
+            x: hive.x + Math.cos(angle) * dist,
+            y: hive.y + Math.sin(angle) * dist,
+            hp: 60,
+            vx: 0, vy: 0,
+            behavior: 'scout',
+            patrolAngle: rng() * Math.PI * 2,
+            patrolTimer: 0
+        });
+    }
 }
 
 btnManualSave.onclick = () => saveGameProgress(true);
@@ -1606,7 +1629,7 @@ addMsg("SISTEMA", "A HORDA ESTÁ CHEGANDO!", "msg-sys");
 if (isWaveActive || isWavePrepActive) {
 isWaveActive = false;
 isWavePrepActive = false;
-enemies = [];
+enemies = enemies.filter(e => e.behavior === 'scout'); // Keep scouts, remove horde
 addMsg("SISTEMA", "A horda recuou com o amanhecer.", "msg-sys");
 saveGameProgress();
 }
@@ -1637,7 +1660,7 @@ enemiesSpawnedInWave++;
 lastEnemySpawnTime = now;
 }
 
-if (enemiesKilledInWave >= 20 && enemies.length === 0) {
+if (enemiesKilledInWave >= 20 && enemies.filter(e => e.behavior !== 'scout').length === 0) {
 isWaveActive = false;
 isWavePrepActive = true;
 wavePrepTimer = 60;
@@ -1648,19 +1671,47 @@ addMsg("SISTEMA", "Grupo derrotado! 60s para se preparar.", "msg-sys");
 
 enemies.forEach((en) => {
 let tx = hive.x, ty = hive.y;
-if (hive.destroyed || en.behavior === 'hunter') {
-let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
-let dPe = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
-if (dMe < Infinity || dPe < Infinity) { 
-if (dMe <= dPe) { tx = players.me.x; ty = players.me.y; } 
-else { tx = players.peer.x; ty = players.peer.y; } 
+
+if (en.behavior === 'scout') {
+    // Scout Logic
+    let distMe = !players.me.isDead ? Math.hypot(players.me.x - en.x, players.me.y - en.y) : Infinity;
+    let distPeer = (players.peer.active && !players.peer.isDead) ? Math.hypot(players.peer.x - en.x, players.peer.y - en.y) : Infinity;
+    
+    // Detect player at 200px (20 meters)
+    if (distMe < 200 || distPeer < 200) {
+        if (distMe <= distPeer) { tx = players.me.x; ty = players.me.y; }
+        else { tx = players.peer.x; ty = players.peer.y; }
+        
+        const angle = Math.atan2(ty - en.y, tx - en.x);
+        en.vx = Math.cos(angle) * 3.5; 
+        en.vy = Math.sin(angle) * 3.5;
+    } else {
+        // Patrol
+        en.patrolTimer--;
+        if(en.patrolTimer <= 0) {
+            en.patrolAngle += (Math.random() - 0.5) * 2; 
+            en.patrolTimer = 60 + Math.random() * 60;
+        }
+        en.vx = Math.cos(en.patrolAngle) * 1.5;
+        en.vy = Math.sin(en.patrolAngle) * 1.5;
+    }
+} else {
+    // Horde Logic
+    if (hive.destroyed || en.behavior === 'hunter') {
+        let dMe = !players.me.isDead ? Math.hypot(en.x - players.me.x, en.y - players.me.y) : Infinity;
+        let dPe = (players.peer.active && !players.peer.isDead) ? Math.hypot(en.x - players.peer.x, en.y - players.peer.y) : Infinity;
+        if (dMe < Infinity || dPe < Infinity) { 
+            if (dMe <= dPe) { tx = players.me.x; ty = players.me.y; } 
+            else { tx = players.peer.x; ty = players.peer.y; } 
+        }
+    }
+    const angle = Math.atan2(ty - en.y, tx - en.x);
+    en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
 }
-}
-const angle = Math.atan2(ty - en.y, tx - en.x);
-en.vx = Math.cos(angle) * 2.0; en.vy = Math.sin(angle) * 2.0;
+
 en.x += en.vx; en.y += en.vy;
 
-if (!hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { 
+if (en.behavior !== 'scout' && !hive.destroyed && Math.hypot(en.x - hive.x, en.y - hive.y) < 50) { 
 if(performance.now() % 60 < 2) hive.hp -= 1.5; 
 }
 if (Math.hypot(en.x - players.me.x, en.y - players.me.y) < 30 && performance.now() % 60 < 2) takeDamage(2);
@@ -1671,7 +1722,9 @@ conn.send({type:'hit', target:'me', amount: 2});
 
 const aliveEnemies = enemies.filter(en => en.hp > 0);
 if (aliveEnemies.length < enemies.length) {
-enemiesKilledInWave += (enemies.length - aliveEnemies.length);
+// Only count kills for horde waves
+const deadCount = enemies.length - aliveEnemies.length;
+if(isWaveActive) enemiesKilledInWave += deadCount;
 }
 enemies = aliveEnemies;
 
