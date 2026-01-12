@@ -544,7 +544,6 @@ white-space: nowrap;
 <div id="lvl-text">Nível 1</div>
 <div id="xp-bar-container"><div id="xp-bar-fill"></div></div>
 </div>
-<div id="time-hud">☀️ Dia 1 • 08:00</div>
 <div id="coords">X: 1100 Y: 1100</div>
 <div id="horde-hud"></div>
 </div>
@@ -1267,10 +1266,7 @@ else if(data.type === 'sync_world') {
 players.peer.lastSeen = Date.now();
 enemies = data.enemies.map(enNew => { let ex = enemies.find(e => e.id === enNew.id); return ex ? {...enNew} : enNew; });
 isWaveActive = data.isWaveActive; hive.hp = data.hiveHp; hive.destroyed = data.hiveDestroyed;
-if(data.dayCycle) { 
-    dayCycle.time = data.dayCycle.time; 
-    dayCycle.day = data.dayCycle.day; 
-}
+if(data.dayCycle) { dayCycle.time = data.dayCycle.time; dayCycle.day = data.dayCycle.day; }
 wavePrepTimer = data.wavePrepTimer;
 isWavePrepActive = data.isWavePrepActive;
 }
@@ -1291,7 +1287,8 @@ else if(data.type === 'hit') { if(!isHost && data.target === 'me') takeDamage(da
 else if(data.type === 'pos') { 
 players.peer.lastSeen = Date.now(); players.peer.tX = data.x; players.peer.tY = data.y; 
 players.peer.dir = data.dir; players.peer.hp = data.hp; players.peer.maxHp = data.maxHp; players.peer.isDead = data.isDead; 
-players.peer.pollen = data.pollen; players.peer.lvl = data.lvl; players.peer.active = true;
+if(!isHost) players.peer.pollen = data.pollen; 
+players.peer.lvl = data.lvl; players.peer.active = true;
 players.peer.isCollecting = data.isCollecting;
 players.peer.moving = data.moving; 
 }
@@ -1526,11 +1523,7 @@ if(players.me.pollen > 0 && !players.me.isDead) {
 
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
     if(players.peer.moving) {
-        let oldPollen = players.peer.pollen;
         players.peer.pollen = Math.max(0, players.peer.pollen - 0.05);
-        if(oldPollen !== players.peer.pollen && conn && conn.open) {
-            conn.send({ type: 'upd_pollen', amount: players.peer.pollen });
-        }
         if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
     }
 }
