@@ -33,7 +33,6 @@ user-select: none;
 
 canvas { display: none; image-rendering: pixelated; }
 
-/* HUD PRINCIPAL */
 #central-hud {
 position: absolute; top: 15px; left: 50%; transform: translateX(-50%);
 display: flex; flex-direction: column; align-items: center; gap: 8px;
@@ -80,7 +79,6 @@ from { transform: scale(1); opacity: 0.8; box-shadow: 0 0 10px rgba(231, 76, 60,
 to { transform: scale(1.05); opacity: 1; box-shadow: 0 0 25px rgba(231, 76, 60, 0.6); color: #ff6b6b; }
 }
 
-/* SIDEBARS */
 #sidebar-container {
 position: absolute; left: 0; top: 100px; z-index: 101;
 display: flex; flex-direction: column; pointer-events: none;
@@ -112,7 +110,6 @@ text-transform: uppercase;
 }
 .item-row { display: flex; justify-content: space-between; margin-bottom: 8px; padding-bottom: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); }
 
-/* MENU INFERIOR */
 #bottom-menu-container {
 position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
 display: flex; flex-direction: column; align-items: center; gap: 15px;
@@ -159,11 +156,9 @@ z-index: 600; transition: transform 0.1s;
 }
 #btn-repair-hive:active { transform: scale(0.9); }
 
-/* MODAIS */
 #death-modal, #game-over-modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 1000; }
 .modal-title { color: #e74c3c; font-size: 48px; margin-bottom: 20px; text-transform: uppercase; letter-spacing: 5px; text-align: center; }
 
-/* CHAT */
 #chat-wrapper { 
 position: absolute; bottom: 220px; left: -240px; width: 240px; z-index: 500; 
 display: none; flex-direction: column; transition: left 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
@@ -189,7 +184,6 @@ transition: background 0.3s;
 }
 .unread-pulse { animation: pulse 1.5s infinite ease-in-out !important; z-index: 502; }
 
-/* PROGRESSÃO E SKILLS */
 #progression-modal {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 background: rgba(0,0,0,0.9); z-index: 2000;
@@ -213,6 +207,122 @@ border-radius: 20px; font-weight: bold; font-size: 14px;
 display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
 }
 @media (max-width: 600px) { .progression-grid { grid-template-columns: 1fr; } }
+
+/* CHARACTER SELECTION CSS */
+#char-selection-screen {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+    z-index: 3500; display: none; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: white; overflow: hidden;
+}
+
+#char-carousel {
+    display: flex; align-items: center; justify-content: center;
+    width: 100%; height: 60vh; position: relative;
+    perspective: 1000px; gap: 20px;
+}
+
+.char-card {
+    width: 260px; height: 380px;
+    background: rgba(20, 20, 20, 0.9);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px; box-sizing: border-box;
+    transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+    position: absolute;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.card-center {
+    transform: scale(1.1) translateZ(50px);
+    z-index: 10;
+    border-color: var(--primary);
+    box-shadow: 0 0 20px rgba(241, 196, 15, 0.3);
+    filter: blur(0); opacity: 1;
+}
+
+.card-left {
+    transform: translateX(-120%) scale(0.85) rotateY(15deg);
+    z-index: 5;
+    filter: blur(3px) grayscale(50%);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.card-right {
+    transform: translateX(120%) scale(0.85) rotateY(-15deg);
+    z-index: 5;
+    filter: blur(3px) grayscale(50%);
+    opacity: 0.7;
+    pointer-events: none;
+}
+
+.char-img-box {
+    width: 120px; height: 120px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 50%;
+    margin-bottom: 15px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--border);
+}
+
+.char-img-box img { width: 80%; height: 80%; image-rendering: pixelated; }
+
+.char-name {
+    font-size: 1.5rem; color: var(--primary);
+    text-transform: uppercase; letter-spacing: 2px;
+    margin-bottom: 5px; font-weight: bold;
+}
+
+.char-class-label { font-size: 0.8rem; color: #aaa; margin-bottom: 15px; font-style: italic; }
+
+.char-stats { width: 100%; display: flex; flex-direction: column; gap: 8px; }
+
+.stat-bar-row { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; }
+.stat-label { width: 30px; font-weight: bold; }
+.stat-track { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+.stat-fill { height: 100%; background: var(--secondary); border-radius: 3px; }
+
+.select-hint {
+    margin-top: 30px; font-size: 0.9rem; color: #888;
+    animation: pulse 2s infinite;
+}
+
+.btn-confirm-char {
+    margin-top: 20px;
+    padding: 15px 40px; background: var(--primary);
+    color: #111; font-weight: bold; border: none;
+    border-radius: 30px; font-size: 1.1rem;
+    cursor: pointer; box-shadow: 0 0 15px rgba(241, 196, 15, 0.4);
+    transition: transform 0.2s;
+}
+.btn-confirm-char:hover { transform: scale(1.05); }
+
+/* MOBILE ADJUSTMENTS */
+@media (max-width: 600px) { 
+    .progression-grid { grid-template-columns: 1fr; } 
+    .menu-card { padding: 30px 15px; width: 95%; }
+    .title-box { gap: 5px; }
+    .menu-card h1 { font-size: 1.4rem; }
+    .bee-flank { width: 35px; height: 35px; }
+    .crown-g::before { font-size: 1.4rem; top: -18px; right: -6px; }
+    .button-row { gap: 10px; }
+    .main-btn { font-size: 0.8rem; padding: 14px 5px; }
+    
+    #lvl-hud { 
+        min-width: 120px; 
+        padding: 6px 15px; 
+    }
+    #lvl-text { font-size: 12px; }
+    #xp-bar-container { height: 6px; }
+    #time-hud { 
+        padding: 4px 10px; 
+        font-size: 10px; 
+    }
+    .char-card { width: 220px; height: 340px; }
+}
 
 .attr-card, .skill-card {
 background: rgba(255,255,255,0.03); border: 1px solid var(--border);
@@ -248,7 +358,6 @@ border-radius: 6px; color: white; cursor: pointer; font-size: 11px;
 }
 .btn-unlock:disabled { background: #555; opacity: 0.5; }
 
-/* LOADING SCREEN */
 #loading-screen {
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 background: radial-gradient(circle at center, #111 0%, #000 100%);
@@ -325,103 +434,6 @@ animation: spinCookie 2s linear infinite;
 .explosion-text { font-size: 40px !important; animation: explodeScale 0.5s ease-out forwards; }
 @keyframes explodeScale { 0% { transform: translateX(-50%) scale(1); } 50% { transform: translateX(-50%) scale(1.5); } 100% { transform: translateX(-50%) scale(0); opacity: 0; } }
 
-/* CHARACTER SELECTION SCREEN */
-#char-selection-screen {
-position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-background: radial-gradient(circle at center, #1a1a1a 0%, #000000 100%);
-z-index: 3500; display: none;
-flex-direction: column; align-items: center; justify-content: center;
-overflow: hidden;
-}
-
-#char-carousel {
-position: relative;
-width: 100%; max-width: 800px;
-height: 400px;
-display: flex; justify-content: center; align-items: center;
-perspective: 1000px;
-margin-bottom: 30px;
-}
-
-.char-card {
-position: absolute;
-width: 260px; height: 380px;
-background: rgba(255, 255, 255, 0.05);
-border: 2px solid var(--border);
-border-radius: 15px;
-display: flex; flex-direction: column; align-items: center;
-transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
-backdrop-filter: blur(10px);
-padding: 15px;
-box-sizing: border-box;
-box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-cursor: pointer;
-}
-
-.char-card.center {
-transform: translateX(0) scale(1.1) rotateY(0deg);
-z-index: 10;
-border-color: var(--primary);
-box-shadow: 0 0 40px rgba(241, 196, 15, 0.3);
-opacity: 1;
-}
-
-.char-card.left {
-transform: translateX(-110%) scale(0.85) rotateY(25deg);
-z-index: 5;
-filter: blur(4px) opacity(0.6);
-}
-
-.char-card.right {
-transform: translateX(110%) scale(0.85) rotateY(-25deg);
-z-index: 5;
-filter: blur(4px) opacity(0.6);
-}
-
-.char-img-container {
-width: 120px; height: 120px;
-background: rgba(0,0,0,0.3);
-border-radius: 50%;
-margin-bottom: 15px;
-display: flex; align-items: center; justify-content: center;
-border: 2px solid var(--border);
-overflow: hidden;
-}
-
-.char-img {
-width: 100%; height: 100%;
-image-rendering: pixelated;
-transform: scale(1.5);
-}
-
-.char-name {
-font-size: 24px; font-weight: bold; color: var(--primary);
-text-transform: uppercase; letter-spacing: 2px;
-margin-bottom: 10px;
-}
-
-.char-role {
-font-size: 14px; color: #aaa; margin-bottom: 20px; font-style: italic;
-}
-
-.char-stats { width: 100%; }
-.stat-bar-row {
-display: flex; align-items: center; justify-content: space-between;
-margin-bottom: 6px; font-size: 12px; color: #ddd;
-}
-.stat-track {
-flex: 1; height: 6px; background: rgba(0,0,0,0.5);
-margin-left: 10px; border-radius: 3px; overflow: hidden;
-}
-.stat-fill { height: 100%; background: var(--secondary); }
-
-.carousel-controls {
-position: absolute; bottom: 20px;
-display: flex; gap: 20px; color: #666; font-size: 12px;
-}
-.key-hint { padding: 4px 8px; border: 1px solid #444; border-radius: 4px; }
-
-/* MENU PRINCIPAL */
 #menu { 
 position: fixed; top: 0; left: 0; width: 100%; height: 100%;
 display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -608,10 +620,6 @@ white-space: nowrap;
 .crown-g::before { font-size: 1.4rem; top: -18px; right: -6px; }
 .button-row { gap: 10px; }
 .main-btn { font-size: 0.8rem; padding: 14px 5px; }
-#lvl-hud { min-width: 120px; padding: 6px 15px; }
-#lvl-text { font-size: 12px; }
-#xp-bar-container { height: 6px; }
-#time-hud { padding: 4px 10px; font-size: 10px; }
 }
 
 .joy-container { position: absolute; bottom: 40px; width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%; display: none; border: 2px solid rgba(255,255,255,0.2); z-index: 150; }
@@ -660,23 +668,6 @@ white-space: nowrap;
 <button class="square-btn" style="opacity: 0.3;">🎒</button>
 </div>
 <button id="btn-open-menu">☰</button>
-</div>
-
-<div id="char-selection-screen">
-<h2 style="color:var(--primary); text-transform:uppercase; letter-spacing:2px; margin-bottom:30px; text-shadow:0 0 10px rgba(241, 196, 15, 0.5);">Escolha sua Classe</h2>
-
-<div id="char-carousel">
-</div>
-
-<div class="carousel-controls">
-<span class="key-hint">⬅️ Anterior</span>
-<span class="key-hint">👆 Deslizar</span>
-<span class="key-hint">Próximo ➡️</span>
-</div>
-
-<button class="main-btn btn-create" onclick="confirmCharacterSelection()" style="margin-top:30px; width:200px; z-index:20;">
-CONFIRMAR
-</button>
 </div>
 
 <div id="progression-modal">
@@ -761,6 +752,19 @@ CONFIRMAR
 <button class="main-btn btn-create" onclick="location.reload()" style="width: 200px;">RECOMEÇAR</button>
 </div>
 
+<div id="char-selection-screen">
+    <h2 style="margin-bottom: 40px; text-transform: uppercase; color: var(--royal-gold); letter-spacing: 3px; text-shadow: 0 0 10px rgba(0,0,0,0.8);">Escolha sua Linhagem</h2>
+    
+    <div id="char-carousel">
+        </div>
+
+    <div class="select-hint" id="select-hint-text">
+        Use as Setas ⬅️ ➡️ ou Deslize para navegar
+    </div>
+
+    <button class="btn-confirm-char" onclick="confirmCharacter()">SELECIONAR GUERREIRO</button>
+</div>
+
 <div id="chat-wrapper">
 <button id="btn-minimize-chat">💬</button>
 <div id="chat-display"></div>
@@ -806,10 +810,10 @@ CONFIRMAR
 <input type="password" id="room-pass" class="menu-input" placeholder="Senha secreta..." maxlength="10">
 </div>
 <div class="button-row">
-<button class="main-btn btn-create" onclick="requestCharSelection(true)">
+<button class="main-btn btn-create" onclick="openCharSelect(true)">
 <span>👑</span> Criar Reino
 </button>
-<button class="main-btn btn-join" onclick="requestCharSelection(false)">
+<button class="main-btn btn-join" onclick="openCharSelect(false)">
 <span>⚔️</span> Entrar
 </button>
 </div>
@@ -851,59 +855,44 @@ window.onload = function() {
 if(localStorage.getItem('hive_nick')) document.getElementById('player-nick').value = localStorage.getItem('hive_nick');
 if(localStorage.getItem('hive_room')) document.getElementById('room-code').value = localStorage.getItem('hive_room');
 if(localStorage.getItem('hive_pass')) document.getElementById('room-pass').value = localStorage.getItem('hive_pass');
-initCharCarousel();
 };
 
-/* LÓGICA DE SELEÇÃO DE PERSONAGEM */
-const charClasses = [
-    {
-        id: 'mage', name: 'Mago Real', role: 'Magia & Suporte',
-        stats: { str: 10, agi: 40, vit: 30 },
-        desc: 'Especialista em magias antigas. Possui regeneração de mana e ataques místicos.',
-        img: 'BeeUpIdle.png', color: '#9b59b6', filter: 'hue-rotate(180deg)'
-    },
-    {
-        id: 'warrior', name: 'Guerreiro', role: 'Combate Corpo a Corpo',
-        stats: { str: 90, agi: 20, vit: 80 },
-        desc: 'O guardião da colmeia. Alta resistência e dano devastador a curta distância.',
-        img: 'BeeDownIdle.png', color: '#e74c3c', filter: 'hue-rotate(-45deg)'
-    },
-    {
-        id: 'archer', name: 'Arqueiro', role: 'Dano à Distância',
-        stats: { str: 40, agi: 90, vit: 30 },
-        desc: 'Rápido e letal. Ataca de longe e possui alta velocidade de movimento.',
-        img: 'BeeRightIdle.png', color: '#2ecc71', filter: 'none'
-    }
+// --- CHARACTER SELECTION LOGIC ---
+
+const classes = [
+    { name: "Mago", role: "Conjurador Real", str: 2, agi: 4, vit: 4, desc: "Domina a magia antiga.", img: "BeeLeftIdle.png", color: "#9b59b6" },
+    { name: "Guerreiro", role: "Guarda da Colmeia", str: 8, agi: 3, vit: 7, desc: "Combate corpo a corpo.", img: "BeeDownIdle.png", color: "#e74c3c" },
+    { name: "Arqueiro", role: "Ferrão Veloz", str: 4, agi: 9, vit: 3, desc: "Ataques à distância.", img: "BeeRightIdle.png", color: "#2ecc71" }
 ];
 
-let charIndex = 1; // Começa no Guerreiro (meio)
+let selectedClassIndex = 1; // Default Guerreiro
 let pendingHostMode = false;
 
-function initCharCarousel() {
+function generateCharCards() {
     const container = document.getElementById('char-carousel');
     container.innerHTML = '';
-    charClasses.forEach((cls, idx) => {
+    
+    classes.forEach((cls, index) => {
         const card = document.createElement('div');
         card.className = 'char-card';
-        card.onclick = () => { charIndex = idx; updateCarousel(); };
+        card.id = `char-card-${index}`;
         
-        let statsHtml = '';
-        Object.entries(cls.stats).forEach(([key, val]) => {
-            const label = key === 'str' ? 'Força' : (key === 'agi' ? 'Agilidade' : 'Vitalidade');
-            statsHtml += `
-            <div class="stat-bar-row">
-                <span>${label}</span>
-                <div class="stat-track"><div class="stat-fill" style="width:${val}%; background:${cls.color}"></div></div>
-            </div>`;
-        });
+        // Define styles
+        let strPct = (cls.str / 10) * 100;
+        let agiPct = (cls.agi / 10) * 100;
+        let vitPct = (cls.vit / 10) * 100;
 
         card.innerHTML = `
-            <div class="char-img-container" style="border-color:${cls.color}">
-                <img src="${cls.img}" class="char-img" style="filter:${cls.filter}">
+            <div class="char-img-box" style="border-color:${cls.color}">
+                <img src="${cls.img}">
             </div>
             <div class="char-name" style="color:${cls.color}">${cls.name}</div>
-            <div class="char-role">${cls.role}</div>
-            <div class="char-stats">${statsHtml}</div>
+            <div class="char-class-label">${cls.role}</div>
+            <div class="char-stats">
+                <div class="stat-bar-row"><div class="stat-label">FOR</div><div class="stat-track"><div class="stat-fill" style="width:${strPct}%"></div></div></div>
+                <div class="stat-bar-row"><div class="stat-label">AGI</div><div class="stat-track"><div class="stat-fill" style="width:${agiPct}%"></div></div></div>
+                <div class="stat-bar-row"><div class="stat-label">VIT</div><div class="stat-track"><div class="stat-fill" style="width:${vitPct}%"></div></div></div>
+            </div>
         `;
         container.appendChild(card);
     });
@@ -911,78 +900,98 @@ function initCharCarousel() {
 }
 
 function updateCarousel() {
-    const cards = document.querySelectorAll('.char-card');
-    cards.forEach((c, i) => {
-        c.className = 'char-card';
-        if(i === charIndex) c.classList.add('center');
-        else if(i === (charIndex - 1 + 3) % 3) c.classList.add('left');
-        else c.classList.add('right');
+    classes.forEach((_, i) => {
+        const card = document.getElementById(`char-card-${i}`);
+        card.className = 'char-card'; // reset
+        if (i === selectedClassIndex) {
+            card.classList.add('card-center');
+        } else if (i < selectedClassIndex) {
+            card.classList.add('card-left');
+        } else {
+            card.classList.add('card-right');
+        }
     });
+    
+    const btn = document.querySelector('.btn-confirm-char');
+    btn.innerText = `SELECIONAR ${classes[selectedClassIndex].name.toUpperCase()}`;
+    btn.style.backgroundColor = classes[selectedClassIndex].color;
+    
+    // Play sound or haptic here if needed
 }
 
-// Controles do Carrossel (PC e Touch)
-document.addEventListener('keydown', (e) => {
-    if(document.getElementById('char-selection-screen').style.display === 'flex') {
-        if(e.key === 'ArrowLeft') { charIndex = (charIndex - 1 + 3) % 3; updateCarousel(); }
-        if(e.key === 'ArrowRight') { charIndex = (charIndex + 1) % 3; updateCarousel(); }
-        if(e.key === 'Enter') confirmCharacterSelection();
-    }
-});
-
-let touchStartX = 0;
-document.getElementById('char-selection-screen').addEventListener('touchstart', e => touchStartX = e.changedTouches[0].screenX);
-document.getElementById('char-selection-screen').addEventListener('touchend', e => {
-    const diff = e.changedTouches[0].screenX - touchStartX;
-    if(Math.abs(diff) > 50) {
-        if(diff > 0) charIndex = (charIndex - 1 + 3) % 3; // Swipe Right
-        else charIndex = (charIndex + 1) % 3; // Swipe Left
+function selectCharacter(dir) {
+    if (dir === 'next' && selectedClassIndex < classes.length - 1) {
+        selectedClassIndex++;
+        updateCarousel();
+    } else if (dir === 'prev' && selectedClassIndex > 0) {
+        selectedClassIndex--;
         updateCarousel();
     }
+}
+
+// Touch handling for carousel
+let touchStartX = 0;
+const charScreen = document.getElementById('char-selection-screen');
+
+charScreen.addEventListener('touchstart', e => {
+    touchStartX = e.changedTouches[0].screenX;
+}, {passive: true});
+
+charScreen.addEventListener('touchend', e => {
+    const touchEndX = e.changedTouches[0].screenX;
+    if (touchEndX < touchStartX - 50) selectCharacter('next');
+    if (touchEndX > touchStartX + 50) selectCharacter('prev');
+}, {passive: true});
+
+// Keyboard handling
+document.addEventListener('keydown', (e) => {
+    if (document.getElementById('char-selection-screen').style.display === 'flex') {
+        if (e.key === 'ArrowRight') selectCharacter('next');
+        if (e.key === 'ArrowLeft') selectCharacter('prev');
+        if (e.key === 'Enter') confirmCharacter();
+    }
 });
 
-function requestCharSelection(isHost) {
+function openCharSelect(isHost) {
     const code = document.getElementById('room-code').value.trim();
     const nick = document.getElementById('player-nick').value.trim();
     const pass = document.getElementById('room-pass').value.trim();
     if(!nick || !code || !pass) return alert("Preencha o Nick, o Nome do Reino e a Senha!");
-    
-    // Salva input
+
+    // Save inputs temporarily
     localStorage.setItem('hive_nick', nick);
     localStorage.setItem('hive_room', code);
     localStorage.setItem('hive_pass', pass);
     
     pendingHostMode = isHost;
     
-    // Troca telas
     document.getElementById('menu').style.display = 'none';
-    document.getElementById('char-selection-screen').style.display = 'flex';
+    const cs = document.getElementById('char-selection-screen');
+    cs.style.display = 'flex';
+    generateCharCards();
 }
 
-function confirmCharacterSelection() {
-    const selectedClass = charClasses[charIndex];
-    // Aplica status baseados na classe
-    players.me.classId = selectedClass.id;
-    players.me.stats.str = Math.floor(selectedClass.stats.str / 10);
-    players.me.stats.agi = Math.floor(selectedClass.stats.agi / 10);
-    players.me.stats.vit = Math.floor(selectedClass.stats.vit / 10);
+function confirmCharacter() {
+    // Apply stats
+    const cls = classes[selectedClassIndex];
+    players.me.stats.str = cls.str;
+    players.me.stats.agi = cls.agi;
+    players.me.stats.vit = cls.vit;
     
-    // Ajusta HP baseado na vit
+    // Recalculate maxHp based on new VIT
     players.me.maxHp = 100 + (players.me.stats.vit * 20);
     players.me.hp = players.me.maxHp;
     
-    // Habilidades iniciais por classe
-    if(selectedClass.id === 'archer') players.me.skills.double = true;
-    if(selectedClass.id === 'mage') players.me.skills.regen = true;
+    // Set custom visual info if needed (for now reusing color)
+    players.me.classType = cls.name; // Save class name
     
-    // Tinta visual (apenas local por enquanto, idealmente sincronizar via rede)
-    if(selectedClass.id === 'mage') players.me.color = '#9b59b6';
-    if(selectedClass.id === 'warrior') players.me.color = '#e74c3c';
-    if(selectedClass.id === 'archer') players.me.color = '#2ecc71';
-
-    // Inicia sessão real
     document.getElementById('char-selection-screen').style.display = 'none';
-    realStartSession(pendingHostMode);
+    
+    // Proceed to networking
+    initNetworkSession(pendingHostMode);
 }
+
+// --- END CHARACTER SELECTION ---
 
 function startLoadingSequence() {
 document.getElementById('menu').style.display = 'none';
@@ -1100,7 +1109,7 @@ statPoints: 0,
 stats: { str: 0, agi: 0, vit: 0 },
 skills: { double: false, regen: false, pollen: false },
 aimAngle: 0,
-classId: 'warrior' // Padrão
+classType: "Guerreiro"
 }, 
 peer: { 
 x: 1100, y: 1100, tX: 1100, tY: 1100, dir: 'Down', nick: "Amigo", color: "#3498db", 
@@ -1164,8 +1173,7 @@ stats: players.me.stats,
 skills: players.me.skills,
 x: players.me.x,
 y: players.me.y,
-pollen: players.me.pollen,
-classId: players.me.classId
+pollen: players.me.pollen
 },
 peerPlayer: players.peer.active ? {
 nick: players.peer.nick,
@@ -1220,7 +1228,6 @@ players.me.stats = save.hostPlayer.stats;
 players.me.skills = save.hostPlayer.skills;
 players.me.x = save.hostPlayer.x;
 players.me.y = save.hostPlayer.y;
-if(save.hostPlayer.classId) players.me.classId = save.hostPlayer.classId;
 
 players.me.nextXp = Math.floor(100 * Math.pow(1.2, players.me.lvl));
 players.me.maxHp = 100 + (players.me.stats.vit * 20);
@@ -1401,46 +1408,44 @@ keys[e.code] = true;
 });
 window.addEventListener('keyup', e => keys[e.code] = false);
 
-// Substituído startSession pela nova lógica
-function realStartSession(host) {
-    const code = localStorage.getItem('hive_room');
-    const nick = localStorage.getItem('hive_nick');
-    const pass = localStorage.getItem('hive_pass');
+function initNetworkSession(host) {
+const code = localStorage.getItem('hive_room');
+const nick = localStorage.getItem('hive_nick');
+const pass = localStorage.getItem('hive_pass');
 
-    isHost = host;
-    hostPassword = pass;
-    currentRoomCode = code;
-    players.me.nick = nick;
-    // Cor já definida na seleção de personagem, mas mantemos backup
-    if(!players.me.color) players.me.color = host ? "#f1c40f" : "#3498db";
-    players.peer.color = host ? "#3498db" : "#f1c40f";
+isHost = host;
+hostPassword = pass;
+currentRoomCode = code;
+players.me.nick = nick;
+players.me.color = host ? "#f1c40f" : "#3498db";
+players.peer.color = host ? "#3498db" : "#f1c40f";
 
-    if(peer && !peer.destroyed) peer.destroy();
+if(peer && !peer.destroyed) peer.destroy();
 
-    const peerId = host ? 'hive-game-' + code : null;
-    peer = new Peer(peerId);
+const peerId = host ? 'hive-game-' + code : null;
+peer = new Peer(peerId);
 
-    peer.on('error', (err) => {
-    if(err.type === 'unavailable-id') alert("Este Nome de Reino já está em uso! Escolha outro.");
-    else if (err.type === 'peer-unavailable') alert("Reino não encontrado! Verifique o nome.");
-    else alert("Erro na conexão: " + err.type);
-    });
+peer.on('error', (err) => {
+if(err.type === 'unavailable-id') alert("Este Nome de Reino já está em uso! Escolha outro.");
+else if (err.type === 'peer-unavailable') alert("Reino não encontrado! Verifique o nome.");
+else alert("Erro na conexão: " + err.type);
+});
 
-    peer.on('open', (id) => { 
-    if(host) { 
-    startLoadingSequence(); 
-    } else { 
-    conn = peer.connect('hive-game-' + code); 
-    setupConn(); 
-    } 
-    });
+peer.on('open', (id) => { 
+if(host) { 
+startLoadingSequence(); 
+} else { 
+conn = peer.connect('hive-game-' + code); 
+setupConn(); 
+} 
+});
 
-    peer.on('connection', c => { conn = c; setupConn(); });
+peer.on('connection', c => { conn = c; setupConn(); });
 }
 
 function setupConn() {
 conn.on('open', () => { 
-if(!isHost) conn.send({ type: 'auth', pass: document.getElementById('room-pass').value.trim(), nick: players.me.nick, color: players.me.color, classId: players.me.classId });
+if(!isHost) conn.send({ type: 'auth', pass: localStorage.getItem('hive_pass'), nick: players.me.nick, color: players.me.color });
 });
 conn.on('data', data => {
 if (isHost && data.type === 'auth') {
@@ -1816,6 +1821,232 @@ if(hit) { projectiles.splice(i, 1); continue; }
 p.x += p.vx; p.y += p.vy; p.life--; if(p.life <= 0) projectiles.splice(i, 1);
 }
 particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.life -= p.decay; if(p.life <= 0) particles.splice(i, 1); });
+}
+
+function repairHiveAction() {
+if(players.me.isDead || players.me.pollen <= 0) return;
+const amountPollen = players.me.pollen;
+players.me.pollen = 0; 
+if(players.me.hp < players.me.maxHp) {
+players.me.hp = Math.min(players.me.maxHp, players.me.hp + 20);
+createParticles(players.me.x, players.me.y, "#2ecc71", 10); 
+addMsg("SISTEMA", "Curado (+20 HP).", "msg-sys");
+}
+if(isHost) {
+const hpGain = (amountPollen / 100) * (hive.destroyed ? 50 : 100);
+hive.hp = Math.min(hive.maxHp, hive.hp + hpGain);
+if(hive.hp > 0) { 
+if(hive.destroyed) {
+addMsg("SISTEMA", "REINO RECONSTRUÍDO!", "msg-sys"); 
+saveGameProgress(); 
+}
+hive.destroyed = false; 
+}
+createParticles(hive.x, hive.y, "#ff4d4d", 15, 'heart'); 
+addXp(Math.floor(amountPollen * 0.15));
+} else { 
+conn.send({ type: 'repair', pollen: amountPollen }); 
+}
+}
+
+btnRepairHive.onclick = repairHiveAction;
+btnRepairHive.ontouchstart = (e) => { e.preventDefault(); repairHiveAction(); };
+
+function updateHordeHud() {
+const hud = document.getElementById('horde-hud');
+if (isWaveActive) {
+hud.style.display = 'block'; 
+hud.style.color = '#ff4757'; 
+hud.classList.remove('warn-pulse');
+hud.innerText = `⚠️ INVASÃO ATIVA! ⚠️`;
+} else if (isWavePrepActive) {
+hud.style.display = 'block'; 
+hud.style.color = '#f1c40f'; 
+hud.classList.add('warn-pulse');
+hud.innerText = `PREPARAÇÃO: ${Math.ceil(wavePrepTimer)}s`;
+} else { 
+hud.style.display = 'none'; 
+}
+}
+
+function drawIndicators() {
+if (players.peer.active && !players.peer.isDead) {
+const dx = players.peer.x - players.me.x, dy = players.peer.y - players.me.y;
+if (Math.hypot(dx, dy) > 150) drawArrow(dx, dy, players.peer.color);
+}
+if(!hive.destroyed) {
+const hdx = hive.x - players.me.x, hdy = hive.y - players.me.y;
+if (Math.hypot(hdx, hdy) > 200) drawArrow(hdx, hdy, "#f1c40f", 90);
+}
+}
+
+function drawArrow(dx, dy, color, radius = 70) {
+const angle = Math.atan2(dy, dx);
+ctx.save(); ctx.translate(players.me.x, players.me.y); ctx.rotate(angle);
+ctx.beginPath(); ctx.moveTo(radius, 0); ctx.lineTo(radius - 15, -8); ctx.lineTo(radius - 15, 8); ctx.closePath();
+ctx.fillStyle = color; ctx.fill(); ctx.restore();
+}
+
+function drawSight() {
+if(players.me.isDead) return;
+if (!isMouseDown && !joyAim.active) return;
+let targetX, targetY;
+if (joyAim.active) {
+targetX = players.me.x + Math.cos(players.me.aimAngle) * 150;
+targetY = players.me.y + Math.sin(players.me.aimAngle) * 150;
+} else {
+const dx = mousePos.x - canvas.width/2;
+const dy = mousePos.y - canvas.height/2;
+const dist = Math.min(Math.hypot(dx, dy), 150);
+targetX = players.me.x + Math.cos(players.me.aimAngle) * dist;
+targetY = players.me.y + Math.sin(players.me.aimAngle) * dist;
+}
+ctx.beginPath(); ctx.setLineDash([5, 10]); ctx.moveTo(players.me.x, players.me.y);
+ctx.lineTo(targetX, targetY); ctx.strokeStyle = "rgba(255, 71, 87, 0.4)"; ctx.lineWidth = 2;
+ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(targetX, targetY, 4, 0, Math.PI * 2);
+ctx.fillStyle = "#ff4757"; ctx.fill(); ctx.strokeStyle = "white"; ctx.lineWidth = 1; ctx.stroke();
+}
+
+function sendMsg() {
+const text = chatInput.value.trim(); if(!text) return;
+addMsg(players.me.nick, text, "me");
+if(conn && conn.open) conn.send({ type: 'chat', msg: text });
+chatInput.value = ""; chatInput.blur();
+}
+
+function addMsg(author, text, senderType) {
+const d = document.createElement('div');
+const color = (senderType === "me") ? players.me.color : ((senderType === "peer") ? players.peer.color : "#aaa");
+d.innerHTML = `<span style="color:${color}; font-weight:bold">${author}:</span> ${text}`;
+const display = document.getElementById('chat-display'); display.appendChild(d); display.scrollTop = display.scrollHeight;
+if (window.getComputedStyle(chatWrapper).left.includes('-') && senderType !== "msg-sys") chatMinimizeBtn.classList.add('unread-pulse');
+}
+
+function startGame() {
+document.getElementById('menu').style.display = 'none';
+document.getElementById('lvl-hud').style.display = 'block';
+chatWrapper.style.display = 'flex'; sessionPanel.style.display = 'block'; hivePanel.style.display = 'block'; canvas.style.display = 'block';
+if('ontouchstart' in window) { moveBase.style.display = 'block'; aimBase.style.display = 'block'; setupMultitouch(); }
+resize(); requestAnimationFrame(gameLoop);
+}
+
+function setupMultitouch() {
+const handleStart = (e) => {
+for(let t of e.changedTouches) {
+const rM = moveBase.getBoundingClientRect(), rA = aimBase.getBoundingClientRect();
+if(t.clientX > rM.left && t.clientX < rM.right && t.clientY > rM.top && t.clientY < rM.bottom) touchIds.move = t.identifier;
+if(t.clientX > rA.left && t.clientX < rA.right && t.clientY > rA.top && t.clientY < rA.bottom) touchIds.aim = t.identifier;
+}
+};
+const handleMove = (e) => {
+e.preventDefault();
+for(let t of e.touches) {
+if(t.identifier === touchIds.move) {
+const r = moveBase.getBoundingClientRect();
+const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40), a = Math.atan2(dy, dx);
+moveStick.style.transform = `translate(${Math.cos(a)*d}px, ${Math.sin(a)*d}px)`;
+joyMove = { dx: Math.cos(a)*(d/40), dy: Math.sin(a)*(d/40) };
+}
+if(t.identifier === touchIds.aim) {
+const r = aimBase.getBoundingClientRect();
+const dx = t.clientX - (r.left + 60), dy = t.clientY - (r.top + 60);
+const d = Math.min(Math.sqrt(dx*dx + dy*dy), 40);
+joyAim.angle = Math.atan2(dy, dx); joyAim.active = true;
+aimStick.style.transform = `translate(${Math.cos(joyAim.angle)*d}px, ${Math.sin(joyAim.angle)*d}px)`;
+players.me.aimAngle = joyAim.angle;
+}
+}
+};
+const handleEnd = (e) => {
+for(let t of e.changedTouches) {
+if(t.identifier === touchIds.move) { touchIds.move = null; joyMove = {dx:0, dy:0}; moveStick.style.transform = 'none'; }
+if(t.identifier === touchIds.aim) { touchIds.aim = null; joyAim.active = false; aimStick.style.transform = 'none'; }
+}
+};
+window.addEventListener('touchstart', handleStart, {passive: false});
+window.addEventListener('touchmove', handleMove, {passive: false});
+window.addEventListener('touchend', handleEnd);
+}
+
+function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+window.addEventListener('resize', resize);
+
+function getDirFromAngle(angle) {
+const deg = angle * (180 / Math.PI);
+if (deg >= -45 && deg <= 45) return 'Right';
+if (deg > 45 && deg < 135) return 'Down';
+if (deg >= 135 || deg <= -135) return 'Left';
+return 'Up';
+}
+
+function update() {
+if(!players.me.isDead) {
+const baseSpeed = 5 + (players.me.stats.agi * 0.4);
+let dx = joyMove.dx, dy = joyMove.dy;
+if (keys['KeyW'] || keys['ArrowUp']) dy = -1; if (keys['KeyS'] || keys['ArrowDown']) dy = 1;
+if (keys['KeyA'] || keys['ArrowLeft']) dx = -1; if (keys['KeyD'] || keys['ArrowRight']) dx = 1;
+players.me.moving = (dx !== 0 || dy !== 0);
+if (players.me.moving) {
+const m = Math.sqrt(dx*dx + dy*dy);
+let newX = players.me.x + (dx/m) * baseSpeed;
+let newY = players.me.y + (dy/m) * baseSpeed;
+const distToHive = Math.hypot(newX - hive.x, newY - hive.y);
+const hiveRadius = 40; 
+if (distToHive > hiveRadius) {
+players.me.x = newX;
+players.me.y = newY;
+} else {
+const angleFromHive = Math.atan2(newY - hive.y, newX - hive.x);
+players.me.x = hive.x + Math.cos(angleFromHive) * (hiveRadius + 1);
+players.me.y = hive.y + Math.sin(angleFromHive) * (hiveRadius + 1);
+}
+if (!joyAim.active && !isMouseDown) { 
+if(Math.abs(dx) > Math.abs(dy)) players.me.dir = dx > 0 ? 'Right' : 'Left'; 
+else players.me.dir = dy > 0 ? 'Down' : 'Up'; 
+}
+}
+if(joyAim.active) { 
+players.me.dir = getDirFromAngle(joyAim.angle); 
+players.me.aimAngle = joyAim.angle; 
+fire(joyAim.angle); 
+} 
+else if(isMouseDown || !('ontouchstart' in window)) { 
+const angle = Math.atan2(mousePos.y - canvas.height/2, mousePos.x - canvas.width/2); 
+players.me.aimAngle = angle; 
+if(isMouseDown) {
+players.me.dir = getDirFromAngle(angle); 
+fire(angle);
+}
+}
+}
+runWaveLogic(); updateMechanics(); updateHordeHud();
+if(performance.now() - lastNetUpdate > 30) { 
+if(conn && conn.open) conn.send({ 
+type: 'pos',
+x: players.me.x, y: players.me.y, dir: players.me.dir,
+hp: players.me.hp, maxHp: players.me.maxHp, isDead: players.me.isDead,
+pollen: players.me.pollen, lvl: players.me.lvl, isCollecting: players.me.isCollecting,
+moving: players.me.moving 
+}); 
+lastNetUpdate = performance.now();
+}
+let playerListHtml = `<div class="item-row" style="color:${players.me.color}"><span>● Você (${players.me.nick})</span><span>Lvl ${players.me.lvl}</span></div>`;
+if(players.peer.active) { 
+players.peer.x += (players.peer.tX - players.peer.x) * 0.15; players.peer.y += (players.peer.tY - players.peer.y) * 0.15; 
+const d = Math.floor(Math.hypot(players.peer.x-players.me.x, players.peer.y-players.me.y)/10);
+playerListHtml += `<div class="item-row" style="color:${players.peer.color}"><span>● ${players.peer.nick}</span><span>${d}m</span></div>`;
+}
+playerItemsContainer.innerHTML = playerListHtml;
+let hiveListHtml = "";
+if(!hive.destroyed) {
+const hpP = Math.floor((hive.hp/hive.maxHp)*100);
+const dist = Math.floor(Math.hypot(hive.x-players.me.x, hive.y-players.me.y)/10);
+hiveListHtml += `<div class="item-row" style="color:${hpP > 30 ? '#2ecc71':'#e74c3c'}"><span>🏠 Base Principal</span><span>${hpP}% (${dist}m)</span></div>`;
+} else { hiveListHtml = `<div class="item-row" style="color:#e74c3c"><span>🏠 Base Destruída</span></div>`; }
+hiveItemsContainer.innerHTML = hiveListHtml;
+camera.x = players.me.x - canvas.width/2; camera.y = players.me.y - canvas.height/2;
+document.getElementById('coords').innerText = `X: ${Math.floor(players.me.x)} Y: ${Math.floor(players.me.y)}`;
 }
 
 function drawHealthBar(x, y, hp, max = 100, w = 50, h = 6, offset = 55) {
