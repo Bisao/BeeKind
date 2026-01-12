@@ -1602,21 +1602,30 @@ if(players.me.hp <= 0) { players.me.hp = 0; players.me.isDead = true; deathModal
 function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.hp = players.me.maxHp; players.me.isDead = false; deathModal.style.display = 'none'; }
 
 function fire(angle) {
-if(Date.now() - lastShootTime < 720 || players.me.isDead) return;
-
-if (players.me.classType === "Guerreiro") {
-    spawnMeleeSlash(players.me.x, players.me.y, angle, true);
-    if(players.peer.active && conn && conn.open) conn.send({ type: 'melee', x: players.me.x, y: players.me.y, angle: angle });
-} else {
-    let type = players.me.classType === "Mago" ? "fireball" : "arrow";
-    spawnProjectile(players.me.x, players.me.y, angle, true, type);
-    if(players.me.skills.double && Math.random() < 0.3) {
-        spawnProjectile(players.me.x, players.me.y, angle + 0.1, true, type);
+    let cooldown = 600; // Base cooldown
+    if (players.me.classType === "Guerreiro") {
+        cooldown = 900; // Guerreiro ataca mais devagar
+    } else if (players.me.classType === "Mago") {
+        cooldown = 1000; // Mago bem lento
+    } else if (players.me.classType === "Arqueiro") {
+        cooldown = 600; // Arqueiro mais rápido
     }
-    if(players.peer.active && conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle, projType: type });
-}
 
-lastShootTime = Date.now();
+    if(Date.now() - lastShootTime < cooldown || players.me.isDead) return;
+
+    if (players.me.classType === "Guerreiro") {
+        spawnMeleeSlash(players.me.x, players.me.y, angle, true);
+        if(players.peer.active && conn && conn.open) conn.send({ type: 'melee', x: players.me.x, y: players.me.y, angle: angle });
+    } else {
+        let type = players.me.classType === "Mago" ? "fireball" : "arrow";
+        spawnProjectile(players.me.x, players.me.y, angle, true, type);
+        if(players.me.skills.double && Math.random() < 0.3) {
+            spawnProjectile(players.me.x, players.me.y, angle + 0.1, true, type);
+        }
+        if(players.peer.active && conn && conn.open) conn.send({ type: 'shoot', x: players.me.x, y: players.me.y, angle: angle, projType: type });
+    }
+
+    lastShootTime = Date.now();
 }
 
 function spawnMeleeSlash(x, y, angle, isMe) {
@@ -1632,7 +1641,8 @@ function spawnMeleeSlash(x, y, angle, isMe) {
 
 function spawnProjectile(x, y, angle, isMe, type) {
 const bonusVel = isMe ? (players.me.stats.str * 0.5) : 0;
-projectiles.push({ x, y, vx: Math.cos(angle)*(12+bonusVel), vy: Math.sin(angle)*(12+bonusVel), life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer', type: type });
+// Velocidade reduzida para 6 (era 12)
+projectiles.push({ x, y, vx: Math.cos(angle)*(6+bonusVel), vy: Math.sin(angle)*(6+bonusVel), life: 60, color: isMe ? players.me.color : players.peer.color, owner: isMe ? 'me' : 'peer', type: type });
 }
 
 function runWaveLogic() {
@@ -2231,6 +2241,13 @@ projectiles.forEach(p => {
         ctx.lineTo(5, -4); ctx.moveTo(10, 0); ctx.lineTo(5, 4); // Head
         ctx.stroke();
     } else if (p.type === 'fireball') {
+        // LIGHT EFFECT ADDITION (Adicionado o gradiente de luz)
+        const grad = ctx.createRadialGradient(0, 0, 5, 0, 0, 30);
+        grad.addColorStop(0, "rgba(255, 165, 0, 0.6)");
+        grad.addColorStop(1, "rgba(255, 165, 0, 0)");
+        ctx.fillStyle = grad;
+        ctx.beginPath(); ctx.arc(0, 0, 30, 0, Math.PI*2); ctx.fill();
+
         // Fireball effect
         ctx.fillStyle = '#e67e22';
         ctx.beginPath(); ctx.arc(0, 0, 6, 0, Math.PI*2); ctx.fill();
