@@ -1565,7 +1565,7 @@ if(players.me.hp <= 0) { players.me.hp = 0; players.me.isDead = true; deathModal
 function respawnPlayer() { players.me.x = 1100; players.me.y = 1100; players.me.hp = players.me.maxHp; players.me.isDead = false; deathModal.style.display = 'none'; }
 
 function fire(angle) {
-if(Date.now() - lastShootTime < 180 || players.me.isDead) return;
+if(Date.now() - lastShootTime < 720 || players.me.isDead) return;
 
 if (players.me.classType === "Guerreiro") {
     spawnMeleeSlash(players.me.x, players.me.y, angle, true);
