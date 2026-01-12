@@ -45,12 +45,10 @@ text-align: center; min-width: 220px; backdrop-filter: blur(10px);
 border: 1px solid var(--border); display: none; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
 }
 
-/* Alterado para lateral esquerda superior */
 #time-hud {
 position: absolute; top: 15px; left: 15px;
 background: rgba(0,0,0,0.6); padding: 5px 15px; border-radius: 15px;
 font-size: 12px; font-weight: bold; color: #fff; margin-top: 5px;
-font-size: 12px; font-weight: bold; color: #fff;
 border: 1px solid var(--border); backdrop-filter: blur(5px);
 display: none; align-items: center; gap: 8px;
 z-index: 105;
@@ -221,7 +219,6 @@ display: grid; grid-template-columns: 1fr 1fr; gap: 20px;
     .button-row { gap: 10px; }
     .main-btn { font-size: 0.8rem; padding: 14px 5px; }
     
-    /* Ajustando XP HUD para não sobrepor o Relógio no mobile */
     #lvl-hud { 
         min-width: 120px; 
         padding: 6px 15px; 
@@ -1188,9 +1185,6 @@ players.peer.color = host ? "#3498db" : "#f1c40f";
 
 if(peer && !peer.destroyed) peer.destroy();
 
-// CORREÇÃO DA ARQUITETURA P2P:
-// Somente o HOST tenta pegar o ID fixo da sala.
-// O GUEST entra com um ID aleatório (passando null) para evitar erro de conflito.
 const peerId = host ? 'hive-game-' + code : null;
 peer = new Peer(peerId);
 
@@ -1204,7 +1198,6 @@ peer.on('open', (id) => {
 if(host) { 
 startLoadingSequence(); 
 } else { 
-// O Convidado se conecta ao ID fixo que o Host criou
 conn = peer.connect('hive-game-' + code); 
 setupConn(); 
 } 
@@ -1499,6 +1492,21 @@ let amICalling = false;
 if(players.me.skills.regen && !players.me.isDead && performance.now() % 2000 < 20) {
 if(players.me.hp < players.me.maxHp) players.me.hp += 1;
 }
+
+// Lógica de partículas compartilhada
+if(players.me.pollen > 0 && !players.me.isDead) {
+    if(players.me.moving && Math.random() < 0.15) {
+        createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
+        if(conn && conn.open) conn.send({ type: 'fx', effect: 'pollen', x: players.me.x, y: players.me.y });
+    }
+}
+
+if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
+    if(players.peer.moving && Math.random() < 0.15) {
+        createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
+    }
+}
+
 if(isHost) {
 let needsFlowerSync = false; const now = Date.now();
 if(Date.now() - lastAutoSaveTime > 60000) {
@@ -1507,19 +1515,19 @@ lastAutoSaveTime = Date.now();
 }
 
 if(players.me.pollen > 0 && !players.me.isDead) {
-if(joyMove.dx !== 0 || joyMove.dy !== 0 || (keys['KeyW']||keys['ArrowUp']||keys['KeyS']||keys['ArrowDown']||keys['KeyA']||keys['ArrowLeft']||keys['KeyD']||keys['ArrowRight'])) {
-if(Math.random() < 0.3) {
-createParticles(players.me.x, players.me.y, "#fffa65", 1, 'pollen');
-if(conn && conn.open) conn.send({ type: 'fx', effect: 'pollen', x: players.me.x, y: players.me.y });
+    if(players.me.moving) {
+        players.me.pollen = Math.max(0, players.me.pollen - 0.05);
+        if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
+    }
 }
-players.me.pollen = Math.max(0, players.me.pollen - 0.05);
-if(Math.random() < 0.002) spawnFlower(players.me.x, players.me.y);
-}
-}
+
 if(players.peer.active && !players.peer.isDead && players.peer.pollen > 0) {
-if(Math.random() < 0.3) createParticles(players.peer.x, players.peer.y, "#fffa65", 1, 'pollen');
-if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
+    if(players.peer.moving) {
+        players.peer.pollen = Math.max(0, players.peer.pollen - 0.05);
+        if(Math.random() < 0.002) spawnFlower(players.peer.x, players.peer.y);
+    }
 }
+
 flowers.forEach(f => {
 if(f.growState !== 'mature') {
 const age = now - f.plantTime;
